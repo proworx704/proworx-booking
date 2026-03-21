@@ -92,12 +92,48 @@ export const create = mutation({
       }
     }
 
+    // Auto-create or link customer record
+    let customerId: string | undefined;
+    if (args.customerEmail) {
+      const existingCustomer = await ctx.db
+        .query("customers")
+        .withIndex("by_email", (q) => q.eq("email", args.customerEmail))
+        .first();
+      if (existingCustomer) {
+        customerId = existingCustomer._id;
+        // Update stats
+        await ctx.db.patch(existingCustomer._id, {
+          totalBookings: (existingCustomer.totalBookings || 0) + 1,
+          lastServiceDate: args.date,
+          // Update address/phone if changed
+          address: args.serviceAddress,
+          phone: args.customerPhone,
+          zipCode: args.zipCode,
+          vehicleType: args.vehicleType,
+        });
+      } else {
+        customerId = await ctx.db.insert("customers", {
+          name: args.customerName,
+          phone: args.customerPhone,
+          email: args.customerEmail,
+          address: args.serviceAddress,
+          zipCode: args.zipCode,
+          vehicleType: args.vehicleType,
+          source: "booking",
+          totalBookings: 1,
+          totalSpent: 0,
+          lastServiceDate: args.date,
+        });
+      }
+    }
+
     const bookingId = await ctx.db.insert("bookings", {
       customerName: args.customerName,
       customerPhone: args.customerPhone,
       customerEmail: args.customerEmail,
       serviceAddress: args.serviceAddress,
       zipCode: args.zipCode,
+      customerId: customerId as any,
       serviceId: args.serviceId,
       serviceName: service.name,
       vehicleType: args.vehicleType,
@@ -271,12 +307,37 @@ export const markPaid = mutation({
     paymentId: v.optional(v.string()),
   },
   handler: async (ctx, { id, paymentMethod, paymentAmount, paymentId }) => {
+    const booking = await ctx.db.get(id);
     await ctx.db.patch(id, {
       paymentStatus: "paid",
       paymentMethod,
       paymentAmount,
       paymentId,
       paidAt: Date.now(),
+    });
+    // Update customer totalSpent
+    if (booking?.customerId) {
+      const customer = await ctx.db.get(booking.customerId);
+      if (customer) {
+        await ctx.db.patch(customer._id, {
+          totalSpent: (customer.totalSpent || 0) + paymentAmount,
+        });
+      }
+    }
+  },
+});
+
+// Admin: store Square payment link on a booking
+export const setSquarePaymentLink = mutation({
+  args: {
+    id: v.id("bookings"),
+    url: v.string(),
+    linkId: v.optional(v.string()),
+  },
+  handler: async (ctx, { id, url, linkId }) => {
+    await ctx.db.patch(id, {
+      squarePaymentLinkUrl: url,
+      squarePaymentLinkId: linkId,
     });
   },
 });

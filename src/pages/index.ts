@@ -8,6 +8,8 @@ export { BookingsPage } from "./BookingsPage";
 export { BookingDetailPage } from "./BookingDetailPage";
 export { ServicesPage } from "./ServicesPage";
 export { AvailabilityPage } from "./AvailabilityPage";
+export { CustomersPage } from "./CustomersPage";
+export { CustomerDetailPage } from "./CustomerDetailPage";
 export { FeedbackPage } from "./FeedbackPage";
 export { StaffPage } from "./StaffPage";
 export { StaffDetailPage } from "./StaffDetailPage";

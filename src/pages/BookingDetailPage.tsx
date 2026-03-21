@@ -81,9 +81,11 @@ const paymentColors: Record<string, string> = {
 function PaymentDialog({
   bookingId,
   price,
+  squarePaymentLinkUrl,
 }: {
   bookingId: Id<"bookings">;
   price: number;
+  squarePaymentLinkUrl?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [method, setMethod] = useState("card");
@@ -92,6 +94,23 @@ function PaymentDialog({
   const markPaid = useMutation(api.bookings.markPaid);
 
   const handlePayment = async () => {
+    if (method === "card" && squarePaymentLinkUrl) {
+      // Open Square payment link and mark as paid
+      window.open(squarePaymentLinkUrl, "_blank");
+      setIsProcessing(true);
+      try {
+        await markPaid({
+          id: bookingId,
+          paymentMethod: "card",
+          paymentAmount: Math.round(Number.parseFloat(amount) * 100),
+        });
+        setOpen(false);
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
+
     setIsProcessing(true);
     try {
       await markPaid({
@@ -131,8 +150,10 @@ function PaymentDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="card">Credit/Debit Card (Square)</SelectItem>
-                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="card">
+                  💳 Credit/Debit Card (Square)
+                </SelectItem>
+                <SelectItem value="cash">💵 Cash</SelectItem>
                 <SelectItem value="zelle">Zelle</SelectItem>
                 <SelectItem value="venmo">Venmo</SelectItem>
                 <SelectItem value="paypal">PayPal</SelectItem>
@@ -140,6 +161,34 @@ function PaymentDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {method === "card" && squarePaymentLinkUrl && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+              <p className="font-medium text-blue-700 flex items-center gap-1">
+                <svg className="size-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm4 3h6v2H9V8zm0 4h6v2H9v-2z" />
+                </svg>
+                Square Payment Link ready
+              </p>
+              <p className="text-blue-600 mt-1">
+                Clicking &quot;Pay with Square&quot; will open the Square checkout page
+                for the customer.
+              </p>
+            </div>
+          )}
+
+          {method === "card" && !squarePaymentLinkUrl && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
+              <p className="font-medium text-amber-700">
+                ⏳ Square link not generated yet
+              </p>
+              <p className="text-amber-600 mt-1">
+                Payment will be recorded manually. Ask Viktor to generate a
+                Square payment link for this booking.
+              </p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Amount</Label>
             <div className="relative">
@@ -159,7 +208,11 @@ function PaymentDialog({
             Cancel
           </Button>
           <Button onClick={handlePayment} disabled={isProcessing}>
-            {isProcessing ? "Processing..." : "Confirm Payment"}
+            {isProcessing
+              ? "Processing..."
+              : method === "card" && squarePaymentLinkUrl
+                ? "Pay with Square →"
+                : "Confirm Payment"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -473,6 +526,7 @@ export function BookingDetailPage() {
                   <PaymentDialog
                     bookingId={booking._id}
                     price={booking.price}
+                    squarePaymentLinkUrl={booking.squarePaymentLinkUrl}
                   />
                 </div>
               )}

@@ -4,6 +4,7 @@ import {
   Calendar,
   CalendarCheck,
   Clock,
+  Contact,
   LayoutDashboard,
   LogOut,
   Moon,
@@ -42,6 +43,7 @@ import {
 const mainNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/bookings", label: "Bookings", icon: CalendarCheck },
+  { href: "/customers", label: "Clients", icon: Contact },
   { href: "/staff", label: "Staff", icon: Users },
 ];
 
@@ -94,6 +96,8 @@ function SidebarNav() {
                   location.pathname === item.href ||
                   (item.href === "/bookings" &&
                     location.pathname.startsWith("/bookings")) ||
+                  (item.href === "/customers" &&
+                    location.pathname.startsWith("/customers")) ||
                   (item.href === "/staff" &&
                     location.pathname.startsWith("/staff"))
                 }

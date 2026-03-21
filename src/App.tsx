@@ -11,6 +11,8 @@ import {
   BookingDetailPage,
   BookingPage,
   BookingsPage,
+  CustomerDetailPage,
+  CustomersPage,
   DashboardPage,
   FeedbackPage,
   LandingPage,
@@ -46,6 +48,8 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/bookings" element={<BookingsPage />} />
               <Route path="/bookings/:id" element={<BookingDetailPage />} />
+              <Route path="/customers" element={<CustomersPage />} />
+              <Route path="/customers/:id" element={<CustomerDetailPage />} />
               <Route path="/staff" element={<StaffPage />} />
               <Route path="/staff/:id" element={<StaffDetailPage />} />
               <Route path="/services" element={<ServicesPage />} />

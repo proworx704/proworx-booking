@@ -71,6 +71,35 @@ const schema = defineSchema({
     reason: v.optional(v.string()),
   }).index("by_date", ["date"]),
 
+  // Customer / Client database
+  customers: defineTable({
+    name: v.string(),
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+    address: v.optional(v.string()),
+    zipCode: v.optional(v.string()),
+    vehicleType: v.optional(v.union(v.literal("sedan"), v.literal("suv"))),
+    vehicleYear: v.optional(v.string()),
+    vehicleMake: v.optional(v.string()),
+    vehicleModel: v.optional(v.string()),
+    vehicleColor: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    source: v.union(
+      v.literal("booking"),   // auto-created from a booking
+      v.literal("manual"),    // manually entered
+      v.literal("csv"),       // imported from CSV
+      v.literal("square"),    // imported from Square
+    ),
+    squareCustomerId: v.optional(v.string()),
+    totalBookings: v.optional(v.number()),
+    totalSpent: v.optional(v.number()), // cents
+    lastServiceDate: v.optional(v.string()),
+  })
+    .index("by_email", ["email"])
+    .index("by_phone", ["phone"])
+    .index("by_name", ["name"])
+    .index("by_square_id", ["squareCustomerId"]),
+
   // Customer bookings
   bookings: defineTable({
     // Customer info
@@ -79,6 +108,7 @@ const schema = defineSchema({
     customerEmail: v.string(),
     serviceAddress: v.string(),
     zipCode: v.optional(v.string()), // ZIP / postal code for route clustering
+    customerId: v.optional(v.id("customers")), // link to customer record
 
     // Booking details
     serviceId: v.id("services"),
@@ -112,6 +142,8 @@ const schema = defineSchema({
     paymentMethod: v.optional(v.string()),
     paymentAmount: v.optional(v.number()), // actual charged amount in cents
     paymentId: v.optional(v.string()),
+    squarePaymentLinkUrl: v.optional(v.string()), // Square checkout link
+    squarePaymentLinkId: v.optional(v.string()),
     paidAt: v.optional(v.number()), // timestamp
 
     // Follow-up

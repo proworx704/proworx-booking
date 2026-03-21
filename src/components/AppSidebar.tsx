@@ -7,6 +7,7 @@ import {
   Clock,
   Contact,
   LayoutDashboard,
+  List,
   LogOut,
   Moon,
   Settings,
@@ -49,7 +50,8 @@ const mainNav = [
 ];
 
 const manageNav = [
-  { href: "/services", label: "Services", icon: Sparkles },
+  { href: "/catalog", label: "Service Catalog", icon: List },
+  { href: "/services", label: "Legacy Services", icon: Sparkles },
   { href: "/availability", label: "Availability", icon: Clock },
   { href: "/schedule-blocks", label: "Schedule Blocks", icon: CalendarClock },
   { href: "/service-freeze", label: "Service Freeze", icon: Snowflake },

@@ -24,6 +24,7 @@ import {
   StaffDetailPage,
   StaffPage,
 } from "./pages";
+import { CatalogPage } from "./pages/CatalogPage";
 import { ScheduleBlocksPage } from "./pages/ScheduleBlocksPage";
 
 function App() {
@@ -53,6 +54,7 @@ function App() {
               <Route path="/customers/:id" element={<CustomerDetailPage />} />
               <Route path="/staff" element={<StaffPage />} />
               <Route path="/staff/:id" element={<StaffDetailPage />} />
+              <Route path="/catalog" element={<CatalogPage />} />
               <Route path="/services" element={<ServicesPage />} />
               <Route path="/availability" element={<AvailabilityPage />} />
               <Route path="/schedule-blocks" element={<ScheduleBlocksPage />} />

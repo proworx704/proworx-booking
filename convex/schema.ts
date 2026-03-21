@@ -2,32 +2,75 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+// Shared validator for catalog variant (reused in multiple places)
+const variantValidator = v.object({
+  label: v.string(),
+  price: v.number(), // cents
+  durationMin: v.number(),
+});
+
 const schema = defineSchema({
   ...authTables,
 
-  // Services offered by ProWorx
+  // ─── Legacy services table (kept for backward compat with existing bookings) ──
   services: defineTable({
     name: v.string(),
     description: v.string(),
-    sedanPrice: v.number(), // in cents
-    suvPrice: v.number(), // in cents
-    duration: v.number(), // in minutes
+    sedanPrice: v.number(),
+    suvPrice: v.number(),
+    duration: v.number(),
     isActive: v.boolean(),
     sortOrder: v.number(),
   }),
 
-  // Staff members
+  // ─── NEW: Full service catalog with variants & categories ──
+  serviceCatalog: defineTable({
+    name: v.string(),
+    slug: v.string(), // URL-friendly slug for deep links, e.g. "standard-inside-out"
+    description: v.string(),
+    category: v.union(
+      v.literal("core"),
+      v.literal("paintCorrection"),
+      v.literal("ceramicCoating"),
+      v.literal("interiorAddon"),
+      v.literal("exteriorAddon"),
+      v.literal("ceramicAddon"),
+    ),
+    variants: v.array(variantValidator),
+    isActive: v.boolean(),
+    sortOrder: v.number(),
+    deposit: v.optional(v.number()), // cents — for ceramic coating packages
+    popular: v.optional(v.boolean()),
+  })
+    .index("by_category", ["category"])
+    .index("by_slug", ["slug"])
+    .index("by_active", ["isActive"]),
+
+  // ─── NEW: Recurring schedule blocks (Week A / Week B custody schedule) ──
+  recurringBlocks: defineTable({
+    weekType: v.union(v.literal("A"), v.literal("B")),
+    dayOfWeek: v.number(), // 0=Sunday .. 6=Saturday
+    blockAfter: v.string(), // "16:00" — block all slots at or after this time
+    reason: v.optional(v.string()),
+  }).index("by_week_day", ["weekType", "dayOfWeek"]),
+
+  // Settings for the recurring block system
+  recurringBlockSettings: defineTable({
+    weekAStartDate: v.string(), // Reference Monday for Week A, e.g. "2026-03-23"
+    isEnabled: v.boolean(),
+  }),
+
+  // ─── Staff ──
   staff: defineTable({
     name: v.string(),
     phone: v.optional(v.string()),
     email: v.optional(v.string()),
     role: v.union(v.literal("owner"), v.literal("technician"), v.literal("manager")),
     isActive: v.boolean(),
-    color: v.string(), // hex color for calendar display, e.g. "#2563eb"
+    color: v.string(),
     notes: v.optional(v.string()),
   }).index("by_active", ["isActive"]),
 
-  // Staff-to-service assignments (many-to-many)
   staffServices: defineTable({
     staffId: v.id("staff"),
     serviceId: v.id("services"),
@@ -36,42 +79,40 @@ const schema = defineSchema({
     .index("by_service", ["serviceId"])
     .index("by_staff_service", ["staffId", "serviceId"]),
 
-  // Per-staff availability (weekly schedule)
   staffAvailability: defineTable({
     staffId: v.id("staff"),
-    dayOfWeek: v.number(), // 0=Sunday .. 6=Saturday
-    startTime: v.string(), // "09:30"
-    endTime: v.string(), // "18:00"
+    dayOfWeek: v.number(),
+    startTime: v.string(),
+    endTime: v.string(),
     isAvailable: v.boolean(),
   })
     .index("by_staff", ["staffId"])
     .index("by_staff_day", ["staffId", "dayOfWeek"]),
 
-  // Per-service blocked dates (freeze booking for specific services on specific dates)
+  // ─── Service freeze ──
   serviceFreeze: defineTable({
     serviceId: v.id("services"),
-    date: v.string(), // "2026-03-25"
+    date: v.string(),
     reason: v.optional(v.string()),
   })
     .index("by_service", ["serviceId"])
     .index("by_date", ["date"])
     .index("by_service_date", ["serviceId", "date"]),
 
-  // Weekly availability settings (global/business-level)
+  // ─── Availability ──
   availability: defineTable({
-    dayOfWeek: v.number(), // 0=Sunday, 1=Monday, ... 6=Saturday
-    startTime: v.string(), // "09:30"
-    endTime: v.string(), // "18:00"
+    dayOfWeek: v.number(),
+    startTime: v.string(),
+    endTime: v.string(),
     isAvailable: v.boolean(),
   }).index("by_day", ["dayOfWeek"]),
 
-  // Blocked dates (holidays, days off — blocks ALL services)
   blockedDates: defineTable({
-    date: v.string(), // "2026-03-25"
+    date: v.string(),
     reason: v.optional(v.string()),
   }).index("by_date", ["date"]),
 
-  // Customer / Client database
+  // ─── Customers ──
   customers: defineTable({
     name: v.string(),
     phone: v.optional(v.string()),
@@ -85,14 +126,14 @@ const schema = defineSchema({
     vehicleColor: v.optional(v.string()),
     notes: v.optional(v.string()),
     source: v.union(
-      v.literal("booking"),   // auto-created from a booking
-      v.literal("manual"),    // manually entered
-      v.literal("csv"),       // imported from CSV
-      v.literal("square"),    // imported from Square
+      v.literal("booking"),
+      v.literal("manual"),
+      v.literal("csv"),
+      v.literal("square"),
     ),
     squareCustomerId: v.optional(v.string()),
     totalBookings: v.optional(v.number()),
-    totalSpent: v.optional(v.number()), // cents
+    totalSpent: v.optional(v.number()),
     lastServiceDate: v.optional(v.string()),
   })
     .index("by_email", ["email"])
@@ -100,25 +141,42 @@ const schema = defineSchema({
     .index("by_name", ["name"])
     .index("by_square_id", ["squareCustomerId"]),
 
-  // Customer bookings
+  // ─── Bookings ──
   bookings: defineTable({
     // Customer info
     customerName: v.string(),
     customerPhone: v.string(),
     customerEmail: v.string(),
     serviceAddress: v.string(),
-    zipCode: v.optional(v.string()), // ZIP / postal code for route clustering
-    customerId: v.optional(v.id("customers")), // link to customer record
+    zipCode: v.optional(v.string()),
+    customerId: v.optional(v.id("customers")),
 
-    // Booking details
-    serviceId: v.id("services"),
+    // Booking details — legacy (serviceId) or new (catalogItemId)
+    serviceId: v.optional(v.id("services")), // legacy — now optional
+    catalogItemId: v.optional(v.id("serviceCatalog")), // new catalog reference
     serviceName: v.string(),
-    vehicleType: v.union(v.literal("sedan"), v.literal("suv")),
-    price: v.number(), // in cents
+    selectedVariant: v.optional(v.string()), // variant label, e.g. "Coupe/Sedan"
+    vehicleType: v.optional(v.union(v.literal("sedan"), v.literal("suv"))), // legacy — now optional
+    price: v.number(), // base service price in cents
+
+    // Add-ons
+    addons: v.optional(
+      v.array(
+        v.object({
+          catalogItemId: v.optional(v.id("serviceCatalog")),
+          name: v.string(),
+          variantLabel: v.optional(v.string()),
+          price: v.number(), // cents
+          durationMin: v.number(),
+        }),
+      ),
+    ),
+    totalPrice: v.optional(v.number()), // total including addons, cents
+    totalDuration: v.optional(v.number()), // total including addons, minutes
 
     // Schedule
-    date: v.string(), // "2026-03-25"
-    time: v.string(), // "10:00"
+    date: v.string(),
+    time: v.string(),
 
     // Staff assignment
     staffId: v.optional(v.id("staff")),
@@ -140,11 +198,11 @@ const schema = defineSchema({
       v.literal("refunded"),
     ),
     paymentMethod: v.optional(v.string()),
-    paymentAmount: v.optional(v.number()), // actual charged amount in cents
+    paymentAmount: v.optional(v.number()),
     paymentId: v.optional(v.string()),
-    squarePaymentLinkUrl: v.optional(v.string()), // Square checkout link
+    squarePaymentLinkUrl: v.optional(v.string()),
     squarePaymentLinkId: v.optional(v.string()),
-    paidAt: v.optional(v.number()), // timestamp
+    paidAt: v.optional(v.number()),
 
     // Follow-up
     followUpSent: v.optional(v.boolean()),
@@ -154,7 +212,7 @@ const schema = defineSchema({
     // Notes
     notes: v.optional(v.string()),
 
-    // Confirmation code for customer lookup
+    // Confirmation code
     confirmationCode: v.string(),
   })
     .index("by_date", ["date"])

@@ -3,6 +3,7 @@ import { useQuery } from "convex/react";
 import {
   Calendar,
   CalendarCheck,
+  CalendarClock,
   Clock,
   Contact,
   LayoutDashboard,
@@ -50,6 +51,7 @@ const mainNav = [
 const manageNav = [
   { href: "/services", label: "Services", icon: Sparkles },
   { href: "/availability", label: "Availability", icon: Clock },
+  { href: "/schedule-blocks", label: "Schedule Blocks", icon: CalendarClock },
   { href: "/service-freeze", label: "Service Freeze", icon: Snowflake },
 ];
 

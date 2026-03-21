@@ -56,13 +56,13 @@ export const seed = mutation({
     if (existing) return "Availability already seeded";
 
     const days = [
-      { dayOfWeek: 0, startTime: "09:30", endTime: "18:00", isAvailable: false }, // Sunday
-      { dayOfWeek: 1, startTime: "09:30", endTime: "18:00", isAvailable: true }, // Monday
-      { dayOfWeek: 2, startTime: "09:30", endTime: "18:00", isAvailable: true }, // Tuesday
-      { dayOfWeek: 3, startTime: "09:30", endTime: "18:00", isAvailable: true }, // Wednesday
-      { dayOfWeek: 4, startTime: "09:30", endTime: "18:00", isAvailable: true }, // Thursday
-      { dayOfWeek: 5, startTime: "09:30", endTime: "18:00", isAvailable: true }, // Friday
-      { dayOfWeek: 6, startTime: "09:30", endTime: "15:00", isAvailable: true }, // Saturday
+      { dayOfWeek: 0, startTime: "09:30", endTime: "18:00", isAvailable: false },
+      { dayOfWeek: 1, startTime: "09:30", endTime: "18:00", isAvailable: true },
+      { dayOfWeek: 2, startTime: "09:30", endTime: "18:00", isAvailable: true },
+      { dayOfWeek: 3, startTime: "09:30", endTime: "18:00", isAvailable: true },
+      { dayOfWeek: 4, startTime: "09:30", endTime: "18:00", isAvailable: true },
+      { dayOfWeek: 5, startTime: "09:30", endTime: "18:00", isAvailable: true },
+      { dayOfWeek: 6, startTime: "09:30", endTime: "15:00", isAvailable: true },
     ];
 
     for (const day of days) {
@@ -88,7 +88,6 @@ export const addBlockedDate = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Check if already blocked
     const existing = await ctx.db
       .query("blockedDates")
       .withIndex("by_date", (q) => q.eq("date", args.date))
@@ -105,16 +104,30 @@ export const removeBlockedDate = mutation({
   },
 });
 
-// Public: get available time slots for a specific date, service, and duration
-// Now considers: business hours, blocked dates, service freezes, staff availability
-// Returns objects with { time, recommended } where recommended = true if another booking
-// in the same ZIP code already exists on that date (route efficiency nudge)
+// ─── Helper: compute Week A/B from reference date ─────────────────────────────
+
+function computeWeekType(
+  weekAStartDate: string,
+  targetDate: string,
+): "A" | "B" {
+  const refDate = new Date(weekAStartDate + "T00:00:00Z");
+  const target = new Date(targetDate + "T00:00:00Z");
+  const diffMs = target.getTime() - refDate.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const diffWeeks = Math.floor(diffDays / 7);
+  return diffWeeks % 2 === 0 ? "A" : "B";
+}
+
+// ─── Public: get available time slots ─────────────────────────────────────────
+// Considers: business hours, blocked dates, service freezes, staff availability,
+// recurring schedule blocks (Week A/B), and ZIP-based "recommended" flagging.
+
 export const getAvailableSlots = query({
   args: {
-    date: v.string(), // "2026-03-25"
+    date: v.string(),
     durationMinutes: v.number(),
     serviceId: v.optional(v.id("services")),
-    zipCode: v.optional(v.string()), // customer ZIP for "recommended" flagging
+    zipCode: v.optional(v.string()),
   },
   handler: async (ctx, { date, durationMinutes, serviceId, zipCode }) => {
     // Check if date is globally blocked
@@ -124,7 +137,7 @@ export const getAvailableSlots = query({
       .first();
     if (blocked) return [];
 
-    // Check if this specific service is frozen on this date
+    // Check service freeze
     if (serviceId) {
       const frozen = await ctx.db
         .query("serviceFreeze")
@@ -135,26 +148,48 @@ export const getAvailableSlots = query({
       if (frozen) return [];
     }
 
-    // Get day of week for this date
+    // Get day of week
     const dateObj = new Date(date + "T12:00:00");
     const dayOfWeek = dateObj.getUTCDay();
 
-    // Get business availability for this day
+    // Get business availability
     const avail = await ctx.db
       .query("availability")
       .withIndex("by_day", (q) => q.eq("dayOfWeek", dayOfWeek))
       .first();
-
     if (!avail || !avail.isAvailable) return [];
 
-    // Get existing bookings for this date (non-cancelled)
+    // ─── Check recurring schedule blocks (Week A/B) ───────────
+    let effectiveEndTime = avail.endTime;
+    const rbSettings = await ctx.db.query("recurringBlockSettings").first();
+    if (rbSettings && rbSettings.isEnabled) {
+      const weekType = computeWeekType(rbSettings.weekAStartDate, date);
+      const block = await ctx.db
+        .query("recurringBlocks")
+        .withIndex("by_week_day", (q) =>
+          q.eq("weekType", weekType).eq("dayOfWeek", dayOfWeek),
+        )
+        .first();
+      if (block) {
+        // Cap end time at blockAfter
+        const [bH, bM] = block.blockAfter.split(":").map(Number);
+        const [eH, eM] = avail.endTime.split(":").map(Number);
+        const blockMinutes = bH * 60 + bM;
+        const endMinutes = eH * 60 + eM;
+        if (blockMinutes < endMinutes) {
+          effectiveEndTime = block.blockAfter;
+        }
+      }
+    }
+
+    // Get existing bookings for this date
     const bookings = await ctx.db
       .query("bookings")
       .withIndex("by_date", (q) => q.eq("date", date))
       .filter((q) => q.neq(q.field("status"), "cancelled"))
       .collect();
 
-    // If we have staff, check which staff can do this service and are available
+    // Staff-based scheduling
     let staffAvailable: Array<{ _id: string; startMinutes: number; endMinutes: number }> = [];
     let useStaffScheduling = false;
 
@@ -188,22 +223,19 @@ export const getAvailableSlots = query({
           });
         }
 
-        // If no staff available for this service on this day, no slots
         if (staffAvailable.length === 0) return [];
       }
     }
 
-    // Check if any bookings on this date share the customer's ZIP code
+    // ZIP code recommendation check
     const hasZipMatch =
       zipCode && zipCode.trim().length >= 3
-        ? bookings.some(
-            (b) => b.zipCode && b.zipCode === zipCode.trim(),
-          )
+        ? bookings.some((b) => b.zipCode && b.zipCode === zipCode.trim())
         : false;
 
     // Generate time slots
     const [startH, startM] = avail.startTime.split(":").map(Number);
-    const [endH, endM] = avail.endTime.split(":").map(Number);
+    const [endH, endM] = effectiveEndTime.split(":").map(Number);
     const startMinutes = startH * 60 + startM;
     const endMinutes = endH * 60 + endM;
 
@@ -215,17 +247,12 @@ export const getAvailableSlots = query({
       const timeStr = `${h.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
 
       if (useStaffScheduling) {
-        // Check if any staff member is available at this time
         const anyStaffFree = staffAvailable.some((s) => {
-          // Staff hours check
           if (m < s.startMinutes || m + durationMinutes > s.endMinutes) return false;
-
-          // Check for booking conflicts with this staff
           const staffBookings = bookings.filter((b) => b.staffId === s._id);
           const hasConflict = staffBookings.some((b) => {
             const [bH, bM] = b.time.split(":").map(Number);
             const bookingStart = bH * 60 + bM;
-            // Use the service duration or 120 min buffer
             const bookingEnd = bookingStart + (durationMinutes || 120);
             return m < bookingEnd && m + durationMinutes > bookingStart;
           });
@@ -236,7 +263,6 @@ export const getAvailableSlots = query({
           slots.push({ time: timeStr, recommended: hasZipMatch });
         }
       } else {
-        // Legacy: just check if the time slot isn't already booked
         const bookedTimes = new Set(bookings.map((b) => b.time));
         if (!bookedTimes.has(timeStr)) {
           slots.push({ time: timeStr, recommended: hasZipMatch });

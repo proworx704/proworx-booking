@@ -10,7 +10,9 @@ function generateConfirmationCode(): string {
   return code;
 }
 
-// Public: create a new booking (no auth required)
+// ─── Public: create a new booking ─────────────────────────────────────────────
+// Supports both legacy (serviceId) and new catalog (catalogItemId + addons) format.
+
 export const create = mutation({
   args: {
     customerName: v.string(),
@@ -18,81 +20,154 @@ export const create = mutation({
     customerEmail: v.string(),
     serviceAddress: v.string(),
     zipCode: v.optional(v.string()),
-    serviceId: v.id("services"),
-    vehicleType: v.union(v.literal("sedan"), v.literal("suv")),
+    // Legacy service fields (optional now)
+    serviceId: v.optional(v.id("services")),
+    vehicleType: v.optional(v.union(v.literal("sedan"), v.literal("suv"))),
+    // New catalog fields
+    catalogItemId: v.optional(v.id("serviceCatalog")),
+    selectedVariant: v.optional(v.string()), // variant label
+    addons: v.optional(
+      v.array(
+        v.object({
+          catalogItemId: v.optional(v.id("serviceCatalog")),
+          name: v.string(),
+          variantLabel: v.optional(v.string()),
+          price: v.number(),
+          durationMin: v.number(),
+        }),
+      ),
+    ),
+    // Overrides (when using catalog)
+    serviceName: v.optional(v.string()),
+    price: v.optional(v.number()),
+    totalPrice: v.optional(v.number()),
+    totalDuration: v.optional(v.number()),
+    // Common fields
     date: v.string(),
     time: v.string(),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Get service details
-    const service = await ctx.db.get(args.serviceId);
-    if (!service) throw new Error("Service not found");
+    let serviceName = args.serviceName || "";
+    let price = args.price || 0;
+    let totalPrice = args.totalPrice;
+    let totalDuration = args.totalDuration;
+    let vehicleType = args.vehicleType;
+    let duration = 120; // default fallback
 
-    const price =
-      args.vehicleType === "sedan" ? service.sedanPrice : service.suvPrice;
+    // ─── Resolve service details ───────────────────────────
+    if (args.catalogItemId) {
+      // New catalog-based booking
+      const catalogItem = await ctx.db.get(args.catalogItemId);
+      if (!catalogItem) throw new Error("Catalog item not found");
+
+      serviceName = serviceName || catalogItem.name;
+
+      // Find the selected variant
+      if (args.selectedVariant) {
+        const variant = catalogItem.variants.find(
+          (v) => v.label === args.selectedVariant,
+        );
+        if (variant) {
+          price = price || variant.price;
+          duration = variant.durationMin;
+        }
+      } else if (catalogItem.variants.length === 1) {
+        price = price || catalogItem.variants[0].price;
+        duration = catalogItem.variants[0].durationMin;
+      }
+
+      // Calculate totals including add-ons
+      const addonPrice = (args.addons || []).reduce((sum, a) => sum + a.price, 0);
+      const addonDuration = (args.addons || []).reduce(
+        (sum, a) => sum + a.durationMin,
+        0,
+      );
+      totalPrice = totalPrice ?? price + addonPrice;
+      totalDuration = totalDuration ?? duration + addonDuration;
+    } else if (args.serviceId) {
+      // Legacy service-based booking
+      const service = await ctx.db.get(args.serviceId);
+      if (!service) throw new Error("Service not found");
+
+      serviceName = service.name;
+      price =
+        args.vehicleType === "sedan"
+          ? service.sedanPrice
+          : service.suvPrice;
+      duration = service.duration;
+      totalPrice = price;
+      totalDuration = duration;
+    }
 
     const confirmationCode = generateConfirmationCode();
 
-    // Auto-assign staff if possible
+    // ─── Auto-assign staff if possible ─────────────────────
     let staffId: string | undefined;
     let staffName: string | undefined;
 
-    // Find staff who can do this service and are available
-    const serviceAssignments = await ctx.db
-      .query("staffServices")
-      .withIndex("by_service", (q) => q.eq("serviceId", args.serviceId))
-      .collect();
-
-    if (serviceAssignments.length > 0) {
-      const dateObj = new Date(args.date + "T12:00:00");
-      const dayOfWeek = dateObj.getUTCDay();
-      const [reqH, reqM] = args.time.split(":").map(Number);
-      const reqMinutes = reqH * 60 + reqM;
-
-      // Get existing bookings on this date
-      const existingBookings = await ctx.db
-        .query("bookings")
-        .withIndex("by_date", (q) => q.eq("date", args.date))
-        .filter((q) => q.neq(q.field("status"), "cancelled"))
+    if (args.serviceId) {
+      const serviceAssignments = await ctx.db
+        .query("staffServices")
+        .withIndex("by_service", (q) => q.eq("serviceId", args.serviceId!))
         .collect();
 
-      for (const assignment of serviceAssignments) {
-        const staff = await ctx.db.get(assignment.staffId);
-        if (!staff || !staff.isActive) continue;
+      if (serviceAssignments.length > 0) {
+        const dateObj = new Date(args.date + "T12:00:00");
+        const dayOfWeek = dateObj.getUTCDay();
+        const [reqH, reqM] = args.time.split(":").map(Number);
+        const reqMinutes = reqH * 60 + reqM;
 
-        // Check staff day availability
-        const staffAvail = await ctx.db
-          .query("staffAvailability")
-          .withIndex("by_staff_day", (q) =>
-            q.eq("staffId", staff._id).eq("dayOfWeek", dayOfWeek),
+        const existingBookings = await ctx.db
+          .query("bookings")
+          .withIndex("by_date", (q) => q.eq("date", args.date))
+          .filter((q) => q.neq(q.field("status"), "cancelled"))
+          .collect();
+
+        for (const assignment of serviceAssignments) {
+          const staff = await ctx.db.get(assignment.staffId);
+          if (!staff || !staff.isActive) continue;
+
+          const staffAvail = await ctx.db
+            .query("staffAvailability")
+            .withIndex("by_staff_day", (q) =>
+              q.eq("staffId", staff._id).eq("dayOfWeek", dayOfWeek),
+            )
+            .first();
+
+          if (!staffAvail || !staffAvail.isAvailable) continue;
+
+          const [sH, sM] = staffAvail.startTime.split(":").map(Number);
+          const [eH, eM] = staffAvail.endTime.split(":").map(Number);
+          if (
+            reqMinutes < sH * 60 + sM ||
+            reqMinutes + duration > eH * 60 + eM
           )
-          .first();
+            continue;
 
-        if (!staffAvail || !staffAvail.isAvailable) continue;
+          const staffBookings = existingBookings.filter(
+            (b) => b.staffId === staff._id,
+          );
+          const hasConflict = staffBookings.some((b) => {
+            const [bH, bM] = b.time.split(":").map(Number);
+            const bookingStart = bH * 60 + bM;
+            const bookingEnd = bookingStart + duration;
+            return (
+              reqMinutes < bookingEnd &&
+              reqMinutes + duration > bookingStart
+            );
+          });
 
-        const [sH, sM] = staffAvail.startTime.split(":").map(Number);
-        const [eH, eM] = staffAvail.endTime.split(":").map(Number);
-        if (reqMinutes < sH * 60 + sM || reqMinutes + service.duration > eH * 60 + eM) continue;
-
-        // Check for booking conflicts
-        const staffBookings = existingBookings.filter((b) => b.staffId === staff._id);
-        const hasConflict = staffBookings.some((b) => {
-          const [bH, bM] = b.time.split(":").map(Number);
-          const bookingStart = bH * 60 + bM;
-          const bookingEnd = bookingStart + service.duration;
-          return reqMinutes < bookingEnd && reqMinutes + service.duration > bookingStart;
-        });
-
-        if (!hasConflict) {
-          staffId = staff._id;
-          staffName = staff.name;
-          break;
+          if (!hasConflict) {
+            staffId = staff._id;
+            staffName = staff.name;
+            break;
+          }
         }
       }
     }
 
-    // Auto-create or link customer record
+    // ─── Auto-create or link customer ──────────────────────
     let customerId: string | undefined;
     if (args.customerEmail) {
       const existingCustomer = await ctx.db
@@ -101,15 +176,13 @@ export const create = mutation({
         .first();
       if (existingCustomer) {
         customerId = existingCustomer._id;
-        // Update stats
         await ctx.db.patch(existingCustomer._id, {
           totalBookings: (existingCustomer.totalBookings || 0) + 1,
           lastServiceDate: args.date,
-          // Update address/phone if changed
           address: args.serviceAddress,
           phone: args.customerPhone,
           zipCode: args.zipCode,
-          vehicleType: args.vehicleType,
+          vehicleType: vehicleType,
         });
       } else {
         customerId = await ctx.db.insert("customers", {
@@ -118,7 +191,7 @@ export const create = mutation({
           email: args.customerEmail,
           address: args.serviceAddress,
           zipCode: args.zipCode,
-          vehicleType: args.vehicleType,
+          vehicleType: vehicleType,
           source: "booking",
           totalBookings: 1,
           totalSpent: 0,
@@ -127,28 +200,46 @@ export const create = mutation({
       }
     }
 
-    const bookingId = await ctx.db.insert("bookings", {
+    // ─── Insert the booking ────────────────────────────────
+    const bookingData: any = {
       customerName: args.customerName,
       customerPhone: args.customerPhone,
       customerEmail: args.customerEmail,
       serviceAddress: args.serviceAddress,
       zipCode: args.zipCode,
       customerId: customerId as any,
-      serviceId: args.serviceId,
-      serviceName: service.name,
-      vehicleType: args.vehicleType,
+      serviceName,
       price,
       date: args.date,
       time: args.time,
-      status: "confirmed",
-      paymentStatus: "unpaid",
+      status: "confirmed" as const,
+      paymentStatus: "unpaid" as const,
       confirmationCode,
       notes: args.notes,
       staffId: staffId as any,
       staffName,
-    });
+    };
 
-    return { bookingId, confirmationCode, price, serviceName: service.name, staffName };
+    // Add legacy fields if present
+    if (args.serviceId) bookingData.serviceId = args.serviceId;
+    if (vehicleType) bookingData.vehicleType = vehicleType;
+
+    // Add new catalog fields if present
+    if (args.catalogItemId) bookingData.catalogItemId = args.catalogItemId;
+    if (args.selectedVariant) bookingData.selectedVariant = args.selectedVariant;
+    if (args.addons && args.addons.length > 0) bookingData.addons = args.addons;
+    if (totalPrice !== undefined) bookingData.totalPrice = totalPrice;
+    if (totalDuration !== undefined) bookingData.totalDuration = totalDuration;
+
+    const bookingId = await ctx.db.insert("bookings", bookingData);
+
+    return {
+      bookingId,
+      confirmationCode,
+      price: totalPrice ?? price,
+      serviceName,
+      staffName,
+    };
   },
 });
 
@@ -195,7 +286,9 @@ export const list = query({
         .query("bookings")
         .withIndex("by_date", (q) => q.eq("date", date))
         .collect();
-      const filtered = status ? results.filter((b) => b.status === status) : results;
+      const filtered = status
+        ? results.filter((b) => b.status === status)
+        : results;
       if (staffId) return filtered.filter((b) => b.staffId === staffId);
       return filtered.sort((a, b) => a.time.localeCompare(b.time));
     }
@@ -207,14 +300,18 @@ export const list = query({
         .collect();
       if (staffId) return results.filter((b) => b.staffId === staffId);
       return results.sort(
-        (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
+        (a, b) =>
+          a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
       );
     }
 
     const results = await ctx.db.query("bookings").collect();
-    const filtered = staffId ? results.filter((b) => b.staffId === staffId) : results;
+    const filtered = staffId
+      ? results.filter((b) => b.staffId === staffId)
+      : results;
     return filtered.sort(
-      (a, b) => b.date.localeCompare(a.date) || a.time.localeCompare(b.time),
+      (a, b) =>
+        b.date.localeCompare(a.date) || a.time.localeCompare(b.time),
     );
   },
 });
@@ -232,7 +329,7 @@ export const listToday = query({
   },
 });
 
-// Admin: list upcoming bookings (next 7 days, excluding today)
+// Admin: list upcoming bookings
 export const listUpcoming = query({
   args: { startDate: v.string(), endDate: v.string() },
   handler: async (ctx, { startDate, endDate }) => {
@@ -247,7 +344,8 @@ export const listUpcoming = query({
       )
       .collect();
     return bookings.sort(
-      (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
+      (a, b) =>
+        a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
     );
   },
 });
@@ -255,9 +353,7 @@ export const listUpcoming = query({
 // Admin: get a single booking
 export const get = query({
   args: { id: v.id("bookings") },
-  handler: async (ctx, { id }) => {
-    return await ctx.db.get(id);
-  },
+  handler: async (ctx, { id }) => ctx.db.get(id),
 });
 
 // Admin: update booking status
@@ -290,7 +386,7 @@ export const assignStaff = mutation({
   },
 });
 
-// Admin: unassign staff from booking
+// Admin: unassign staff
 export const unassignStaff = mutation({
   args: { id: v.id("bookings") },
   handler: async (ctx, { id }) => {
@@ -315,7 +411,6 @@ export const markPaid = mutation({
       paymentId,
       paidAt: Date.now(),
     });
-    // Update customer totalSpent
     if (booking?.customerId) {
       const customer = await ctx.db.get(booking.customerId);
       if (customer) {
@@ -327,7 +422,7 @@ export const markPaid = mutation({
   },
 });
 
-// Admin: store Square payment link on a booking
+// Admin: store Square payment link
 export const setSquarePaymentLink = mutation({
   args: {
     id: v.id("bookings"),
@@ -384,7 +479,7 @@ export const stats = query({
   },
 });
 
-// Admin: get bookings for a specific staff member
+// Admin: list by staff
 export const listByStaff = query({
   args: {
     staffId: v.id("staff"),
@@ -403,12 +498,13 @@ export const listByStaff = query({
     if (endDate) filtered = filtered.filter((b) => b.date <= endDate);
 
     return filtered.sort(
-      (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
+      (a, b) =>
+        a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
     );
   },
 });
 
-// Admin: get bookings grouped by ZIP for route clustering
+// Admin: ZIP cluster grouping
 export const listByZipCluster = query({
   args: { startDate: v.string(), endDate: v.string() },
   handler: async (ctx, { startDate, endDate }) => {
@@ -423,7 +519,6 @@ export const listByZipCluster = query({
       )
       .collect();
 
-    // Group by ZIP code
     const zipGroups: Record<
       string,
       Array<{
@@ -453,10 +548,10 @@ export const listByZipCluster = query({
       });
     }
 
-    // Sort each group by date then time
     for (const zip of Object.keys(zipGroups)) {
       zipGroups[zip].sort(
-        (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
+        (a, b) =>
+          a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
       );
     }
 

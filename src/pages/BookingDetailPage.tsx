@@ -307,24 +307,53 @@ export function BookingDetailPage() {
                       {booking.serviceName}
                     </p>
                     <p className="text-sm text-muted-foreground capitalize">
-                      {booking.vehicleType === "suv"
-                        ? "SUV / Truck"
-                        : "Sedan / Car"}
+                      {booking.selectedVariant
+                        ? booking.selectedVariant
+                        : booking.vehicleType === "suv"
+                          ? "SUV / Truck"
+                          : booking.vehicleType === "sedan"
+                            ? "Sedan / Car"
+                            : ""}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-primary">
-                    {formatPrice(booking.price)}
+                    {formatPrice(booking.totalPrice ?? booking.price)}
                   </p>
+                  {booking.totalPrice && booking.totalPrice !== booking.price && (
+                    <p className="text-xs text-muted-foreground">
+                      Base: {formatPrice(booking.price)}
+                    </p>
+                  )}
                   {booking.paymentAmount &&
-                    booking.paymentAmount !== booking.price && (
+                    booking.paymentAmount !== (booking.totalPrice ?? booking.price) && (
                       <p className="text-sm text-muted-foreground">
                         Paid: {formatPrice(booking.paymentAmount)}
                       </p>
                     )}
                 </div>
               </div>
+
+              {/* Add-ons breakdown */}
+              {booking.addons && booking.addons.length > 0 && (
+                <div className="px-4 space-y-1.5">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Add-Ons</p>
+                  {booking.addons.map((addon: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <span>
+                        {addon.name}
+                        {addon.variantLabel && addon.variantLabel !== "Standard" && (
+                          <span className="text-muted-foreground"> — {addon.variantLabel}</span>
+                        )}
+                      </span>
+                      <span className="font-medium text-muted-foreground">
+                        +{formatPrice(addon.price)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">

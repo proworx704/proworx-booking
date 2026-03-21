@@ -17,6 +17,7 @@ export const create = mutation({
     customerPhone: v.string(),
     customerEmail: v.string(),
     serviceAddress: v.string(),
+    zipCode: v.optional(v.string()),
     serviceId: v.id("services"),
     vehicleType: v.union(v.literal("sedan"), v.literal("suv")),
     date: v.string(),
@@ -96,6 +97,7 @@ export const create = mutation({
       customerPhone: args.customerPhone,
       customerEmail: args.customerEmail,
       serviceAddress: args.serviceAddress,
+      zipCode: args.zipCode,
       serviceId: args.serviceId,
       serviceName: service.name,
       vehicleType: args.vehicleType,
@@ -342,6 +344,62 @@ export const listByStaff = query({
     return filtered.sort(
       (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
     );
+  },
+});
+
+// Admin: get bookings grouped by ZIP for route clustering
+export const listByZipCluster = query({
+  args: { startDate: v.string(), endDate: v.string() },
+  handler: async (ctx, { startDate, endDate }) => {
+    const bookings = await ctx.db
+      .query("bookings")
+      .filter((q) =>
+        q.and(
+          q.gte(q.field("date"), startDate),
+          q.lte(q.field("date"), endDate),
+          q.neq(q.field("status"), "cancelled"),
+        ),
+      )
+      .collect();
+
+    // Group by ZIP code
+    const zipGroups: Record<
+      string,
+      Array<{
+        _id: string;
+        customerName: string;
+        serviceName: string;
+        date: string;
+        time: string;
+        serviceAddress: string;
+        status: string;
+        staffName?: string;
+      }>
+    > = {};
+
+    for (const b of bookings) {
+      const zip = b.zipCode || "No ZIP";
+      if (!zipGroups[zip]) zipGroups[zip] = [];
+      zipGroups[zip].push({
+        _id: b._id,
+        customerName: b.customerName,
+        serviceName: b.serviceName,
+        date: b.date,
+        time: b.time,
+        serviceAddress: b.serviceAddress,
+        status: b.status,
+        staffName: b.staffName,
+      });
+    }
+
+    // Sort each group by date then time
+    for (const zip of Object.keys(zipGroups)) {
+      zipGroups[zip].sort(
+        (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
+      );
+    }
+
+    return zipGroups;
   },
 });
 

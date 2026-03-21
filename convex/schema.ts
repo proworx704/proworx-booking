@@ -78,6 +78,7 @@ const schema = defineSchema({
     customerPhone: v.string(),
     customerEmail: v.string(),
     serviceAddress: v.string(),
+    zipCode: v.optional(v.string()), // ZIP / postal code for route clustering
 
     // Booking details
     serviceId: v.id("services"),
@@ -129,7 +130,8 @@ const schema = defineSchema({
     .index("by_confirmation", ["confirmationCode"])
     .index("by_email", ["customerEmail"])
     .index("by_staff", ["staffId"])
-    .index("by_staff_date", ["staffId", "date"]),
+    .index("by_staff_date", ["staffId", "date"])
+    .index("by_zip_date", ["zipCode", "date"]),
 });
 
 export default schema;

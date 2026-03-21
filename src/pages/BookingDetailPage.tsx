@@ -334,7 +334,14 @@ export function BookingDetailPage() {
                   <p className="text-xs text-muted-foreground">
                     Service Address
                   </p>
-                  <p className="font-medium">{booking.serviceAddress}</p>
+                  <p className="font-medium">
+                    {booking.serviceAddress}
+                    {booking.zipCode && (
+                      <span className="ml-2 text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                        ZIP {booking.zipCode}
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
             </CardContent>

@@ -107,13 +107,16 @@ export const removeBlockedDate = mutation({
 
 // Public: get available time slots for a specific date, service, and duration
 // Now considers: business hours, blocked dates, service freezes, staff availability
+// Returns objects with { time, recommended } where recommended = true if another booking
+// in the same ZIP code already exists on that date (route efficiency nudge)
 export const getAvailableSlots = query({
   args: {
     date: v.string(), // "2026-03-25"
     durationMinutes: v.number(),
     serviceId: v.optional(v.id("services")),
+    zipCode: v.optional(v.string()), // customer ZIP for "recommended" flagging
   },
-  handler: async (ctx, { date, durationMinutes, serviceId }) => {
+  handler: async (ctx, { date, durationMinutes, serviceId, zipCode }) => {
     // Check if date is globally blocked
     const blocked = await ctx.db
       .query("blockedDates")
@@ -190,13 +193,21 @@ export const getAvailableSlots = query({
       }
     }
 
+    // Check if any bookings on this date share the customer's ZIP code
+    const hasZipMatch =
+      zipCode && zipCode.trim().length >= 3
+        ? bookings.some(
+            (b) => b.zipCode && b.zipCode === zipCode.trim(),
+          )
+        : false;
+
     // Generate time slots
     const [startH, startM] = avail.startTime.split(":").map(Number);
     const [endH, endM] = avail.endTime.split(":").map(Number);
     const startMinutes = startH * 60 + startM;
     const endMinutes = endH * 60 + endM;
 
-    const slots: string[] = [];
+    const slots: Array<{ time: string; recommended: boolean }> = [];
 
     for (let m = startMinutes; m + durationMinutes <= endMinutes; m += 60) {
       const h = Math.floor(m / 60);
@@ -222,13 +233,13 @@ export const getAvailableSlots = query({
         });
 
         if (anyStaffFree) {
-          slots.push(timeStr);
+          slots.push({ time: timeStr, recommended: hasZipMatch });
         }
       } else {
         // Legacy: just check if the time slot isn't already booked
         const bookedTimes = new Set(bookings.map((b) => b.time));
         if (!bookedTimes.has(timeStr)) {
-          slots.push(timeStr);
+          slots.push({ time: timeStr, recommended: hasZipMatch });
         }
       }
     }

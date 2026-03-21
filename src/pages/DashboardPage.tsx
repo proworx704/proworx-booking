@@ -5,7 +5,9 @@ import {
   Clock,
   DollarSign,
   AlertCircle,
+  MapPin,
 } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,6 +57,139 @@ const paymentColors: Record<string, string> = {
   paid: "bg-green-100 text-green-800",
   refunded: "bg-gray-100 text-gray-800",
 };
+
+// ─── ZIP Route Clustering Panel ──────────────────────────
+function ZipClusterPanel() {
+  const today = getToday();
+  const endDate = getEndDate(7);
+  const [showRange, setShowRange] = useState<"today" | "week">("week");
+
+  // For "today" mode: show only today's date; for "week" mode: today through +7 days
+  const zipClusters = useQuery(api.bookings.listByZipCluster, {
+    startDate: today,
+    endDate: showRange === "today" ? today : endDate,
+  });
+
+  const totalBookings = zipClusters
+    ? Object.values(zipClusters).reduce((sum, arr) => sum + arr.length, 0)
+    : 0;
+
+  const sortedZips = zipClusters
+    ? Object.entries(zipClusters).sort((a, b) => b[1].length - a[1].length)
+    : [];
+
+  const zipColors = [
+    "bg-teal-100 text-teal-800 border-teal-200",
+    "bg-blue-100 text-blue-800 border-blue-200",
+    "bg-purple-100 text-purple-800 border-purple-200",
+    "bg-orange-100 text-orange-800 border-orange-200",
+    "bg-pink-100 text-pink-800 border-pink-200",
+    "bg-cyan-100 text-cyan-800 border-cyan-200",
+    "bg-emerald-100 text-emerald-800 border-emerald-200",
+    "bg-indigo-100 text-indigo-800 border-indigo-200",
+  ];
+
+  if (!zipClusters || totalBookings === 0) {
+    return null;
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <MapPin className="size-5" />
+              Route Clusters by ZIP
+            </CardTitle>
+            <CardDescription>
+              {sortedZips.length} area{sortedZips.length !== 1 ? "s" : ""} ·{" "}
+              {totalBookings} booking{totalBookings !== 1 ? "s" : ""}
+            </CardDescription>
+          </div>
+          <div className="flex gap-1 bg-muted rounded-lg p-1">
+            <button
+              type="button"
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                showRange === "today"
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => setShowRange("today")}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                showRange === "week"
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => setShowRange("week")}
+            >
+              This Week
+            </button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {sortedZips.map(([zip, bookings], idx) => (
+            <div key={zip} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className={`text-sm font-mono px-2.5 py-0.5 ${zipColors[idx % zipColors.length]}`}
+                >
+                  <MapPin className="size-3 mr-1" />
+                  {zip}
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  {bookings.length} booking{bookings.length !== 1 ? "s" : ""}
+                </span>
+                {bookings.length >= 2 && (
+                  <Badge variant="secondary" className="text-xs bg-green-50 text-green-700 border-green-200">
+                    ✓ Route efficient
+                  </Badge>
+                )}
+              </div>
+              <div className="ml-4 space-y-1">
+                {bookings.map((b) => (
+                  <Link
+                    key={b._id}
+                    to={`/bookings/${b._id}`}
+                    className="flex items-center gap-3 px-3 py-2 rounded-md border hover:bg-accent/50 transition-colors text-sm"
+                  >
+                    <span className="font-medium min-w-[100px]">
+                      {formatTime(b.time)}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {b.customerName}
+                    </span>
+                    <span className="text-muted-foreground hidden sm:inline">
+                      · {b.serviceName}
+                    </span>
+                    {showRange === "week" && (
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {formatDateShort(b.date)}
+                      </span>
+                    )}
+                    {b.staffName && (
+                      <Badge variant="outline" className="text-xs ml-auto">
+                        {b.staffName}
+                      </Badge>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export function DashboardPage() {
   const today = getToday();
@@ -253,6 +388,9 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ZIP Route Clustering */}
+      <ZipClusterPanel />
 
       {/* Quick Actions */}
       <div className="flex gap-3">

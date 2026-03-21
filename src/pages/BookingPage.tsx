@@ -12,6 +12,7 @@ import {
   Sparkles,
   Truck,
   User,
+  Zap,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -61,6 +62,7 @@ interface BookingData {
   customerPhone: string;
   customerEmail: string;
   serviceAddress: string;
+  zipCode: string;
   notes: string;
 }
 
@@ -76,6 +78,7 @@ const initialData: BookingData = {
   customerPhone: "",
   customerEmail: "",
   serviceAddress: "",
+  zipCode: "",
   notes: "",
 };
 
@@ -233,7 +236,12 @@ function DateTimeStep({
   const slots = useQuery(
     api.availability.getAvailableSlots,
     data.date
-      ? { date: data.date, durationMinutes: data.duration, serviceId: data.serviceId ?? undefined }
+      ? {
+          date: data.date,
+          durationMinutes: data.duration,
+          serviceId: data.serviceId ?? undefined,
+          zipCode: data.zipCode.trim() || undefined,
+        }
       : "skip",
   );
 
@@ -310,19 +318,36 @@ function DateTimeStep({
                   No available slots for this date. Please try another day.
                 </p>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {slots.map((slot) => (
-                    <Button
-                      key={slot}
-                      variant={data.time === slot ? "default" : "outline"}
-                      size="sm"
-                      className="w-full"
-                      onClick={() => onSelectTime(slot)}
-                    >
-                      <Clock className="size-3 mr-1" />
-                      {formatTime(slot)}
-                    </Button>
-                  ))}
+                <div>
+                  {slots.some((s) => s.recommended) && (
+                    <div className="flex items-center gap-2 mb-3 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                      <Zap className="size-4 text-amber-500 shrink-0" />
+                      <span>
+                        <strong>⚡ Recommended</strong> — we're already in your area on this day!
+                      </span>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {slots.map((slot) => (
+                      <Button
+                        key={slot.time}
+                        variant={data.time === slot.time ? "default" : "outline"}
+                        size="sm"
+                        className={`w-full relative ${
+                          slot.recommended && data.time !== slot.time
+                            ? "border-amber-400 bg-amber-50 hover:bg-amber-100 text-amber-900"
+                            : ""
+                        }`}
+                        onClick={() => onSelectTime(slot.time)}
+                      >
+                        {slot.recommended && data.time !== slot.time && (
+                          <Zap className="size-3 mr-0.5 text-amber-500" />
+                        )}
+                        <Clock className="size-3 mr-1" />
+                        {formatTime(slot.time)}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -401,10 +426,28 @@ function InfoStep({
           </Label>
           <Input
             id="address"
-            placeholder="123 Main St, Charlotte, NC 28202"
+            placeholder="123 Main St, Charlotte, NC"
             value={data.serviceAddress}
             onChange={(e) => onChange("serviceAddress", e.target.value)}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="zipCode" className="flex items-center gap-2">
+            <MapPin className="size-4" />
+            ZIP Code
+          </Label>
+          <Input
+            id="zipCode"
+            placeholder="28202"
+            value={data.zipCode}
+            onChange={(e) => onChange("zipCode", e.target.value)}
+            maxLength={10}
+            className="w-32"
+          />
+          <p className="text-xs text-muted-foreground">
+            Helps us find the best time slot for your area
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -471,7 +514,7 @@ function ConfirmStep({ data }: { data: BookingData }) {
             </div>
             <div className="flex gap-2">
               <MapPin className="size-4 text-muted-foreground shrink-0 mt-0.5" />
-              <span>{data.serviceAddress}</span>
+              <span>{data.serviceAddress}{data.zipCode ? ` · ${data.zipCode}` : ""}</span>
             </div>
             {data.notes && (
               <div className="pt-2 border-t">
@@ -566,12 +609,12 @@ export function BookingPage() {
   const steps: BookingStep[] = [
     "service",
     "vehicle",
-    "datetime",
     "info",
+    "datetime",
     "confirm",
   ];
   const stepIndex = steps.indexOf(step);
-  const stepLabels = ["Service", "Vehicle", "Date & Time", "Your Info", "Confirm"];
+  const stepLabels = ["Service", "Vehicle", "Your Info", "Date & Time", "Confirm"];
 
   const canGoNext = () => {
     switch (step) {
@@ -605,6 +648,7 @@ export function BookingPage() {
           customerPhone: data.customerPhone,
           customerEmail: data.customerEmail,
           serviceAddress: data.serviceAddress,
+          zipCode: data.zipCode.trim() || undefined,
           serviceId: data.serviceId!,
           vehicleType: data.vehicleType!,
           date: data.date,
@@ -707,7 +751,7 @@ export function BookingPage() {
             services={services}
             onSelect={(type, price) => {
               setData((d) => ({ ...d, vehicleType: type, price }));
-              setStep("datetime");
+              setStep("info");
             }}
           />
         )}
@@ -745,8 +789,8 @@ export function BookingPage() {
           Back
         </Button>
 
-        {/* Only show Next for datetime and info steps since service/vehicle auto-advance */}
-        {(step === "datetime" || step === "info" || step === "confirm") && (
+        {/* Show Next for info, datetime, and confirm steps (service/vehicle auto-advance) */}
+        {(step === "info" || step === "datetime" || step === "confirm") && (
           <Button onClick={handleNext} disabled={!canGoNext() || isSubmitting}>
             {step === "confirm" ? (
               isSubmitting ? (

@@ -259,16 +259,22 @@ function ServiceStep({
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="font-bold text-primary text-lg">
-                          {singleVariant
-                            ? formatPrice(minPrice)
-                            : minPrice === maxPrice
+                        {isMembership ? (
+                          <div className="text-sm font-medium text-emerald-600">
+                            Included
+                          </div>
+                        ) : (
+                          <div className="font-bold text-primary text-lg">
+                            {singleVariant
                               ? formatPrice(minPrice)
-                              : `${formatPrice(minPrice)}–${formatPrice(maxPrice)}`}
-                        </div>
+                              : minPrice === maxPrice
+                                ? formatPrice(minPrice)
+                                : `${formatPrice(minPrice)}–${formatPrice(maxPrice)}`}
+                          </div>
+                        )}
                         {!singleVariant && (
                           <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {isExpanded ? "tap to collapse" : "tap to expand"}
+                            {isExpanded ? "select your vehicle" : "tap to expand"}
                           </p>
                         )}
                       </div>
@@ -307,9 +313,15 @@ function ServiceStep({
                                 ~{formatDuration(variant.durationMin)}
                               </span>
                             </div>
-                            <span className="font-bold text-primary">
-                              {formatPrice(variant.price)}
-                            </span>
+                            {isMembership ? (
+                              <span className="text-sm font-medium text-emerald-600">
+                                ✓ Included
+                              </span>
+                            ) : (
+                              <span className="font-bold text-primary">
+                                {formatPrice(variant.price)}
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -754,7 +766,7 @@ function DateTimeStep({
 
 // ─── Step 5: Confirm ──────────────────────────────────────────────────────────
 
-function ConfirmStep({ data }: { data: BookingData }) {
+function ConfirmStep({ data, isMembership }: { data: BookingData; isMembership?: boolean }) {
   const totalAddons = data.addons.reduce((s, a) => s + a.price, 0);
   const totalPrice = data.basePrice + totalAddons;
 
@@ -763,7 +775,9 @@ function ConfirmStep({ data }: { data: BookingData }) {
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold">Review & Confirm</h2>
         <p className="text-muted-foreground">
-          Make sure everything looks right
+          {isMembership
+            ? "Your maintenance visit is included in your membership"
+            : "Make sure everything looks right"}
         </p>
       </div>
 
@@ -778,9 +792,15 @@ function ConfirmStep({ data }: { data: BookingData }) {
                   {data.selectedVariant}
                 </p>
               </div>
-              <span className="font-bold text-primary text-lg">
-                {formatPrice(data.basePrice)}
-              </span>
+              {isMembership ? (
+                <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                  ✓ Included
+                </span>
+              ) : (
+                <span className="font-bold text-primary text-lg">
+                  {formatPrice(data.basePrice)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -1236,7 +1256,7 @@ export function BookingPage() {
           />
         )}
 
-        {step === "confirm" && <ConfirmStep data={data} />}
+        {step === "confirm" && <ConfirmStep data={data} isMembership={isMembership} />}
       </div>
 
       {/* Navigation */}

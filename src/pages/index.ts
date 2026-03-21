@@ -1,5 +1,11 @@
-export { DashboardPage } from "./DashboardPage";
 export { LandingPage } from "./LandingPage";
 export { LoginPage } from "./LoginPage";
-export { SettingsPage } from "./SettingsPage";
 export { SignupPage } from "./SignupPage";
+export { DashboardPage } from "./DashboardPage";
+export { SettingsPage } from "./SettingsPage";
+export { BookingPage } from "./BookingPage";
+export { BookingsPage } from "./BookingsPage";
+export { BookingDetailPage } from "./BookingDetailPage";
+export { ServicesPage } from "./ServicesPage";
+export { AvailabilityPage } from "./AvailabilityPage";
+export { FeedbackPage } from "./FeedbackPage";

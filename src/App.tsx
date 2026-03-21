@@ -7,9 +7,15 @@ import { PublicOnlyRoute } from "./components/PublicOnlyRoute";
 import { Toaster } from "./components/ui/sonner";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import {
+  AvailabilityPage,
+  BookingDetailPage,
+  BookingPage,
+  BookingsPage,
   DashboardPage,
+  FeedbackPage,
   LandingPage,
   LoginPage,
+  ServicesPage,
   SettingsPage,
   SignupPage,
 } from "./pages";
@@ -17,20 +23,28 @@ import {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="system" switchable>
+      <ThemeProvider defaultTheme="light" switchable>
         <Toaster />
         <Routes>
+          {/* Public pages */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/book" element={<BookingPage />} />
+            <Route path="/feedback" element={<FeedbackPage />} />
             <Route element={<PublicOnlyRoute />}>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
             </Route>
           </Route>
 
+          {/* Admin pages (auth required) */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/bookings" element={<BookingsPage />} />
+              <Route path="/bookings/:id" element={<BookingDetailPage />} />
+              <Route path="/services" element={<ServicesPage />} />
+              <Route path="/availability" element={<AvailabilityPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

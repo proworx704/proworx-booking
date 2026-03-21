@@ -1,6 +1,16 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
-import { LayoutDashboard, LogOut, Moon, Settings, Sun } from "lucide-react";
+import {
+  Calendar,
+  CalendarCheck,
+  Clock,
+  LayoutDashboard,
+  LogOut,
+  Moon,
+  Settings,
+  Sparkles,
+  Sun,
+} from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
 import { APP_NAME } from "@/lib/constants";
@@ -19,6 +29,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -26,8 +37,14 @@ import {
   useSidebar,
 } from "./ui/sidebar";
 
-const navItems = [
+const mainNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/bookings", label: "Bookings", icon: CalendarCheck },
+];
+
+const manageNav = [
+  { href: "/services", label: "Services", icon: Sparkles },
+  { href: "/availability", label: "Availability", icon: Clock },
 ];
 
 function NavLink({
@@ -63,7 +80,27 @@ function SidebarNav() {
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
-            {navItems.map(item => (
+            {mainNav.map((item) => (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+                isActive={
+                  location.pathname === item.href ||
+                  (item.href === "/bookings" &&
+                    location.pathname.startsWith("/bookings"))
+                }
+              />
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel>Manage</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {manageNav.map((item) => (
               <NavLink
                 key={item.href}
                 href={item.href}
@@ -154,8 +191,8 @@ function SidebarHeaderContent() {
         onClick={() => setOpenMobile(false)}
         className="flex items-center gap-2.5 px-2 py-1 font-semibold text-lg"
       >
-        <div className="size-8 rounded-lg bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-sm">M</span>
+        <div className="size-8 rounded-lg bg-blue-600 flex items-center justify-center">
+          <Calendar className="size-4 text-white" />
         </div>
         <span>{APP_NAME}</span>
       </Link>

@@ -1,177 +1,270 @@
 import { useQuery } from "convex/react";
 import {
-  Activity,
-  ArrowUpRight,
+  Calendar,
+  CalendarCheck,
   Clock,
-  Settings,
-  Sparkles,
-  TrendingUp,
+  DollarSign,
+  AlertCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "../../convex/_generated/api";
 
-const stats = [
-  {
-    title: "Stat One",
-    value: "123",
-    change: "+12%",
-    icon: Activity,
-    color: "text-chart-1",
-    bg: "bg-chart-1/10",
-  },
-  {
-    title: "Stat Two",
-    value: "456",
-    change: "+8%",
-    icon: TrendingUp,
-    color: "text-chart-2",
-    bg: "bg-chart-2/10",
-  },
-  {
-    title: "Stat Three",
-    value: "78.9",
-    change: "+24%",
-    icon: Clock,
-    color: "text-chart-3",
-    bg: "bg-chart-3/10",
-  },
-];
+function formatPrice(cents: number) {
+  return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 0 })}`;
+}
 
-const quickActions = [
-  { label: "Account Settings", href: "/settings", icon: Settings },
-];
+function formatTime(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
+}
+
+function getToday() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function getEndDate(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+function formatDateShort(dateStr: string) {
+  const d = new Date(dateStr + "T12:00:00");
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+const statusColors: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-800",
+  confirmed: "bg-blue-100 text-blue-800",
+  in_progress: "bg-purple-100 text-purple-800",
+  completed: "bg-green-100 text-green-800",
+  cancelled: "bg-red-100 text-red-800",
+};
+
+const paymentColors: Record<string, string> = {
+  unpaid: "bg-orange-100 text-orange-800",
+  paid: "bg-green-100 text-green-800",
+  refunded: "bg-gray-100 text-gray-800",
+};
 
 export function DashboardPage() {
-  const user = useQuery(api.auth.currentUser);
+  const today = getToday();
+  const stats = useQuery(api.bookings.stats, { today });
+  const todayBookings = useQuery(api.bookings.listToday, { today });
+  const upcoming = useQuery(api.bookings.listUpcoming, {
+    startDate: today,
+    endDate: getEndDate(7),
+  });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-          Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Dashboard subtitle goes here
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <p className="text-muted-foreground">
+          {new Date().toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          })}
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {stats.map(stat => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <div className={`rounded-lg p-2 ${stat.bg}`}>
-                <stat.icon className={`size-4 ${stat.color}`} />
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Calendar className="size-5 text-blue-600" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold tracking-tight">
-                {stat.value}
+              <div>
+                <p className="text-2xl font-bold">{stats?.todayCount ?? "—"}</p>
+                <p className="text-xs text-muted-foreground">Today</p>
               </div>
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-sm font-medium text-success">
-                  {stat.change}
-                </span>
-                <ArrowUpRight className="size-3 text-success" />
-                <span className="text-xs text-muted-foreground">
-                  from last week
-                </span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                <CalendarCheck className="size-5 text-purple-600" />
               </div>
-            </CardContent>
-          </Card>
-        ))}
+              <div>
+                <p className="text-2xl font-bold">
+                  {stats?.upcomingCount ?? "—"}
+                </p>
+                <p className="text-xs text-muted-foreground">Upcoming</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                <AlertCircle className="size-5 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stats?.unpaidCount ?? "—"}</p>
+                <p className="text-xs text-muted-foreground">Unpaid</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-green-100 flex items-center justify-center">
+                <DollarSign className="size-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {stats ? formatPrice(stats.totalRevenue) : "—"}
+                </p>
+                <p className="text-xs text-muted-foreground">Revenue</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Today's Appointments */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="size-5 text-muted-foreground" />
-              Quick Actions
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Clock className="size-5" />
+              Today's Appointments
             </CardTitle>
-            <CardDescription>Card description goes here</CardDescription>
+            <CardDescription>
+              {todayBookings?.length ?? 0} appointment
+              {todayBookings?.length !== 1 ? "s" : ""} today
+            </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3">
-            {quickActions.map(action => (
-              <Button
-                key={action.label}
-                variant="outline"
-                className="justify-between h-auto py-4 px-4 group"
-                asChild
-              >
-                <Link to={action.href}>
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-muted p-2 transition-colors group-hover:bg-primary/10">
-                      <action.icon className="size-4 transition-colors group-hover:text-primary" />
+          <CardContent>
+            {todayBookings === undefined ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : todayBookings.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                No appointments today
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {todayBookings.map((b) => (
+                  <Link
+                    key={b._id}
+                    to={`/bookings/${b._id}`}
+                    className="block p-3 rounded-lg border hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{b.customerName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {b.serviceName} · {formatTime(b.time)}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Badge
+                          variant="outline"
+                          className={statusColors[b.status]}
+                        >
+                          {b.status}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={paymentColors[b.paymentStatus]}
+                        >
+                          {b.paymentStatus}
+                        </Badge>
+                      </div>
                     </div>
-                    <span>{action.label}</span>
-                  </div>
-                  <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                </Link>
-              </Button>
-            ))}
+                  </Link>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
+        {/* Upcoming */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="size-5 text-chart-3" />
-              Getting Started
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <CalendarCheck className="size-5" />
+              Upcoming (Next 7 Days)
             </CardTitle>
-            <CardDescription>Card description goes here</CardDescription>
+            <CardDescription>
+              {upcoming?.length ?? 0} upcoming appointment
+              {upcoming?.length !== 1 ? "s" : ""}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-4">
-              {[
-                {
-                  title: "First step title",
-                  desc: "Description of what to do",
-                  color: "bg-chart-1",
-                },
-                {
-                  title: "Second step title",
-                  desc: "Description of what to do",
-                  color: "bg-chart-2",
-                },
-                {
-                  title: "Third step title",
-                  desc: "Description of what to do",
-                  color: "bg-chart-3",
-                },
-              ].map((step, i) => (
-                <li key={i} className="flex items-start gap-4">
-                  <div className="relative">
-                    <div
-                      className={`size-8 rounded-full ${step.color} flex items-center justify-center`}
-                    >
-                      <span className="text-xs font-bold text-white">
-                        {i + 1}
-                      </span>
+            {upcoming === undefined ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : upcoming.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                No upcoming appointments
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {upcoming.map((b) => (
+                  <Link
+                    key={b._id}
+                    to={`/bookings/${b._id}`}
+                    className="block p-3 rounded-lg border hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{b.customerName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {b.serviceName} · {formatDateShort(b.date)}{" "}
+                          {formatTime(b.time)}
+                        </p>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={statusColors[b.status]}
+                      >
+                        {b.status}
+                      </Badge>
                     </div>
-                    {i < 2 && (
-                      <div className="absolute top-8 left-1/2 w-px h-6 bg-border -translate-x-1/2" />
-                    )}
-                  </div>
-                  <div className="pt-1">
-                    <p className="font-medium text-sm">{step.title}</p>
-                    <p className="text-muted-foreground text-sm">{step.desc}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  </Link>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="flex gap-3">
+        <Button asChild>
+          <Link to="/bookings">View All Bookings</Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link to="/services">Manage Services</Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link to="/availability">Set Availability</Link>
+        </Button>
       </div>
     </div>
   );

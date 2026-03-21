@@ -107,7 +107,7 @@ export function MembershipPage() {
               </div>
             </div>
             <Button asChild size="lg" className="shrink-0">
-              <a href="/book?membership=true">
+              <a href="/book?category=membership">
                 Book Here <ArrowRight className="size-4 ml-1" />
               </a>
             </Button>

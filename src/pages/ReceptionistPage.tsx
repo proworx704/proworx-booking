@@ -6,7 +6,9 @@ import {
   Check,
   ChevronRight,
   Clock,
+  Copy,
   DollarSign,
+  ExternalLink,
   Headphones,
   Loader2,
   MapPin,
@@ -1080,6 +1082,30 @@ export function ReceptionistPage() {
           <div className="flex-1">
             <h1 className="text-lg font-bold">Receptionist Booking</h1>
             <p className="text-sm text-blue-100">Fast phone intake → quote → book</p>
+          </div>
+          {/* Share link button */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors"
+              onClick={() => {
+                const url = `${window.location.origin}/intake`;
+                navigator.clipboard.writeText(url);
+                toast.success("Customer booking link copied!");
+              }}
+              title="Copy customer booking link"
+            >
+              <Copy className="size-3.5" /> Copy Link
+            </button>
+            <a
+              href="/intake"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors"
+              title="Open customer intake page"
+            >
+              <ExternalLink className="size-3.5" /> Preview
+            </a>
           </div>
           {totalPrice > 0 && (
             <div className="text-right">

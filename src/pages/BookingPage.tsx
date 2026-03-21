@@ -128,12 +128,15 @@ const CATEGORY_LABELS: Record<string, string> = {
   core: "Standard Detailing",
   paintCorrection: "Paint Correction",
   ceramicCoating: "Ceramic Coating Packages",
+  boatDetailing: "Boat Detailing",
+  membership: "Maintenance Plans",
   interiorAddon: "Interior Add-Ons",
   exteriorAddon: "Exterior Add-Ons",
   ceramicAddon: "Ceramic Add-Ons",
+  boatAddon: "Boat Add-Ons",
 };
 
-const CORE_CATEGORIES = ["core", "paintCorrection", "ceramicCoating"];
+const CORE_CATEGORIES = ["core", "paintCorrection", "ceramicCoating", "boatDetailing"];
 const ADDON_CATEGORIES = ["interiorAddon", "exteriorAddon", "ceramicAddon"];
 
 // When a ceramic coating package is selected, only show ceramic-relevant add-ons
@@ -145,6 +148,8 @@ function ServiceStep({
   data,
   onSelect,
   catalog,
+  filterCategory,
+  isMembership,
 }: {
   data: BookingData;
   onSelect: (
@@ -156,6 +161,8 @@ function ServiceStep({
     duration: number,
   ) => void;
   catalog: CatalogItem[] | undefined;
+  filterCategory?: string | null;
+  isMembership?: boolean;
 }) {
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
@@ -169,7 +176,10 @@ function ServiceStep({
     );
   }
 
-  const grouped = CORE_CATEGORIES.reduce(
+  // If a category filter is set, only show that category
+  const categoriesToShow = filterCategory ? [filterCategory] : CORE_CATEGORIES;
+
+  const grouped = categoriesToShow.reduce(
     (acc, cat) => {
       const items = catalog.filter((c) => c.category === cat);
       if (items.length) acc[cat] = items;
@@ -181,9 +191,13 @@ function ServiceStep({
   return (
     <div className="space-y-6">
       <div className="text-center mb-4">
-        <h2 className="text-2xl font-bold">Choose Your Service</h2>
+        <h2 className="text-2xl font-bold">
+          {isMembership ? "Book Your Maintenance Visit" : "Choose Your Service"}
+        </h2>
         <p className="text-muted-foreground">
-          Select a service, then pick the right size for your vehicle
+          {isMembership
+            ? "Select your membership tier below — no charge, it's included in your plan"
+            : "Select a service, then pick the right size for your vehicle"}
         </p>
       </div>
 
@@ -944,6 +958,10 @@ export function BookingPage() {
   const catalog = useQuery(api.catalog.listActive, {});
   const createBooking = useMutation(api.bookings.create);
 
+  // ─── URL params for filtering ─────────────────────────────
+  const categoryFilter = searchParams.get("category");
+  const isMembership = categoryFilter === "membership";
+
   // ─── Deep link: auto-select service from URL ─────────────
   const serviceSlug = searchParams.get("service");
   useEffect(() => {
@@ -1168,6 +1186,8 @@ export function BookingPage() {
           <ServiceStep
             data={data}
             catalog={catalog}
+            filterCategory={categoryFilter}
+            isMembership={isMembership}
             onSelect={(id, name, category, variant, price, duration) => {
               setData((d) => ({
                 ...d,
@@ -1175,13 +1195,14 @@ export function BookingPage() {
                 serviceName: name,
                 serviceCategory: category,
                 selectedVariant: variant,
-                basePrice: price,
+                basePrice: isMembership ? 0 : price,
                 baseDuration: duration,
                 addons: [],
                 date: "",
                 time: "",
               }));
-              setStep("addons");
+              // For membership bookings, skip add-ons and go straight to info
+              setStep(isMembership ? "info" : "addons");
             }}
           />
         )}

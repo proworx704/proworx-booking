@@ -26,6 +26,7 @@ import {
 } from "./pages";
 import { BoatDetailingPage } from "./pages/BoatDetailingPage";
 import { CatalogPage } from "./pages/CatalogPage";
+import { IntakePage } from "./pages/IntakePage";
 import { MembershipPage } from "./pages/MembershipPage";
 import { ReceptionistPage } from "./pages/ReceptionistPage";
 import { ScheduleBlocksPage } from "./pages/ScheduleBlocksPage";
@@ -68,6 +69,9 @@ function App() {
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
+
+          {/* Public standalone intake page — shareable link, no login needed */}
+          <Route path="/intake" element={<IntakePage />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

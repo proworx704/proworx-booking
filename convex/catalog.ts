@@ -429,7 +429,7 @@ export const seed = mutation({
         slug: "clay-bar",
         description: "Removes bonded contaminants for a smooth, clean finish.",
         category: "exteriorAddon",
-        variants: [{ label: "Standard", price: 6000, durationMin: 30 }],
+        variants: [{ label: "Standard", price: 10000, durationMin: 30 }],
         isActive: true,
         sortOrder: 8,
       },

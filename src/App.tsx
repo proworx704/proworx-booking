@@ -27,6 +27,7 @@ import {
 import { BoatDetailingPage } from "./pages/BoatDetailingPage";
 import { CatalogPage } from "./pages/CatalogPage";
 import { MembershipPage } from "./pages/MembershipPage";
+import { ReceptionistPage } from "./pages/ReceptionistPage";
 import { ScheduleBlocksPage } from "./pages/ScheduleBlocksPage";
 
 function App() {
@@ -63,6 +64,7 @@ function App() {
               <Route path="/availability" element={<AvailabilityPage />} />
               <Route path="/schedule-blocks" element={<ScheduleBlocksPage />} />
               <Route path="/service-freeze" element={<ServiceFreezePage />} />
+              <Route path="/receptionist" element={<ReceptionistPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

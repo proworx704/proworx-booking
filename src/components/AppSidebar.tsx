@@ -6,6 +6,7 @@ import {
   CalendarClock,
   Clock,
   Contact,
+  Headphones,
   LayoutDashboard,
   List,
   LogOut,
@@ -47,6 +48,10 @@ const mainNav = [
   { href: "/bookings", label: "Bookings", icon: CalendarCheck },
   { href: "/customers", label: "Clients", icon: Contact },
   { href: "/staff", label: "Staff", icon: Users },
+];
+
+const toolsNav = [
+  { href: "/receptionist", label: "Receptionist", icon: Headphones },
 ];
 
 const manageNav = [
@@ -105,6 +110,22 @@ function SidebarNav() {
                   (item.href === "/staff" &&
                     location.pathname.startsWith("/staff"))
                 }
+              />
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel>Tools</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {toolsNav.map((item) => (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+                isActive={location.pathname === item.href}
               />
             ))}
           </SidebarMenu>

@@ -1221,8 +1221,7 @@ export function BookingPage() {
                 date: "",
                 time: "",
               }));
-              // For membership bookings, skip add-ons and go straight to info
-              setStep(isMembership ? "info" : "addons");
+              setStep("addons");
             }}
           />
         )}

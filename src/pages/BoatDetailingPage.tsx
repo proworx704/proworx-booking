@@ -2,7 +2,6 @@ import { useQuery } from "convex/react";
 import {
   Anchor,
   ArrowRight,
-  CheckCircle2,
   Phone,
   Shield,
   Sparkles,

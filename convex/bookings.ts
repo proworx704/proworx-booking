@@ -33,6 +33,64 @@ export const create = mutation({
 
     const confirmationCode = generateConfirmationCode();
 
+    // Auto-assign staff if possible
+    let staffId: string | undefined;
+    let staffName: string | undefined;
+
+    // Find staff who can do this service and are available
+    const serviceAssignments = await ctx.db
+      .query("staffServices")
+      .withIndex("by_service", (q) => q.eq("serviceId", args.serviceId))
+      .collect();
+
+    if (serviceAssignments.length > 0) {
+      const dateObj = new Date(args.date + "T12:00:00");
+      const dayOfWeek = dateObj.getUTCDay();
+      const [reqH, reqM] = args.time.split(":").map(Number);
+      const reqMinutes = reqH * 60 + reqM;
+
+      // Get existing bookings on this date
+      const existingBookings = await ctx.db
+        .query("bookings")
+        .withIndex("by_date", (q) => q.eq("date", args.date))
+        .filter((q) => q.neq(q.field("status"), "cancelled"))
+        .collect();
+
+      for (const assignment of serviceAssignments) {
+        const staff = await ctx.db.get(assignment.staffId);
+        if (!staff || !staff.isActive) continue;
+
+        // Check staff day availability
+        const staffAvail = await ctx.db
+          .query("staffAvailability")
+          .withIndex("by_staff_day", (q) =>
+            q.eq("staffId", staff._id).eq("dayOfWeek", dayOfWeek),
+          )
+          .first();
+
+        if (!staffAvail || !staffAvail.isAvailable) continue;
+
+        const [sH, sM] = staffAvail.startTime.split(":").map(Number);
+        const [eH, eM] = staffAvail.endTime.split(":").map(Number);
+        if (reqMinutes < sH * 60 + sM || reqMinutes + service.duration > eH * 60 + eM) continue;
+
+        // Check for booking conflicts
+        const staffBookings = existingBookings.filter((b) => b.staffId === staff._id);
+        const hasConflict = staffBookings.some((b) => {
+          const [bH, bM] = b.time.split(":").map(Number);
+          const bookingStart = bH * 60 + bM;
+          const bookingEnd = bookingStart + service.duration;
+          return reqMinutes < bookingEnd && reqMinutes + service.duration > bookingStart;
+        });
+
+        if (!hasConflict) {
+          staffId = staff._id;
+          staffName = staff.name;
+          break;
+        }
+      }
+    }
+
     const bookingId = await ctx.db.insert("bookings", {
       customerName: args.customerName,
       customerPhone: args.customerPhone,
@@ -48,9 +106,11 @@ export const create = mutation({
       paymentStatus: "unpaid",
       confirmationCode,
       notes: args.notes,
+      staffId: staffId as any,
+      staffName,
     });
 
-    return { bookingId, confirmationCode, price, serviceName: service.name };
+    return { bookingId, confirmationCode, price, serviceName: service.name, staffName };
   },
 });
 
@@ -78,34 +138,44 @@ export const list = query({
       ),
     ),
     date: v.optional(v.string()),
+    staffId: v.optional(v.id("staff")),
   },
-  handler: async (ctx, { status, date }) => {
-    let q = ctx.db.query("bookings");
-
-    if (date) {
-      const results = await q
-        .withIndex("by_date", (idx) => idx.eq("date", date))
+  handler: async (ctx, { status, date, staffId }) => {
+    if (staffId && date) {
+      const results = await ctx.db
+        .query("bookings")
+        .withIndex("by_staff_date", (q) =>
+          q.eq("staffId", staffId).eq("date", date),
+        )
         .collect();
-      if (status) {
-        return results
-          .filter((b) => b.status === status)
-          .sort((a, b) => a.time.localeCompare(b.time));
-      }
+      if (status) return results.filter((b) => b.status === status);
       return results.sort((a, b) => a.time.localeCompare(b.time));
     }
 
-    if (status) {
-      const results = await q
-        .withIndex("by_status", (idx) => idx.eq("status", status))
+    if (date) {
+      const results = await ctx.db
+        .query("bookings")
+        .withIndex("by_date", (q) => q.eq("date", date))
         .collect();
+      const filtered = status ? results.filter((b) => b.status === status) : results;
+      if (staffId) return filtered.filter((b) => b.staffId === staffId);
+      return filtered.sort((a, b) => a.time.localeCompare(b.time));
+    }
+
+    if (status) {
+      const results = await ctx.db
+        .query("bookings")
+        .withIndex("by_status", (q) => q.eq("status", status))
+        .collect();
+      if (staffId) return results.filter((b) => b.staffId === staffId);
       return results.sort(
-        (a, b) =>
-          a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
+        (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
       );
     }
 
-    const results = await q.collect();
-    return results.sort(
+    const results = await ctx.db.query("bookings").collect();
+    const filtered = staffId ? results.filter((b) => b.staffId === staffId) : results;
+    return filtered.sort(
       (a, b) => b.date.localeCompare(a.date) || a.time.localeCompare(b.time),
     );
   },
@@ -169,6 +239,27 @@ export const updateStatus = mutation({
   },
 });
 
+// Admin: assign staff to booking
+export const assignStaff = mutation({
+  args: {
+    id: v.id("bookings"),
+    staffId: v.id("staff"),
+  },
+  handler: async (ctx, { id, staffId }) => {
+    const staff = await ctx.db.get(staffId);
+    if (!staff) throw new Error("Staff member not found");
+    await ctx.db.patch(id, { staffId, staffName: staff.name });
+  },
+});
+
+// Admin: unassign staff from booking
+export const unassignStaff = mutation({
+  args: { id: v.id("bookings") },
+  handler: async (ctx, { id }) => {
+    await ctx.db.patch(id, { staffId: undefined, staffName: undefined });
+  },
+});
+
 // Admin: mark as paid
 export const markPaid = mutation({
   args: {
@@ -227,6 +318,30 @@ export const stats = query({
       unpaidCount: unpaid.length,
       totalRevenue,
     };
+  },
+});
+
+// Admin: get bookings for a specific staff member
+export const listByStaff = query({
+  args: {
+    staffId: v.id("staff"),
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
+  },
+  handler: async (ctx, { staffId, startDate, endDate }) => {
+    const bookings = await ctx.db
+      .query("bookings")
+      .withIndex("by_staff", (q) => q.eq("staffId", staffId))
+      .filter((q) => q.neq(q.field("status"), "cancelled"))
+      .collect();
+
+    let filtered = bookings;
+    if (startDate) filtered = filtered.filter((b) => b.date >= startDate);
+    if (endDate) filtered = filtered.filter((b) => b.date <= endDate);
+
+    return filtered.sort(
+      (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
+    );
   },
 });
 

@@ -15,9 +15,12 @@ import {
   FeedbackPage,
   LandingPage,
   LoginPage,
+  ServiceFreezePage,
   ServicesPage,
   SettingsPage,
   SignupPage,
+  StaffDetailPage,
+  StaffPage,
 } from "./pages";
 
 function App() {
@@ -43,8 +46,11 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/bookings" element={<BookingsPage />} />
               <Route path="/bookings/:id" element={<BookingDetailPage />} />
+              <Route path="/staff" element={<StaffPage />} />
+              <Route path="/staff/:id" element={<StaffDetailPage />} />
               <Route path="/services" element={<ServicesPage />} />
               <Route path="/availability" element={<AvailabilityPage />} />
+              <Route path="/service-freeze" element={<ServiceFreezePage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

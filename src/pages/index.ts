@@ -9,3 +9,6 @@ export { BookingDetailPage } from "./BookingDetailPage";
 export { ServicesPage } from "./ServicesPage";
 export { AvailabilityPage } from "./AvailabilityPage";
 export { FeedbackPage } from "./FeedbackPage";
+export { StaffPage } from "./StaffPage";
+export { StaffDetailPage } from "./StaffDetailPage";
+export { ServiceFreezePage } from "./ServiceFreezePage";

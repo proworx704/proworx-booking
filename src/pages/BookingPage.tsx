@@ -233,7 +233,7 @@ function DateTimeStep({
   const slots = useQuery(
     api.availability.getAvailableSlots,
     data.date
-      ? { date: data.date, durationMinutes: data.duration }
+      ? { date: data.date, durationMinutes: data.duration, serviceId: data.serviceId ?? undefined }
       : "skip",
   );
 

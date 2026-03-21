@@ -8,8 +8,10 @@ import {
   LogOut,
   Moon,
   Settings,
+  Snowflake,
   Sparkles,
   Sun,
+  Users,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -40,11 +42,13 @@ import {
 const mainNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/bookings", label: "Bookings", icon: CalendarCheck },
+  { href: "/staff", label: "Staff", icon: Users },
 ];
 
 const manageNav = [
   { href: "/services", label: "Services", icon: Sparkles },
   { href: "/availability", label: "Availability", icon: Clock },
+  { href: "/service-freeze", label: "Service Freeze", icon: Snowflake },
 ];
 
 function NavLink({
@@ -89,7 +93,9 @@ function SidebarNav() {
                 isActive={
                   location.pathname === item.href ||
                   (item.href === "/bookings" &&
-                    location.pathname.startsWith("/bookings"))
+                    location.pathname.startsWith("/bookings")) ||
+                  (item.href === "/staff" &&
+                    location.pathname.startsWith("/staff"))
                 }
               />
             ))}

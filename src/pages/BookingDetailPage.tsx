@@ -12,6 +12,7 @@ import {
   Phone,
   Truck,
   User,
+  Users,
   XCircle,
 } from "lucide-react";
 import { useState } from "react";
@@ -171,8 +172,11 @@ export function BookingDetailPage() {
     api.bookings.get,
     id ? { id: id as Id<"bookings"> } : "skip",
   );
+  const activeStaff = useQuery(api.staff.listActive);
   const updateStatus = useMutation(api.bookings.updateStatus);
   const updateNotes = useMutation(api.bookings.updateNotes);
+  const assignStaff = useMutation(api.bookings.assignStaff);
+  const unassignStaff = useMutation(api.bookings.unassignStaff);
   const [notes, setNotes] = useState<string | null>(null);
   const [savingNotes, setSavingNotes] = useState(false);
 
@@ -333,6 +337,55 @@ export function BookingDetailPage() {
                   <p className="font-medium">{booking.serviceAddress}</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Staff Assignment */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="size-4" />
+                Assigned Staff
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {booking.staffName ? (
+                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <div className="flex items-center gap-3">
+                    <div className="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                      {booking.staffName.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+                    </div>
+                    <p className="font-medium">{booking.staffName}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => unassignStaff({ id: booking._id })}
+                  >
+                    Unassign
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground mb-2">No staff assigned yet</p>
+                  <Select
+                    onValueChange={(staffId) =>
+                      assignStaff({ id: booking._id, staffId: staffId as Id<"staff"> })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Assign a staff member..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeStaff?.map((s) => (
+                        <SelectItem key={s._id} value={s._id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </CardContent>
           </Card>
 

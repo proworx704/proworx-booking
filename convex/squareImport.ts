@@ -44,7 +44,6 @@ export const importBookings = mutation({
 
       // Parse date & time from ISO
       const dt = new Date(b.startAt);
-      const dateStr = b.startAt.slice(0, 10); // "2026-03-21"
       // Convert UTC to Eastern (UTC-4 during EDT Mar-Nov, UTC-5 otherwise)
       const month = dt.getUTCMonth(); // 0-based
       const isDST = month >= 2 && month <= 10; // Mar–Nov approximation

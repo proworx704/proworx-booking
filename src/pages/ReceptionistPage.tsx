@@ -10,7 +10,6 @@ import {
   Headphones,
   Loader2,
   MapPin,
-  Phone,
   Plus,
   Sparkles,
   User,

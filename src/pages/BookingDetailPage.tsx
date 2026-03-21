@@ -9,6 +9,7 @@ import {
   DollarSign,
   Mail,
   MapPin,
+  Navigation,
   Phone,
   Truck,
   User,
@@ -328,13 +329,18 @@ export function BookingDetailPage() {
                   </a>
                 </div>
               </div>
-              <div className="flex items-start gap-3 p-3 rounded-lg border">
-                <MapPin className="size-5 text-muted-foreground mt-0.5" />
-                <div>
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(booking.serviceAddress + (booking.zipCode ? ` ${booking.zipCode}` : ""))}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-3 p-3 rounded-lg border hover:bg-blue-50 hover:border-blue-200 transition-colors group cursor-pointer"
+              >
+                <MapPin className="size-5 text-muted-foreground mt-0.5 group-hover:text-blue-600" />
+                <div className="flex-1">
                   <p className="text-xs text-muted-foreground">
                     Service Address
                   </p>
-                  <p className="font-medium">
+                  <p className="font-medium group-hover:text-blue-600">
                     {booking.serviceAddress}
                     {booking.zipCode && (
                       <span className="ml-2 text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
@@ -342,8 +348,13 @@ export function BookingDetailPage() {
                       </span>
                     )}
                   </p>
+                  <p className="text-xs text-blue-600 flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Navigation className="size-3" />
+                    Open in Google Maps
+                  </p>
                 </div>
-              </div>
+                <Navigation className="size-4 text-blue-500 mt-1 opacity-60 group-hover:opacity-100" />
+              </a>
             </CardContent>
           </Card>
 

@@ -239,9 +239,28 @@ export const getAvailableSlots = query({
     const startMinutes = startH * 60 + startM;
     const endMinutes = endH * 60 + endM;
 
+    // ─── Filter out past time slots for today ─────────────────
+    // Convert current UTC time to Eastern Time (UTC-4 EDT / UTC-5 EST)
+    const nowUtc = Date.now();
+    const nowEastern = new Date(nowUtc);
+    // Use manual offset: check if in DST (March-November roughly)
+    const month = nowEastern.getUTCMonth(); // 0-indexed
+    const isDST = month >= 2 && month <= 10; // March(2) through November(10)
+    const offsetHours = isDST ? -4 : -5;
+    const easternMs = nowUtc + offsetHours * 60 * 60 * 1000;
+    const easternDate = new Date(easternMs);
+    const todayStr = `${easternDate.getUTCFullYear()}-${String(easternDate.getUTCMonth() + 1).padStart(2, "0")}-${String(easternDate.getUTCDate()).padStart(2, "0")}`;
+    const isToday = date === todayStr;
+    // Current time in minutes (Eastern), plus 30 min buffer for booking lead time
+    const nowMinutesEastern = isToday
+      ? easternDate.getUTCHours() * 60 + easternDate.getUTCMinutes() + 30
+      : 0;
+
     const slots: Array<{ time: string; recommended: boolean }> = [];
 
     for (let m = startMinutes; m + durationMinutes <= endMinutes; m += 60) {
+      // Skip past slots for today
+      if (isToday && m < nowMinutesEastern) continue;
       const h = Math.floor(m / 60);
       const mins = m % 60;
       const timeStr = `${h.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;

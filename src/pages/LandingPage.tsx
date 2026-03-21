@@ -1,8 +1,10 @@
 import {
+  Anchor,
   ArrowRight,
   CalendarCheck,
   Car,
   Shield,
+  ShieldCheck,
   Sparkles,
   Star,
 } from "lucide-react";
@@ -103,6 +105,48 @@ export function LandingPage() {
                 </p>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Boat & Membership Quick Links */}
+      <section className="py-12 bg-background">
+        <div className="container">
+          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            <Link
+              to="/boat-detailing"
+              className="group flex items-start gap-4 p-6 rounded-2xl border bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200/50 dark:border-blue-800/30 hover:shadow-md transition-all"
+            >
+              <div className="size-12 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 text-white flex items-center justify-center shrink-0">
+                <Anchor className="size-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg mb-1 group-hover:text-blue-600 transition-colors">
+                  Boat Detailing &amp; Ceramic
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Mobile marine detailing for Lake Norman &amp; Charlotte. Wash to
+                  full ceramic protection.
+                </p>
+              </div>
+            </Link>
+            <Link
+              to="/memberships"
+              className="group flex items-start gap-4 p-6 rounded-2xl border bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950/30 dark:to-blue-950/30 border-slate-200/50 dark:border-slate-800/30 hover:shadow-md transition-all"
+            >
+              <div className="size-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center shrink-0">
+                <ShieldCheck className="size-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg mb-1 group-hover:text-blue-600 transition-colors">
+                  Maintenance Memberships
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Starting at $59/mo. Keep your vehicle showroom-fresh with
+                  monthly scheduled maintenance.
+                </p>
+              </div>
+            </Link>
           </div>
         </div>
       </section>

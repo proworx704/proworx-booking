@@ -61,6 +61,7 @@ type BookingStep = "service" | "addons" | "info" | "datetime" | "confirm";
 interface BookingData {
   catalogItemId: Id<"serviceCatalog"> | null;
   serviceName: string;
+  serviceCategory: string;
   selectedVariant: string;
   basePrice: number;
   baseDuration: number;
@@ -78,6 +79,7 @@ interface BookingData {
 const initialData: BookingData = {
   catalogItemId: null,
   serviceName: "",
+  serviceCategory: "",
   selectedVariant: "",
   basePrice: 0,
   baseDuration: 0,
@@ -134,6 +136,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 const CORE_CATEGORIES = ["core", "paintCorrection", "ceramicCoating"];
 const ADDON_CATEGORIES = ["interiorAddon", "exteriorAddon", "ceramicAddon"];
 
+// When a ceramic coating package is selected, only show ceramic-relevant add-ons
+const CERAMIC_ADDON_CATEGORIES = ["ceramicAddon"];
+
 // ─── Step 1: Service Selection ────────────────────────────────────────────────
 
 function ServiceStep({
@@ -145,6 +150,7 @@ function ServiceStep({
   onSelect: (
     id: Id<"serviceCatalog">,
     name: string,
+    category: string,
     variant: string,
     price: number,
     duration: number,
@@ -206,6 +212,7 @@ function ServiceStep({
                         onSelect(
                           item._id,
                           item.name,
+                          item.category,
                           item.variants[0].label,
                           item.variants[0].price,
                           item.variants[0].durationMin,
@@ -271,6 +278,7 @@ function ServiceStep({
                               onSelect(
                                 item._id,
                                 item.name,
+                                item.category,
                                 variant.label,
                                 variant.price,
                                 variant.durationMin,
@@ -310,18 +318,31 @@ function AddonsStep({
   onToggle,
   onChangeVariant,
   catalog,
+  selectedServiceCategory,
 }: {
   data: BookingData;
   onToggle: (addon: CatalogItem, variant?: CatalogItem["variants"][0]) => void;
   onChangeVariant: (addonId: Id<"serviceCatalog">, variant: CatalogItem["variants"][0]) => void;
   catalog: CatalogItem[] | undefined;
+  selectedServiceCategory?: string;
 }) {
-  const [activeTab, setActiveTab] = useState<string>("interiorAddon");
+  // When a ceramic coating package is selected, only show ceramic add-ons
+  const allowedCategories =
+    selectedServiceCategory === "ceramicCoating"
+      ? CERAMIC_ADDON_CATEGORIES
+      : ADDON_CATEGORIES;
+
+  const defaultTab =
+    selectedServiceCategory === "ceramicCoating"
+      ? "ceramicAddon"
+      : "interiorAddon";
+
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
 
   if (!catalog) return <div className="h-40 animate-pulse bg-muted rounded-xl" />;
 
-  const addonItems = catalog.filter((c) => ADDON_CATEGORIES.includes(c.category));
-  const tabs = ADDON_CATEGORIES.filter((cat) =>
+  const addonItems = catalog.filter((c) => allowedCategories.includes(c.category));
+  const tabs = allowedCategories.filter((cat) =>
     addonItems.some((i) => i.category === cat),
   );
 
@@ -934,6 +955,7 @@ export function BookingPage() {
             ...d,
             catalogItemId: item._id,
             serviceName: item.name,
+            serviceCategory: item.category,
             selectedVariant: item.variants[0].label,
             basePrice: item.variants[0].price,
             baseDuration: item.variants[0].durationMin,
@@ -1146,11 +1168,12 @@ export function BookingPage() {
           <ServiceStep
             data={data}
             catalog={catalog}
-            onSelect={(id, name, variant, price, duration) => {
+            onSelect={(id, name, category, variant, price, duration) => {
               setData((d) => ({
                 ...d,
                 catalogItemId: id,
                 serviceName: name,
+                serviceCategory: category,
                 selectedVariant: variant,
                 basePrice: price,
                 baseDuration: duration,
@@ -1169,6 +1192,7 @@ export function BookingPage() {
             catalog={catalog}
             onToggle={handleAddonToggle}
             onChangeVariant={handleAddonVariantChange}
+            selectedServiceCategory={data.serviceCategory}
           />
         )}
 

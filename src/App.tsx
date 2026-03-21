@@ -24,7 +24,9 @@ import {
   StaffDetailPage,
   StaffPage,
 } from "./pages";
+import { BoatDetailingPage } from "./pages/BoatDetailingPage";
 import { CatalogPage } from "./pages/CatalogPage";
+import { MembershipPage } from "./pages/MembershipPage";
 import { ScheduleBlocksPage } from "./pages/ScheduleBlocksPage";
 
 function App() {
@@ -37,6 +39,8 @@ function App() {
           <Route element={<PublicLayout />}>
             <Route path="/" element={<LandingPage />} />
             <Route path="/book" element={<BookingPage />} />
+            <Route path="/boat-detailing" element={<BoatDetailingPage />} />
+            <Route path="/memberships" element={<MembershipPage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route element={<PublicOnlyRoute />}>
               <Route path="/login" element={<LoginPage />} />

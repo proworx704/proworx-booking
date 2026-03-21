@@ -1,4 +1,3 @@
-import { useSearchParams } from "react-router-dom";
 import { BookingPage } from "./BookingPage";
 
 /**
@@ -7,9 +6,6 @@ import { BookingPage } from "./BookingPage";
  * Supports all the same deep-link params as /book (?service=..., ?category=..., ?membership=true)
  */
 export function IntakePage() {
-  const [searchParams] = useSearchParams();
-  const _params = searchParams.toString();
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       {/* Minimal branded header */}

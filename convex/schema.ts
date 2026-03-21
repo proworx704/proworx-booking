@@ -218,6 +218,9 @@ const schema = defineSchema({
 
     // Confirmation code
     confirmationCode: v.string(),
+
+    // Square import link
+    squareBookingId: v.optional(v.string()),
   })
     .index("by_date", ["date"])
     .index("by_status", ["status"])
@@ -225,7 +228,8 @@ const schema = defineSchema({
     .index("by_email", ["customerEmail"])
     .index("by_staff", ["staffId"])
     .index("by_staff_date", ["staffId", "date"])
-    .index("by_zip_date", ["zipCode", "date"]),
+    .index("by_zip_date", ["zipCode", "date"])
+    .index("by_square_booking_id", ["squareBookingId"]),
 });
 
 export default schema;

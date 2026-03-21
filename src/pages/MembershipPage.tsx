@@ -30,25 +30,24 @@ const TIER_FEATURES: Record<string, string[]> = {
   "membership-clean": [
     "Monthly exterior hand wash",
     "Tire & wheel clean",
-    "Window cleaning inside & out",
+    "Exterior window cleaning",
     "Door jamb wipe-down",
-    "Quick interior vacuum",
+    "Tire shine & dressing",
   ],
   "membership-shield": [
-    "Everything in Clean, plus:",
-    "Full interior vacuum & wipe-down",
+    "Monthly interior detail",
+    "Full vacuum & wipe-down",
     "Dashboard & console detail",
-    "Paint sealant refresh",
-    "Tire shine & trim dressing",
+    "Leather / vinyl conditioning",
+    "Interior windows",
     "Air freshener",
   ],
   "membership-armor": [
-    "Everything in Shield, plus:",
-    "Interior deep clean & condition",
-    "Exterior compound & polish",
-    "Engine bay maintenance",
-    "Ceramic coating top-up",
-    "Headlight check & clean",
+    "Full inside & out detail",
+    "Everything in Exterior + Interior",
+    "Ceramic wet-coat protection",
+    "Paint sealant refresh",
+    "Tire shine & trim dressing",
     "Priority scheduling",
   ],
 };
@@ -93,6 +92,28 @@ export function MembershipPage() {
       </div>
 
       <div className="container max-w-5xl py-12 px-4">
+        {/* Already a Member */}
+        <div className="mb-8 p-5 rounded-2xl border-2 border-blue-500/30 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/20">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="size-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                <ShieldCheck className="size-6" />
+              </div>
+              <div>
+                <h2 className="font-bold text-lg">Already a member?</h2>
+                <p className="text-sm text-muted-foreground">
+                  Book your monthly maintenance visit — no charge, it's included in your plan.
+                </p>
+              </div>
+            </div>
+            <Button asChild size="lg" className="shrink-0">
+              <a href="/book?membership=true">
+                Book Here <ArrowRight className="size-4 ml-1" />
+              </a>
+            </Button>
+          </div>
+        </div>
+
         {/* How It Works */}
         <div className="mb-12 p-6 rounded-2xl border bg-card">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">

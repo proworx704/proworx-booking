@@ -282,8 +282,16 @@ export const getAvailableSlots = query({
           slots.push({ time: timeStr, recommended: hasZipMatch });
         }
       } else {
-        const bookedTimes = new Set(bookings.map((b) => b.time));
-        if (!bookedTimes.has(timeStr)) {
+        // Check overlap with ALL existing bookings using their full duration
+        const hasConflict = bookings.some((b) => {
+          const [bH, bM] = b.time.split(":").map(Number);
+          const bookingStart = bH * 60 + bM;
+          // Use booking's stored totalDuration, or fall back to requested duration
+          const bDuration = (b as any).totalDuration || durationMinutes;
+          const bookingEnd = bookingStart + bDuration;
+          return m < bookingEnd && m + durationMinutes > bookingStart;
+        });
+        if (!hasConflict) {
           slots.push({ time: timeStr, recommended: hasZipMatch });
         }
       }

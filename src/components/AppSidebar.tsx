@@ -1,7 +1,6 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import {
-  Calendar,
   CalendarCheck,
   CalendarClock,
   CalendarDays,

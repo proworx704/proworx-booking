@@ -116,44 +116,39 @@ function PaymentDialog({
   const amountFormatted = `$${Number.parseFloat(amount).toFixed(2)}`;
 
   const handleChargeWithReader = async () => {
-    // Build Square POS deep link for iOS
-    const posData = {
-      amount_money: {
-        amount: amountCents.toString(),
-        currency_code: "USD",
-      },
-      callback_url: window.location.href,
-      client_id: "sq0idp-proworx-booking",
-      version: "1.3",
-      notes: `ProWorx ${confirmationCode} — ${serviceName} for ${customerName}`,
-      options: {
-        supported_tender_types: [
-          "CREDIT_CARD",
-          "CASH",
-          "OTHER",
-          "CARD_ON_FILE",
-        ],
-        auto_return: true,
-      },
-    };
-
-    const encodedData = encodeURIComponent(JSON.stringify(posData));
-    const iosUrl = `square-commerce-v1://payment/create?data=${encodedData}`;
-
-    // Also copy amount to clipboard as fallback
+    // Copy amount to clipboard so user can paste it in Square POS
     try {
       await navigator.clipboard.writeText(amount);
     } catch {
       // Clipboard may not be available
     }
 
-    // Try opening Square POS via deep link
-    // On iOS this opens Square POS with amount pre-filled
-    // If it fails, the user stays on this page and sees the fallback UI
-    window.location.href = iosUrl;
+    // Try opening Square POS app via deep link
+    // square-commerce-v1:// is the official Square POS URL scheme for iOS
+    const noteText = `ProWorx ${confirmationCode} — ${serviceName} for ${customerName}`;
+    const posData = {
+      amount_money: {
+        amount: amountCents,
+        currency_code: "USD",
+      },
+      callback_url: window.location.href,
+      version: "1.3",
+      notes: noteText,
+      options: {
+        supported_tender_types: ["CREDIT_CARD", "CASH", "OTHER", "CARD_ON_FILE"],
+      },
+    };
+    const encodedData = encodeURIComponent(JSON.stringify(posData));
 
-    // Show "charged" confirmation UI after a short delay
-    // (if Square POS opened, user will leave; if not, they'll see fallback)
+    // Try the Square POS deep link first, fall back to just opening Square app
+    try {
+      window.location.href = `square-commerce-v1://payment/create?data=${encodedData}`;
+    } catch {
+      // If deep link fails, try opening Square POS directly
+      window.open("https://squareup.com/dashboard/sales/transactions", "_blank");
+    }
+
+    // Show the confirmation UI after a short delay
     setTimeout(() => {
       setReaderOpened(true);
     }, 1500);
@@ -341,13 +336,20 @@ function PaymentDialog({
               {/* READER MODE — after opening Square POS */}
               {cardMode === "reader" && readerOpened && (
                 <div className="space-y-3">
-                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center">
-                    <Loader2 className="size-6 text-amber-500 mx-auto mb-2 animate-spin" />
-                    <p className="font-medium text-amber-800">
-                      Waiting for payment in Square POS...
+                  <div className="p-4 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl text-white text-center">
+                    <p className="text-3xl font-bold tracking-tight">
+                      {amountFormatted}
                     </p>
-                    <p className="text-xs text-amber-600 mt-1">
-                      {amountFormatted} for {customerName}
+                    <p className="text-gray-400 text-xs mt-1">
+                      {serviceName} — {customerName}
+                    </p>
+                    <p className="text-gray-500 text-[10px] mt-1">
+                      Amount copied to clipboard
+                    </p>
+                  </div>
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs text-amber-800 text-center">
+                      Charge <span className="font-bold">{amountFormatted}</span> in Square POS, then tap the green button below to record it.
                     </p>
                   </div>
                   <Button

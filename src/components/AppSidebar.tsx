@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useUserRole } from "@/contexts/RoleContext";
 import { APP_NAME } from "@/lib/constants";
 import { api } from "../../convex/_generated/api";
 import { Avatar, AvatarFallback } from "./ui/avatar";
@@ -46,6 +47,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "./ui/sidebar";
+
+// ─── Navigation Definitions ──────────────────────────────────────────────────
 
 const mainNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -75,6 +78,14 @@ const manageNav = [
   { href: "/service-freeze", label: "Service Freeze", icon: Snowflake },
 ];
 
+const employeeNav = [
+  { href: "/my/dashboard", label: "My Dashboard", icon: LayoutDashboard },
+  { href: "/my/time-entries", label: "My Time", icon: ClipboardList },
+  { href: "/my/pay", label: "My Pay", icon: Wallet },
+];
+
+// ─── Components ──────────────────────────────────────────────────────────────
+
 function NavLink({
   href,
   label,
@@ -100,11 +111,45 @@ function NavLink({
   );
 }
 
-function SidebarNav() {
+function NavSection({
+  label,
+  items,
+  pathname,
+}: {
+  label: string;
+  items: typeof mainNav;
+  pathname: string;
+}) {
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) => (
+            <NavLink
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              isActive={
+                pathname === item.href ||
+                pathname.startsWith(item.href + "/")
+              }
+            />
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
+function AdminSidebarNav() {
   const location = useLocation();
+  const p = location.pathname;
 
   return (
     <SidebarContent>
+      {/* Main — no label, first section */}
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
@@ -115,65 +160,40 @@ function SidebarNav() {
                 label={item.label}
                 icon={item.icon}
                 isActive={
-                  location.pathname === item.href ||
-                  (item.href === "/bookings" &&
-                    location.pathname.startsWith("/bookings")) ||
-                  (item.href === "/customers" &&
-                    location.pathname.startsWith("/customers")) ||
-                  (item.href === "/staff" &&
-                    location.pathname.startsWith("/staff"))
+                  p === item.href ||
+                  (item.href === "/bookings" && p.startsWith("/bookings")) ||
+                  (item.href === "/customers" && p.startsWith("/customers")) ||
+                  (item.href === "/staff" && p.startsWith("/staff"))
                 }
               />
             ))}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
+
+      <NavSection label="Payroll" items={payrollNav} pathname={p} />
+      <NavSection label="Tools" items={toolsNav} pathname={p} />
+      <NavSection label="Manage" items={manageNav} pathname={p} />
+    </SidebarContent>
+  );
+}
+
+function EmployeeSidebarNav() {
+  const location = useLocation();
+  const p = location.pathname;
+
+  return (
+    <SidebarContent>
       <SidebarGroup>
-        <div className="border-t border-sidebar-border mx-2 mb-1" />
-        <SidebarGroupLabel className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50 px-3 pb-1">Payroll</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {payrollNav.map((item) => (
+            {employeeNav.map((item) => (
               <NavLink
                 key={item.href}
                 href={item.href}
                 label={item.label}
                 icon={item.icon}
-                isActive={location.pathname === item.href}
-              />
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-      <SidebarGroup>
-        <div className="border-t border-sidebar-border mx-2 mb-1" />
-        <SidebarGroupLabel className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50 px-3 pb-1">Tools</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {toolsNav.map((item) => (
-              <NavLink
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                icon={item.icon}
-                isActive={location.pathname === item.href}
-              />
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-      <SidebarGroup>
-        <div className="border-t border-sidebar-border mx-2 mb-1" />
-        <SidebarGroupLabel className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50 px-3 pb-1">Manage</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {manageNav.map((item) => (
-              <NavLink
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                icon={item.icon}
-                isActive={location.pathname === item.href}
+                isActive={p === item.href || p.startsWith(item.href + "/")}
               />
             ))}
           </SidebarMenu>
@@ -188,6 +208,10 @@ function SidebarUserMenu() {
   const { signOut } = useAuthActions();
   const { theme, toggleTheme, switchable } = useTheme();
   const { setOpenMobile } = useSidebar();
+  const { role, displayName } = useUserRole();
+
+  const roleBadge =
+    role === "owner" ? "Owner" : role === "admin" ? "Admin" : role === "employee" ? "Employee" : "";
 
   return (
     <SidebarFooter className="border-t border-sidebar-border">
@@ -198,15 +222,15 @@ function SidebarUserMenu() {
               <SidebarMenuButton size="lg">
                 <Avatar className="size-8">
                   <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
-                    {user?.name?.charAt(0).toUpperCase() || "U"}
+                    {(displayName || user?.name || "U").charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col items-start text-left">
+                <div className="flex flex-col items-start text-left min-w-0">
                   <span className="text-sm font-medium truncate">
-                    {user?.name || "User"}
+                    {displayName || user?.name || "User"}
                   </span>
                   <span className="text-xs text-muted-foreground truncate">
-                    {user?.email}
+                    {roleBadge ? `${roleBadge} · ` : ""}{user?.email}
                   </span>
                 </div>
               </SidebarMenuButton>
@@ -216,12 +240,14 @@ function SidebarUserMenu() {
               align="start"
               className="w-[--radix-dropdown-menu-trigger-width]"
             >
-              <DropdownMenuItem asChild>
-                <Link to="/settings" onClick={() => setOpenMobile(false)}>
-                  <Settings className="size-4" />
-                  Settings
-                </Link>
-              </DropdownMenuItem>
+              {role !== "employee" && (
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" onClick={() => setOpenMobile(false)}>
+                    <Settings className="size-4" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+              )}
               {switchable && (
                 <DropdownMenuItem onClick={toggleTheme}>
                   {theme === "light" ? (
@@ -266,10 +292,12 @@ function SidebarHeaderContent() {
 }
 
 export function AppSidebar() {
+  const { role, isEmployee } = useUserRole();
+
   return (
     <Sidebar>
       <SidebarHeaderContent />
-      <SidebarNav />
+      {isEmployee ? <EmployeeSidebarNav /> : <AdminSidebarNav />}
       <SidebarUserMenu />
     </Sidebar>
   );

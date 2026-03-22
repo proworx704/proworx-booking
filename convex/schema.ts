@@ -325,6 +325,26 @@ const schema = defineSchema({
       type: v.union(v.literal("text"), v.literal("textarea"), v.literal("html")),
     })),
   }).index("by_slug", ["slug"]),
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // USER PROFILES — Role-based access control
+  // ═══════════════════════════════════════════════════════════════════════
+
+  userProfiles: defineTable({
+    userId: v.id("users"),
+    role: v.union(
+      v.literal("owner"),    // Full access — Tyler
+      v.literal("admin"),    // Full access — managers
+      v.literal("employee"), // Employee portal only
+    ),
+    displayName: v.string(),
+    staffId: v.optional(v.id("staff")),             // Link to staff table
+    payrollWorkerId: v.optional(v.id("payrollWorkers")), // Link to payroll worker
+  })
+    .index("by_user", ["userId"])
+    .index("by_role", ["role"])
+    .index("by_staff", ["staffId"])
+    .index("by_worker", ["payrollWorkerId"]),
 });
 
 export default schema;

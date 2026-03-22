@@ -1,5 +1,6 @@
 import { useConvexAuth } from "convex/react";
 import { Navigate, Outlet } from "react-router-dom";
+import { RoleProvider } from "@/contexts/RoleContext";
 import {
   Sidebar,
   SidebarContent,
@@ -74,5 +75,9 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <RoleProvider>
+      <Outlet />
+    </RoleProvider>
+  );
 }

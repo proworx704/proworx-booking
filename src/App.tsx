@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
+import { AdminRoute } from "./components/AdminRoute";
 import { AppLayout } from "./components/AppLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -62,34 +63,38 @@ function App() {
             </Route>
           </Route>
 
-          {/* Admin pages (auth required) */}
+          {/* Authenticated pages */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/calendar" element={<CalendarViewPage />} />
-              <Route path="/bookings" element={<BookingsPage />} />
-              <Route path="/bookings/:id" element={<BookingDetailPage />} />
-              <Route path="/customers" element={<CustomersPage />} />
-              <Route path="/customers/:id" element={<CustomerDetailPage />} />
-              <Route path="/staff" element={<StaffPage />} />
-              <Route path="/staff/:id" element={<StaffDetailPage />} />
-              <Route path="/catalog" element={<CatalogPage />} />
-              <Route path="/services" element={<ServicesPage />} />
-              <Route path="/availability" element={<AvailabilityPage />} />
-              <Route path="/schedule-blocks" element={<ScheduleBlocksPage />} />
-              <Route path="/service-freeze" element={<ServiceFreezePage />} />
-              <Route path="/receptionist" element={<ReceptionistPage />} />
-              <Route path="/payroll/workers" element={<PayrollWorkersPage />} />
-              <Route path="/payroll/time-entries" element={<PayrollTimeEntriesPage />} />
-              <Route path="/payroll/payouts" element={<PayrollPayoutsPage />} />
-              <Route path="/payroll/tax-settings" element={<PayrollTaxSettingsPage />} />
-              <Route path="/website" element={<WebsiteEditorPage />} />
-              <Route path="/team" element={<TeamPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              {/* Employee portal routes */}
+              {/* Employee portal routes (accessible by all roles) */}
               <Route path="/my/dashboard" element={<EmployeeDashboardPage />} />
               <Route path="/my/time-entries" element={<MyTimeEntriesPage />} />
               <Route path="/my/pay" element={<MyPayPage />} />
+
+              {/* Admin-only routes (employees redirected to /my/dashboard) */}
+              <Route element={<AdminRoute />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/calendar" element={<CalendarViewPage />} />
+                <Route path="/bookings" element={<BookingsPage />} />
+                <Route path="/bookings/:id" element={<BookingDetailPage />} />
+                <Route path="/customers" element={<CustomersPage />} />
+                <Route path="/customers/:id" element={<CustomerDetailPage />} />
+                <Route path="/staff" element={<StaffPage />} />
+                <Route path="/staff/:id" element={<StaffDetailPage />} />
+                <Route path="/catalog" element={<CatalogPage />} />
+                <Route path="/services" element={<ServicesPage />} />
+                <Route path="/availability" element={<AvailabilityPage />} />
+                <Route path="/schedule-blocks" element={<ScheduleBlocksPage />} />
+                <Route path="/service-freeze" element={<ServiceFreezePage />} />
+                <Route path="/receptionist" element={<ReceptionistPage />} />
+                <Route path="/payroll/workers" element={<PayrollWorkersPage />} />
+                <Route path="/payroll/time-entries" element={<PayrollTimeEntriesPage />} />
+                <Route path="/payroll/payouts" element={<PayrollPayoutsPage />} />
+                <Route path="/payroll/tax-settings" element={<PayrollTaxSettingsPage />} />
+                <Route path="/website" element={<WebsiteEditorPage />} />
+                <Route path="/team" element={<TeamPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Route>
             </Route>
           </Route>
 

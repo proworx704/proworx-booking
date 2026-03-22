@@ -169,6 +169,20 @@ function BookingBlock({ booking, isCompact }: { booking: Booking; isCompact: boo
 // ─── Schedule Block Overlay ───────────────────────────────────────────────────
 
 function ScheduleBlockOverlay({ block }: { block: ScheduleBlock }) {
+  // "all-day" means block the entire day
+  if (block.blockAfter === "all-day") {
+    return (
+      <div
+        className="absolute left-0 right-0 bg-rose-100/60 dark:bg-rose-900/20 border-t-2 border-rose-300 dark:border-rose-700 z-[5] pointer-events-none"
+        style={{ top: 0, height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}
+      >
+        <div className="px-1.5 py-1 text-[10px] sm:text-[11px] font-medium text-rose-600 dark:text-rose-400 truncate">
+          {block.reason || "Blocked — All Day"}
+        </div>
+      </div>
+    );
+  }
+
   const startMin = timeToMinutes(block.blockAfter);
   const endMin = HOUR_END * 60;
   const topOffset = ((startMin - HOUR_START * 60) / 60) * HOUR_HEIGHT;

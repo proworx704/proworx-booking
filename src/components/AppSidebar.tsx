@@ -39,9 +39,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -113,35 +110,54 @@ function NavLink({
   );
 }
 
-function NavSection({
-  label,
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        display: "block",
+        boxSizing: "border-box",
+        paddingTop: "12px",
+        paddingBottom: "4px",
+        paddingLeft: "12px",
+        paddingRight: "12px",
+        fontSize: "11px",
+        fontWeight: 500,
+        letterSpacing: "0.05em",
+        textTransform: "uppercase" as const,
+        color: "var(--sidebar-foreground)",
+        opacity: 0.5,
+        lineHeight: "1",
+        borderTop: "1px solid color-mix(in srgb, var(--sidebar-foreground) 10%, transparent)",
+        marginTop: "4px",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function NavItems({
   items,
   pathname,
 }: {
-  label: string;
   items: typeof mainNav;
   pathname: string;
 }) {
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>{label}</SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {items.map((item) => (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-              isActive={
-                pathname === item.href ||
-                pathname.startsWith(item.href + "/")
-              }
-            />
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+    <SidebarMenu>
+      {items.map((item) => (
+        <NavLink
+          key={item.href}
+          href={item.href}
+          label={item.label}
+          icon={item.icon}
+          isActive={
+            pathname === item.href ||
+            pathname.startsWith(item.href + "/")
+          }
+        />
+      ))}
+    </SidebarMenu>
   );
 }
 
@@ -151,31 +167,37 @@ function AdminSidebarNav() {
 
   return (
     <SidebarContent>
-      {/* Main — no label, first section */}
-      <SidebarGroup>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {mainNav.map((item) => (
-              <NavLink
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                icon={item.icon}
-                isActive={
-                  p === item.href ||
-                  (item.href === "/bookings" && p.startsWith("/bookings")) ||
-                  (item.href === "/customers" && p.startsWith("/customers")) ||
-                  (item.href === "/staff" && p.startsWith("/staff"))
-                }
-              />
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+      <div className="flex flex-col gap-0 p-2">
+        {/* Main nav — no label */}
+        <SidebarMenu>
+          {mainNav.map((item) => (
+            <NavLink
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              isActive={
+                p === item.href ||
+                (item.href === "/bookings" && p.startsWith("/bookings")) ||
+                (item.href === "/customers" && p.startsWith("/customers")) ||
+                (item.href === "/staff" && p.startsWith("/staff"))
+              }
+            />
+          ))}
+        </SidebarMenu>
 
-      <NavSection label="Payroll" items={payrollNav} pathname={p} />
-      <NavSection label="Tools" items={toolsNav} pathname={p} />
-      <NavSection label="Manage" items={manageNav} pathname={p} />
+        {/* Payroll section */}
+        <SectionLabel>Payroll</SectionLabel>
+        <NavItems items={payrollNav} pathname={p} />
+
+        {/* Tools section */}
+        <SectionLabel>Tools</SectionLabel>
+        <NavItems items={toolsNav} pathname={p} />
+
+        {/* Manage section */}
+        <SectionLabel>Manage</SectionLabel>
+        <NavItems items={manageNav} pathname={p} />
+      </div>
     </SidebarContent>
   );
 }
@@ -186,21 +208,19 @@ function EmployeeSidebarNav() {
 
   return (
     <SidebarContent>
-      <SidebarGroup>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {employeeNav.map((item) => (
-              <NavLink
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                icon={item.icon}
-                isActive={p === item.href || p.startsWith(item.href + "/")}
-              />
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+      <div className="flex flex-col gap-0 p-2">
+        <SidebarMenu>
+          {employeeNav.map((item) => (
+            <NavLink
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              isActive={p === item.href || p.startsWith(item.href + "/")}
+            />
+          ))}
+        </SidebarMenu>
+      </div>
     </SidebarContent>
   );
 }

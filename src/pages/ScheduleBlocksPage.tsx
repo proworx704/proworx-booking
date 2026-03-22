@@ -32,6 +32,13 @@ const DAY_NAMES = [
 ];
 
 const TIME_OPTIONS = [
+  "all-day",
+  "06:00",
+  "07:00",
+  "08:00",
+  "09:00",
+  "10:00",
+  "11:00",
   "12:00",
   "13:00",
   "14:00",
@@ -39,9 +46,13 @@ const TIME_OPTIONS = [
   "16:00",
   "17:00",
   "18:00",
+  "19:00",
+  "20:00",
+  "21:00",
 ];
 
 function formatTime12(t: string) {
+  if (t === "all-day") return "All Day";
   const [h, m] = t.split(":").map(Number);
   const ampm = h >= 12 ? "PM" : "AM";
   const hour = h % 12 || 12;
@@ -203,8 +214,8 @@ export function ScheduleBlocksPage() {
               </span>
               {isActive && (
                 <div className="flex items-center gap-2 ml-auto">
-                  <span className="text-xs text-muted-foreground">
-                    Stop after
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {dayConfig?.blockAfter === "all-day" ? "Blocked" : "Stop after"}
                   </span>
                   <Select
                     value={dayConfig?.blockAfter || "16:00"}

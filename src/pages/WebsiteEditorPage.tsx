@@ -85,6 +85,14 @@ function EditableField({
   );
 }
 
+const SITE_DEFAULTS: Record<string, string> = {
+  businessName: "ProWorx Mobile Detailing",
+  phone: "(704) 995-3299",
+  email: "detailing@proworxdetailing.com",
+  address: "Charlotte, NC",
+  serviceArea: "Charlotte Metro Area, NC",
+};
+
 export function WebsiteEditorPage() {
   const rawConfig = useQuery(api.siteConfig.getAll);
   const setMany = useMutation(api.siteConfig.setMany);
@@ -97,7 +105,8 @@ export function WebsiteEditorPage() {
 
   useEffect(() => {
     if (rawConfig && !loaded) {
-      setConfig(rawConfig);
+      // Merge defaults with saved values (saved values win)
+      setConfig({ ...SITE_DEFAULTS, ...rawConfig });
       setLoaded(true);
     }
   }, [rawConfig, loaded]);
@@ -191,7 +200,7 @@ export function WebsiteEditorPage() {
                 config={config}
                 onChange={updateField}
                 icon={<Mail className="h-3.5 w-3.5" />}
-                placeholder="info@proworxdetailing.com"
+                placeholder="detailing@proworxdetailing.com"
                 type="email"
               />
               <EditableField

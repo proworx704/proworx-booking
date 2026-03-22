@@ -230,6 +230,77 @@ const schema = defineSchema({
     .index("by_staff_date", ["staffId", "date"])
     .index("by_zip_date", ["zipCode", "date"])
     .index("by_square_booking_id", ["squareBookingId"]),
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // PAYROLL MODULE (ported from ProWorx Time Tracker)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  payrollWorkers: defineTable({
+    name: v.string(),
+    hourlyRate: v.number(),
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+    isActive: v.boolean(),
+  })
+    .index("by_active", ["isActive"])
+    .index("by_email", ["email"]),
+
+  payrollTimeEntries: defineTable({
+    workerId: v.id("payrollWorkers"),
+    date: v.string(), // YYYY-MM-DD
+    startTime: v.string(), // HH:mm (24hr)
+    endTime: v.string(), // HH:mm (24hr)
+    hoursWorked: v.number(), // auto-calculated
+    notes: v.optional(v.string()),
+    // Approval workflow
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+    ),
+    reviewedAt: v.optional(v.string()), // ISO timestamp
+    adminNotes: v.optional(v.string()),
+  })
+    .index("by_worker", ["workerId"])
+    .index("by_worker_date", ["workerId", "date"])
+    .index("by_date", ["date"])
+    .index("by_status", ["status"]),
+
+  payrollPayouts: defineTable({
+    workerId: v.id("payrollWorkers"),
+    weekStart: v.string(), // YYYY-MM-DD (Monday)
+    weekEnd: v.string(), // YYYY-MM-DD (Sunday)
+    totalHours: v.number(),
+    grossPay: v.number(),
+    federalTax: v.number(),
+    stateTax: v.number(),
+    socialSecurity: v.number(),
+    medicare: v.number(),
+    totalDeductions: v.number(),
+    netPay: v.number(),
+    payDate: v.string(), // following Thursday YYYY-MM-DD
+    isPaid: v.boolean(),
+    paidAt: v.optional(v.string()), // ISO timestamp when marked paid
+  })
+    .index("by_worker", ["workerId"])
+    .index("by_weekStart", ["weekStart"])
+    .index("by_worker_weekStart", ["workerId", "weekStart"]),
+
+  payrollTaxSettings: defineTable({
+    federalRate: v.number(), // percentage e.g. 10
+    stateRate: v.number(), // NC state tax percentage
+    socialSecurityRate: v.number(), // 6.2
+    medicareRate: v.number(), // 1.45
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // WEBSITE CMS MODULE (ported from ProWorx Website Admin)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  siteConfig: defineTable({
+    key: v.string(),
+    value: v.string(),
+  }).index("by_key", ["key"]),
 });
 
 export default schema;

@@ -5,17 +5,21 @@ import {
   CalendarClock,
   CalendarDays,
   Clock,
+  ClipboardList,
   Contact,
+  Globe,
   Headphones,
   LayoutDashboard,
   List,
   LogOut,
   Moon,
+  Receipt,
   Settings,
   Snowflake,
   Sparkles,
   Sun,
   Users,
+  Wallet,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -53,6 +57,17 @@ const mainNav = [
 
 const toolsNav = [
   { href: "/receptionist", label: "Receptionist", icon: Headphones },
+];
+
+const payrollNav = [
+  { href: "/payroll/workers", label: "Workers", icon: Users },
+  { href: "/payroll/time-entries", label: "Time Entries", icon: ClipboardList },
+  { href: "/payroll/payouts", label: "Payouts", icon: Wallet },
+  { href: "/payroll/tax-settings", label: "Tax Settings", icon: Receipt },
+];
+
+const websiteNav = [
+  { href: "/website", label: "Website Editor", icon: Globe },
 ];
 
 const manageNav = [
@@ -121,6 +136,38 @@ function SidebarNav() {
         <SidebarGroupContent>
           <SidebarMenu>
             {toolsNav.map((item) => (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+                isActive={location.pathname === item.href}
+              />
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel>Payroll</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {payrollNav.map((item) => (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+                isActive={location.pathname === item.href}
+              />
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel>Website</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {websiteNav.map((item) => (
               <NavLink
                 key={item.href}
                 href={item.href}

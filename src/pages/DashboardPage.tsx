@@ -1,4 +1,4 @@
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import {
   Calendar,
   CalendarCheck,
@@ -6,13 +6,19 @@ import {
   DollarSign,
   AlertCircle,
   MapPin,
+  Users,
+  ClipboardList,
+  Wallet,
+  Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "../../convex/_generated/api";
+import { formatCurrency, formatHours, getWeekStart } from "@/lib/dateUtils";
 
 function formatPrice(cents: number) {
   return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 0 })}`;
@@ -392,18 +398,135 @@ export function DashboardPage() {
       {/* ZIP Route Clustering */}
       <ZipClusterPanel />
 
+      {/* Payroll Summary */}
+      <PayrollSummaryPanel />
+
       {/* Quick Actions */}
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <Button asChild>
           <Link to="/bookings">View All Bookings</Link>
         </Button>
         <Button variant="outline" asChild>
-          <Link to="/services">Manage Services</Link>
+          <Link to="/payroll/time-entries">Payroll</Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link to="/website">Website Editor</Link>
         </Button>
         <Button variant="outline" asChild>
           <Link to="/availability">Set Availability</Link>
         </Button>
       </div>
     </div>
+  );
+}
+
+// ─── Payroll Summary Panel ──────────────────────────
+function PayrollSummaryPanel() {
+  const workers = useQuery(api.payrollWorkers.list) ?? [];
+  const payouts = useQuery(api.payrollPayouts.list) ?? [];
+  const pendingEntries = useQuery(api.payrollTimeEntries.listPending) ?? [];
+
+  const currentWeekStart = useMemo(() => getWeekStart(new Date()), []);
+  const currentWeekEnd = useMemo(() => {
+    const d = new Date(`${currentWeekStart}T12:00:00`);
+    d.setDate(d.getDate() + 6);
+    return d.toISOString().split("T")[0];
+  }, [currentWeekStart]);
+  const weekEntries = useQuery(api.payrollTimeEntries.listByWeek, {
+    weekStart: currentWeekStart,
+    weekEnd: currentWeekEnd,
+  }) ?? [];
+
+  const generatePayouts = useMutation(api.payrollPayouts.generate);
+
+  const activeWorkers = workers.filter((w) => w.isActive);
+  const unpaidPayouts = payouts.filter((p) => !p.isPaid);
+  const totalOwed = unpaidPayouts.reduce((s, p) => s + p.netPay, 0);
+  const weekHours = weekEntries.reduce((s, e) => s + e.hoursWorked, 0);
+
+  const handleGeneratePayouts = async () => {
+    try {
+      const result = await generatePayouts({
+        weekStart: currentWeekStart,
+        weekEnd: currentWeekEnd,
+      });
+      if (result.length === 0) {
+        toast.info("No approved time entries to generate payouts for this week");
+      } else {
+        toast.success(`Generated ${result.length} payout(s) for this week`);
+      }
+    } catch {
+      toast.error("Failed to generate payouts");
+    }
+  };
+
+  if (workers.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Wallet className="size-5" />
+              Payroll Summary
+            </CardTitle>
+            <CardDescription>
+              {activeWorkers.length} active worker{activeWorkers.length !== 1 ? "s" : ""}
+            </CardDescription>
+          </div>
+          <Button size="sm" variant="outline" onClick={handleGeneratePayouts}>
+            <Zap className="mr-1 h-3 w-3" />
+            Generate Payouts
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <ClipboardList className="h-3 w-3" />
+              This Week
+            </p>
+            <p className="text-xl font-bold">{formatHours(weekHours)}</p>
+            <p className="text-xs text-muted-foreground">{weekEntries.length} entries</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Pending Review
+            </p>
+            <p className="text-xl font-bold text-amber-600">{pendingEntries.length}</p>
+            {pendingEntries.length > 0 && (
+              <Link to="/payroll/time-entries" className="text-xs text-primary hover:underline">
+                Review →
+              </Link>
+            )}
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <DollarSign className="h-3 w-3" />
+              Unpaid
+            </p>
+            <p className="text-xl font-bold text-amber-600">
+              {formatCurrency(totalOwed)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {unpaidPayouts.length} payout{unpaidPayouts.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              Workers
+            </p>
+            <p className="text-xl font-bold">{activeWorkers.length}</p>
+            <Link to="/payroll/workers" className="text-xs text-primary hover:underline">
+              Manage →
+            </Link>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

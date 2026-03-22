@@ -31,6 +31,11 @@ import { MembershipPage } from "./pages/MembershipPage";
 import { ReceptionistPage } from "./pages/ReceptionistPage";
 import { CalendarViewPage } from "./pages/CalendarViewPage";
 import { ScheduleBlocksPage } from "./pages/ScheduleBlocksPage";
+import { PayrollWorkersPage } from "./pages/PayrollWorkersPage";
+import { PayrollTimeEntriesPage } from "./pages/PayrollTimeEntriesPage";
+import { PayrollPayoutsPage } from "./pages/PayrollPayoutsPage";
+import { PayrollTaxSettingsPage } from "./pages/PayrollTaxSettingsPage";
+import { WebsiteEditorPage } from "./pages/WebsiteEditorPage";
 
 function App() {
   return (
@@ -68,6 +73,11 @@ function App() {
               <Route path="/schedule-blocks" element={<ScheduleBlocksPage />} />
               <Route path="/service-freeze" element={<ServiceFreezePage />} />
               <Route path="/receptionist" element={<ReceptionistPage />} />
+              <Route path="/payroll/workers" element={<PayrollWorkersPage />} />
+              <Route path="/payroll/time-entries" element={<PayrollTimeEntriesPage />} />
+              <Route path="/payroll/payouts" element={<PayrollPayoutsPage />} />
+              <Route path="/payroll/tax-settings" element={<PayrollTaxSettingsPage />} />
+              <Route path="/website" element={<WebsiteEditorPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

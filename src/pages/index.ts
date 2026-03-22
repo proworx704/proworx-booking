@@ -14,3 +14,8 @@ export { FeedbackPage } from "./FeedbackPage";
 export { StaffPage } from "./StaffPage";
 export { StaffDetailPage } from "./StaffDetailPage";
 export { ServiceFreezePage } from "./ServiceFreezePage";
+export { PayrollWorkersPage } from "./PayrollWorkersPage";
+export { PayrollTimeEntriesPage } from "./PayrollTimeEntriesPage";
+export { PayrollPayoutsPage } from "./PayrollPayoutsPage";
+export { PayrollTaxSettingsPage } from "./PayrollTaxSettingsPage";
+export { WebsiteEditorPage } from "./WebsiteEditorPage";

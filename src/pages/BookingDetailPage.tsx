@@ -1,14 +1,19 @@
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import {
   ArrowLeft,
   Calendar,
   Car,
   CheckCircle2,
   Clock,
+  Copy,
   CreditCard,
   DollarSign,
+  ExternalLink,
+  Link2,
+  Loader2,
   Mail,
   MapPin,
+  MessageSquare,
   Navigation,
   Phone,
   Truck,
@@ -82,20 +87,80 @@ function PaymentDialog({
   bookingId,
   price,
   squarePaymentLinkUrl,
+  serviceName,
+  customerName,
+  confirmationCode,
 }: {
   bookingId: Id<"bookings">;
   price: number;
   squarePaymentLinkUrl?: string;
+  serviceName: string;
+  customerName: string;
+  confirmationCode: string;
 }) {
   const [open, setOpen] = useState(false);
   const [method, setMethod] = useState("card");
   const [amount, setAmount] = useState((price / 100).toFixed(2));
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [manualUrl, setManualUrl] = useState("");
+  const [showManualInput, setShowManualInput] = useState(false);
   const markPaid = useMutation(api.bookings.markPaid);
+  const createSquareLink = useAction(api.squarePayments.createPaymentLink);
+  const setManualLink = useMutation(api.squarePayments.setPaymentLinkManual);
+
+  const handleGenerateLink = async () => {
+    setIsGenerating(true);
+    try {
+      const result = await createSquareLink({
+        bookingId,
+        serviceName,
+        amountCents: Math.round(Number.parseFloat(amount) * 100),
+        customerName,
+        confirmationCode,
+      });
+      if (!result.success) {
+        alert("Could not generate link automatically. You can paste a Square link manually.");
+        setShowManualInput(true);
+      }
+    } catch (e) {
+      console.error("Failed to generate Square link:", e);
+      alert("Could not generate link automatically. You can paste a Square link manually.");
+      setShowManualInput(true);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSaveManualLink = async () => {
+    if (!manualUrl.trim()) return;
+    try {
+      await setManualLink({ bookingId, url: manualUrl.trim() });
+      setShowManualInput(false);
+      setManualUrl("");
+    } catch (e) {
+      console.error("Failed to save link:", e);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (squarePaymentLinkUrl) {
+      await navigator.clipboard.writeText(squarePaymentLinkUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    }
+  };
+
+  const handleTextLink = () => {
+    if (squarePaymentLinkUrl) {
+      const message = `Hi ${customerName.split(" ")[0]}! Here's your payment link for your ProWorx appointment: ${squarePaymentLinkUrl}`;
+      window.open(`sms:?body=${encodeURIComponent(message)}`, "_blank");
+    }
+  };
 
   const handlePayment = async () => {
     if (method === "card" && squarePaymentLinkUrl) {
-      // Open Square payment link and mark as paid
       window.open(squarePaymentLinkUrl, "_blank");
       setIsProcessing(true);
       try {
@@ -135,14 +200,15 @@ function PaymentDialog({
           Take Payment
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Process Payment</DialogTitle>
           <DialogDescription>
-            Record payment for this appointment
+            {formatPrice(price)} for {serviceName}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-2">
+          {/* Payment Method Selector */}
           <div className="space-y-2">
             <Label>Payment Method</Label>
             <Select value={method} onValueChange={setMethod}>
@@ -154,41 +220,116 @@ function PaymentDialog({
                   💳 Credit/Debit Card (Square)
                 </SelectItem>
                 <SelectItem value="cash">💵 Cash</SelectItem>
-                <SelectItem value="zelle">Zelle</SelectItem>
-                <SelectItem value="venmo">Venmo</SelectItem>
-                <SelectItem value="paypal">PayPal</SelectItem>
-                <SelectItem value="check">Check</SelectItem>
+                <SelectItem value="zelle">⚡ Zelle</SelectItem>
+                <SelectItem value="venmo">💜 Venmo</SelectItem>
+                <SelectItem value="paypal">🅿️ PayPal</SelectItem>
+                <SelectItem value="check">📝 Check</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {method === "card" && squarePaymentLinkUrl && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-              <p className="font-medium text-blue-700 flex items-center gap-1">
-                <svg className="size-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm4 3h6v2H9V8zm0 4h6v2H9v-2z" />
-                </svg>
-                Square Payment Link ready
-              </p>
-              <p className="text-blue-600 mt-1">
-                Clicking &quot;Pay with Square&quot; will open the Square checkout page
-                for the customer.
-              </p>
+          {/* Square Card Section */}
+          {method === "card" && (
+            <div className="space-y-3">
+              {squarePaymentLinkUrl ? (
+                <>
+                  {/* Square link ready */}
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="font-medium text-green-700 flex items-center gap-1.5 text-sm">
+                      <CheckCircle2 className="size-4" />
+                      Square Payment Link Ready
+                    </p>
+                    <p className="text-xs text-green-600 mt-1 truncate">
+                      {squarePaymentLinkUrl}
+                    </p>
+                  </div>
+                  {/* Quick actions for the link */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={handleCopyLink}
+                    >
+                      {linkCopied ? (
+                        <CheckCircle2 className="size-3.5 mr-1.5 text-green-500" />
+                      ) : (
+                        <Copy className="size-3.5 mr-1.5" />
+                      )}
+                      {linkCopied ? "Copied!" : "Copy Link"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={handleTextLink}
+                    >
+                      <MessageSquare className="size-3.5 mr-1.5" />
+                      Text to Customer
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(squarePaymentLinkUrl, "_blank")}
+                    >
+                      <ExternalLink className="size-3.5" />
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* No Square link yet */}
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="font-medium text-blue-700 text-sm flex items-center gap-1.5">
+                      <Link2 className="size-4" />
+                      Generate a Square checkout link
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Creates a payment link you can text to the customer or open on their phone.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="flex-1"
+                      onClick={handleGenerateLink}
+                      disabled={isGenerating}
+                    >
+                      {isGenerating ? (
+                        <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <CreditCard className="size-3.5 mr-1.5" />
+                      )}
+                      {isGenerating ? "Generating..." : "Generate Square Link"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowManualInput(!showManualInput)}
+                    >
+                      Paste Link
+                    </Button>
+                  </div>
+                  {showManualInput && (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="https://square.link/u/..."
+                        value={manualUrl}
+                        onChange={(e) => setManualUrl(e.target.value)}
+                        className="text-sm"
+                      />
+                      <Button size="sm" onClick={handleSaveManualLink} disabled={!manualUrl.trim()}>
+                        Save
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 
-          {method === "card" && !squarePaymentLinkUrl && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
-              <p className="font-medium text-amber-700">
-                ⏳ Square link not generated yet
-              </p>
-              <p className="text-amber-600 mt-1">
-                Payment will be recorded manually. Ask Viktor to generate a
-                Square payment link for this booking.
-              </p>
-            </div>
-          )}
-
+          {/* Amount */}
           <div className="space-y-2">
             <Label>Amount</Label>
             <div className="relative">
@@ -211,8 +352,10 @@ function PaymentDialog({
             {isProcessing
               ? "Processing..."
               : method === "card" && squarePaymentLinkUrl
-                ? "Pay with Square →"
-                : "Confirm Payment"}
+                ? "Open Square Checkout →"
+                : method === "card"
+                  ? "Record Card Payment"
+                  : "Confirm Payment"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -554,8 +697,11 @@ export function BookingDetailPage() {
                   </div>
                   <PaymentDialog
                     bookingId={booking._id}
-                    price={booking.price}
+                    price={booking.totalPrice || booking.price}
                     squarePaymentLinkUrl={booking.squarePaymentLinkUrl}
+                    serviceName={booking.serviceName}
+                    customerName={booking.customerName}
+                    confirmationCode={booking.confirmationCode}
                   />
                 </div>
               )}

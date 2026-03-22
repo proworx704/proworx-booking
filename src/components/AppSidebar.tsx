@@ -228,9 +228,7 @@ function SidebarHeaderContent() {
         onClick={() => setOpenMobile(false)}
         className="flex items-center gap-2.5 px-2 py-1 font-semibold text-lg"
       >
-        <div className="size-8 rounded-lg bg-blue-600 flex items-center justify-center">
-          <Calendar className="size-4 text-white" />
-        </div>
+        <img src="/favicon-192.png" alt="ProWorx" className="size-8 rounded-lg" />
         <span>{APP_NAME}</span>
       </Link>
     </SidebarHeader>

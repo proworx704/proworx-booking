@@ -131,6 +131,8 @@ export const update = mutation({
     sortOrder: v.optional(v.number()),
     deposit: v.optional(v.number()),
     popular: v.optional(v.boolean()),
+    features: v.optional(v.array(v.string())),
+    subscriptionUrl: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...updates }) => {
     const filtered = Object.fromEntries(

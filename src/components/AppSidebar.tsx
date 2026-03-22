@@ -55,10 +55,6 @@ const mainNav = [
   { href: "/staff", label: "Staff", icon: Users },
 ];
 
-const toolsNav = [
-  { href: "/receptionist", label: "Receptionist", icon: Headphones },
-];
-
 const payrollNav = [
   { href: "/payroll/workers", label: "Workers", icon: Users },
   { href: "/payroll/time-entries", label: "Time Entries", icon: ClipboardList },
@@ -66,7 +62,8 @@ const payrollNav = [
   { href: "/payroll/tax-settings", label: "Tax Settings", icon: Receipt },
 ];
 
-const websiteNav = [
+const toolsNav = [
+  { href: "/receptionist", label: "Receptionist", icon: Headphones },
   { href: "/website", label: "Website Editor", icon: Globe },
 ];
 
@@ -132,22 +129,6 @@ function SidebarNav() {
         </SidebarGroupContent>
       </SidebarGroup>
       <SidebarGroup>
-        <SidebarGroupLabel>Tools</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {toolsNav.map((item) => (
-              <NavLink
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                icon={item.icon}
-                isActive={location.pathname === item.href}
-              />
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-      <SidebarGroup>
         <SidebarGroupLabel>Payroll</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
@@ -164,10 +145,10 @@ function SidebarNav() {
         </SidebarGroupContent>
       </SidebarGroup>
       <SidebarGroup>
-        <SidebarGroupLabel>Website</SidebarGroupLabel>
+        <SidebarGroupLabel>Tools</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {websiteNav.map((item) => (
+            {toolsNav.map((item) => (
               <NavLink
                 key={item.href}
                 href={item.href}

@@ -164,7 +164,10 @@ export function MembershipPage() {
           <div className="grid sm:grid-cols-3 gap-6 mb-12">
             {memberships.map((item) => {
               const price = item.variants[0]?.price ?? 0;
-              const features = TIER_FEATURES[item.slug] ?? [];
+              const features = (item as any).features?.length
+                ? (item as any).features as string[]
+                : TIER_FEATURES[item.slug] ?? [];
+              const subUrl = (item as any).subscriptionUrl as string | undefined;
               const gradient = TIER_GRADIENTS[item.slug] ?? "from-gray-500 to-gray-400";
               const accent = TIER_ACCENT[item.slug] ?? "";
 
@@ -219,9 +222,15 @@ export function MembershipPage() {
                       className={`w-full ${item.popular ? "" : "variant-outline"}`}
                       variant={item.popular ? "default" : "outline"}
                     >
-                      <a href={`tel:${BUSINESS_PHONE}`}>
-                        <Phone className="size-4 mr-1" /> Call to Join
-                      </a>
+                      {subUrl ? (
+                        <a href={subUrl} target="_blank" rel="noopener noreferrer">
+                          <ArrowRight className="size-4 mr-1" /> Subscribe Now
+                        </a>
+                      ) : (
+                        <a href={`tel:${BUSINESS_PHONE}`}>
+                          <Phone className="size-4 mr-1" /> Call to Join
+                        </a>
+                      )}
                     </Button>
                   </CardContent>
                 </Card>

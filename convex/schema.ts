@@ -45,6 +45,8 @@ const schema = defineSchema({
     sortOrder: v.number(),
     deposit: v.optional(v.number()), // cents — for ceramic coating packages
     popular: v.optional(v.boolean()),
+    features: v.optional(v.array(v.string())), // feature bullet points (memberships)
+    subscriptionUrl: v.optional(v.string()), // subscription/sign-up link (memberships)
   })
     .index("by_category", ["category"])
     .index("by_slug", ["slug"])

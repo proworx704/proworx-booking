@@ -64,6 +64,10 @@ const CATEGORIES = [
   { value: "interiorAddon", label: "Interior Add-Ons" },
   { value: "exteriorAddon", label: "Exterior Add-Ons" },
   { value: "ceramicAddon", label: "Ceramic Add-Ons" },
+  { value: "boatDetailing", label: "Boat Detailing" },
+  { value: "boatCeramic", label: "Boat Ceramic" },
+  { value: "boatAddon", label: "Boat Add-Ons" },
+  { value: "membership", label: "Maintenance Memberships" },
 ] as const;
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -73,6 +77,10 @@ const CATEGORY_COLORS: Record<string, string> = {
   interiorAddon: "bg-green-100 text-green-800 border-green-200",
   exteriorAddon: "bg-cyan-100 text-cyan-800 border-cyan-200",
   ceramicAddon: "bg-pink-100 text-pink-800 border-pink-200",
+  boatDetailing: "bg-sky-100 text-sky-800 border-sky-200",
+  boatCeramic: "bg-indigo-100 text-indigo-800 border-indigo-200",
+  boatAddon: "bg-teal-100 text-teal-800 border-teal-200",
+  membership: "bg-amber-100 text-amber-800 border-amber-200",
 };
 
 function formatPrice(cents: number) {

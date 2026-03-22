@@ -128,8 +128,9 @@ function SidebarNav() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup className="pt-4">
-        <SidebarGroupLabel>Payroll</SidebarGroupLabel>
+      <SidebarGroup>
+        <div className="border-t border-sidebar-border mx-2 mb-1" />
+        <SidebarGroupLabel className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50 px-3 pb-1">Payroll</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             {payrollNav.map((item) => (
@@ -144,8 +145,9 @@ function SidebarNav() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup className="pt-4">
-        <SidebarGroupLabel>Tools</SidebarGroupLabel>
+      <SidebarGroup>
+        <div className="border-t border-sidebar-border mx-2 mb-1" />
+        <SidebarGroupLabel className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50 px-3 pb-1">Tools</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             {toolsNav.map((item) => (
@@ -160,8 +162,9 @@ function SidebarNav() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup className="pt-4">
-        <SidebarGroupLabel>Manage</SidebarGroupLabel>
+      <SidebarGroup>
+        <div className="border-t border-sidebar-border mx-2 mb-1" />
+        <SidebarGroupLabel className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50 px-3 pb-1">Manage</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             {manageNav.map((item) => (

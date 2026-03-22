@@ -303,6 +303,28 @@ const schema = defineSchema({
     key: v.string(),
     value: v.string(),
   }).index("by_key", ["key"]),
+
+  // Site photos — images used on the public website
+  sitePhotos: defineTable({
+    storageId: v.id("_storage"),
+    url: v.string(),
+    filename: v.string(),
+    section: v.string(), // e.g. "hero", "gallery", "about", "services", "boats", "memberships"
+    alt: v.optional(v.string()),
+    sortOrder: v.number(),
+  }).index("by_section", ["section", "sortOrder"]),
+
+  // Site pages — editable text content for all website pages
+  sitePages: defineTable({
+    slug: v.string(), // e.g. "home", "services", "boat-detailing", "memberships", "about"
+    title: v.string(),
+    sections: v.array(v.object({
+      key: v.string(),
+      label: v.string(),
+      content: v.string(),
+      type: v.union(v.literal("text"), v.literal("textarea"), v.literal("html")),
+    })),
+  }).index("by_slug", ["slug"]),
 });
 
 export default schema;

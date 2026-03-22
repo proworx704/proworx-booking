@@ -183,7 +183,7 @@ export const seed = mutation({
       },
       {
         name: "Standard Interior Only",
-        slug: "standard-interior",
+        slug: "standard-interior-only",
         description: "Complete interior detail — vacuum, shampoo, wipe-down, glass, and light stain treatment.",
         category: "core",
         variants: [
@@ -197,7 +197,7 @@ export const seed = mutation({
       },
       {
         name: "Standard Exterior Only",
-        slug: "standard-exterior",
+        slug: "standard-exterior-only",
         description: "Professional exterior refresh — hand wash, wheels, glass, and light spray wax.",
         category: "core",
         variants: [

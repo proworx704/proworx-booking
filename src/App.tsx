@@ -1,5 +1,4 @@
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { AppLayout } from "./components/AppLayout";
 import ErrorBoundary from "./components/ErrorBoundary";

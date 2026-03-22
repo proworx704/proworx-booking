@@ -4,6 +4,7 @@ import {
   CalendarCheck,
   CalendarClock,
   CalendarDays,
+  ChevronRight,
   Clock,
   ClipboardList,
   Contact,
@@ -27,6 +28,11 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useUserRole } from "@/contexts/RoleContext";
 import { APP_NAME } from "@/lib/constants";
 import { api } from "../../convex/_generated/api";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "./ui/collapsible";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import {
   DropdownMenu,
@@ -43,6 +49,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from "./ui/sidebar";
 
@@ -54,10 +63,10 @@ const mainNav = [
   { href: "/bookings", label: "Bookings", icon: CalendarCheck },
   { href: "/customers", label: "Clients", icon: Contact },
   { href: "/staff", label: "Staff", icon: Users },
-  { href: "/team", label: "Team Accounts", icon: UserCog },
 ];
 
 const payrollNav = [
+  { href: "/team", label: "Team Accounts", icon: UserCog },
   { href: "/payroll/workers", label: "Workers", icon: Users },
   { href: "/payroll/time-entries", label: "Time Entries", icon: ClipboardList },
   { href: "/payroll/payouts", label: "Payouts", icon: Wallet },
@@ -85,6 +94,8 @@ const employeeNav = [
 
 // ─── Components ──────────────────────────────────────────────────────────────
 
+type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
+
 function NavLink({
   href,
   label,
@@ -110,54 +121,56 @@ function NavLink({
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        display: "block",
-        boxSizing: "border-box",
-        paddingTop: "12px",
-        paddingBottom: "4px",
-        paddingLeft: "12px",
-        paddingRight: "12px",
-        fontSize: "11px",
-        fontWeight: 500,
-        letterSpacing: "0.05em",
-        textTransform: "uppercase" as const,
-        color: "var(--sidebar-foreground)",
-        opacity: 0.5,
-        lineHeight: "1",
-        borderTop: "1px solid color-mix(in srgb, var(--sidebar-foreground) 10%, transparent)",
-        marginTop: "4px",
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function NavItems({
+function CollapsibleNavSection({
+  label,
+  icon: SectionIcon,
   items,
   pathname,
 }: {
-  items: typeof mainNav;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: NavItem[];
   pathname: string;
 }) {
+  const { setOpenMobile } = useSidebar();
+
+  // Auto-expand if current page is in this section
+  const isActiveSection = items.some(
+    (item) =>
+      pathname === item.href || pathname.startsWith(item.href + "/"),
+  );
+
   return (
-    <SidebarMenu>
-      {items.map((item) => (
-        <NavLink
-          key={item.href}
-          href={item.href}
-          label={item.label}
-          icon={item.icon}
-          isActive={
-            pathname === item.href ||
-            pathname.startsWith(item.href + "/")
-          }
-        />
-      ))}
-    </SidebarMenu>
+    <Collapsible defaultOpen={isActiveSection} className="group/collapsible">
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton className="font-medium">
+            <SectionIcon />
+            <span>{label}</span>
+            <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {items.map((item) => {
+              const isActive =
+                pathname === item.href ||
+                pathname.startsWith(item.href + "/");
+              return (
+                <SidebarMenuSubItem key={item.href}>
+                  <SidebarMenuSubButton asChild isActive={isActive}>
+                    <Link to={item.href} onClick={() => setOpenMobile(false)}>
+                      <item.icon className="size-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              );
+            })}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
   );
 }
 
@@ -167,37 +180,43 @@ function AdminSidebarNav() {
 
   return (
     <SidebarContent>
-      <div className="flex flex-col gap-0 p-2">
-        {/* Main nav — no label */}
-        <SidebarMenu>
-          {mainNav.map((item) => (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-              isActive={
-                p === item.href ||
-                (item.href === "/bookings" && p.startsWith("/bookings")) ||
-                (item.href === "/customers" && p.startsWith("/customers")) ||
-                (item.href === "/staff" && p.startsWith("/staff"))
-              }
-            />
-          ))}
-        </SidebarMenu>
+      <SidebarMenu className="px-2 py-2 gap-1">
+        {/* Main nav — always visible */}
+        {mainNav.map((item) => (
+          <NavLink
+            key={item.href}
+            href={item.href}
+            label={item.label}
+            icon={item.icon}
+            isActive={
+              p === item.href ||
+              (item.href === "/bookings" && p.startsWith("/bookings")) ||
+              (item.href === "/customers" && p.startsWith("/customers")) ||
+              (item.href === "/staff" && p.startsWith("/staff"))
+            }
+          />
+        ))}
 
-        {/* Payroll section */}
-        <SectionLabel>Payroll</SectionLabel>
-        <NavItems items={payrollNav} pathname={p} />
-
-        {/* Tools section */}
-        <SectionLabel>Tools</SectionLabel>
-        <NavItems items={toolsNav} pathname={p} />
-
-        {/* Manage section */}
-        <SectionLabel>Manage</SectionLabel>
-        <NavItems items={manageNav} pathname={p} />
-      </div>
+        {/* Collapsible sections */}
+        <CollapsibleNavSection
+          label="Payroll"
+          icon={Wallet}
+          items={payrollNav}
+          pathname={p}
+        />
+        <CollapsibleNavSection
+          label="Tools"
+          icon={Headphones}
+          items={toolsNav}
+          pathname={p}
+        />
+        <CollapsibleNavSection
+          label="Manage"
+          icon={Settings}
+          items={manageNav}
+          pathname={p}
+        />
+      </SidebarMenu>
     </SidebarContent>
   );
 }
@@ -208,19 +227,17 @@ function EmployeeSidebarNav() {
 
   return (
     <SidebarContent>
-      <div className="flex flex-col gap-0 p-2">
-        <SidebarMenu>
-          {employeeNav.map((item) => (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-              isActive={p === item.href || p.startsWith(item.href + "/")}
-            />
-          ))}
-        </SidebarMenu>
-      </div>
+      <SidebarMenu className="px-2 py-2 gap-1">
+        {employeeNav.map((item) => (
+          <NavLink
+            key={item.href}
+            href={item.href}
+            label={item.label}
+            icon={item.icon}
+            isActive={p === item.href || p.startsWith(item.href + "/")}
+          />
+        ))}
+      </SidebarMenu>
     </SidebarContent>
   );
 }

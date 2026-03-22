@@ -14,7 +14,7 @@ import {
   User,
   Zap,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -626,6 +626,16 @@ function DateTimeStep({
   onSelectDate: (date: string) => void;
   onSelectTime: (time: string) => void;
 }) {
+  // Session variable: track ZIP changes to reset date/time when user edits ZIP and returns
+  const prevZipRef = useRef(data.zipCode);
+  useEffect(() => {
+    if (prevZipRef.current && prevZipRef.current !== data.zipCode) {
+      onSelectDate("");
+      onSelectTime("");
+    }
+    prevZipRef.current = data.zipCode;
+  }, [data.zipCode, onSelectDate, onSelectTime]);
+
   const totalDuration =
     data.baseDuration +
     data.addons.reduce((s, a) => s + a.durationMin, 0);

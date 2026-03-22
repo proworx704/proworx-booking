@@ -17,7 +17,7 @@ import {
   User,
   Zap,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -642,6 +642,17 @@ function ScheduleStep({
   onDateChange: (v: string) => void;
   onTimeChange: (v: string) => void;
 }) {
+  // Session variable: track ZIP changes to reset date/time selection
+  const prevZipRef = useRef(zip);
+  useEffect(() => {
+    if (prevZipRef.current && prevZipRef.current !== zip) {
+      // ZIP changed (user went back and edited it) — clear stale selection
+      onDateChange("");
+      onTimeChange("");
+    }
+    prevZipRef.current = zip;
+  }, [zip, onDateChange, onTimeChange]);
+
   const slots = useQuery(
     api.availability.getAvailableSlots,
     date ? { date, durationMinutes: duration, zipCode: zip || undefined } : "skip",

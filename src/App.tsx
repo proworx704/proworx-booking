@@ -42,6 +42,7 @@ import { EmployeeDashboardPage } from "./pages/EmployeeDashboardPage";
 import { TeamPage } from "./pages/TeamPage";
 import { MyTimeEntriesPage } from "./pages/MyTimeEntriesPage";
 import { MyPayPage } from "./pages/MyPayPage";
+import { StandaloneReceptionistPage } from "./pages/StandaloneReceptionistPage";
 
 function App() {
   return (
@@ -98,8 +99,9 @@ function App() {
             </Route>
           </Route>
 
-          {/* Public standalone intake page — shareable link, no login needed */}
+          {/* Public standalone pages — shareable links, no login needed */}
           <Route path="/intake" element={<IntakePage />} />
+          <Route path="/reception" element={<StandaloneReceptionistPage />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

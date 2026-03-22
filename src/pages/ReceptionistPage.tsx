@@ -805,7 +805,7 @@ function ScheduleStep({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export function ReceptionistPage() {
+export function ReceptionistPage({ standalone = false }: { standalone?: boolean }) {
   const navigate = useNavigate();
   const catalog = useQuery(api.catalog.listActive, {});
   const createBooking = useMutation(api.bookings.create);
@@ -1045,7 +1045,23 @@ export function ReceptionistPage() {
       });
 
       toast.success("Booking created!", { description: `${serviceName} for ${customerName}` });
-      navigate("/bookings");
+      if (standalone) {
+        // Reset form for next booking in standalone mode
+        setStep("service");
+        setServiceType("");
+        setSubService("");
+        setVehicleSize("");
+        setBoatLength("");
+        setSelectedAddons([]);
+        setNotes("");
+        setCustomerName("");
+        setCustomerPhone("");
+        setCustomerEmail("");
+        setDate("");
+        setTime("");
+      } else {
+        navigate("/bookings");
+      }
     } catch (err) {
       toast.error("Failed to create booking", {
         description: err instanceof Error ? err.message : "Unknown error",

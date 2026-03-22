@@ -128,7 +128,7 @@ function SidebarNav() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup>
+      <SidebarGroup className="pt-4">
         <SidebarGroupLabel>Payroll</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
@@ -144,7 +144,7 @@ function SidebarNav() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup>
+      <SidebarGroup className="pt-4">
         <SidebarGroupLabel>Tools</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
@@ -160,7 +160,7 @@ function SidebarNav() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup>
+      <SidebarGroup className="pt-4">
         <SidebarGroupLabel>Manage</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>

@@ -19,7 +19,6 @@ import {
   Upload,
   BookOpen,
   X,
-  GripVertical,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";

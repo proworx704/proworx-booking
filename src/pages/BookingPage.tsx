@@ -137,7 +137,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const CORE_CATEGORIES = ["core", "paintCorrection", "ceramicCoating", "boatDetailing"];
-const ADDON_CATEGORIES = ["interiorAddon", "exteriorAddon", "ceramicAddon"];
+const ADDON_CATEGORIES = ["interiorAddon", "exteriorAddon", "ceramicAddon", "boatAddon"];
 
 // When a ceramic coating package is selected, only show ceramic-relevant add-ons
 const CERAMIC_ADDON_CATEGORIES = ["ceramicAddon"];
@@ -371,16 +371,21 @@ function AddonsStep({
   catalog: CatalogItem[] | undefined;
   selectedServiceCategory?: string;
 }) {
-  // When a ceramic coating package is selected, only show ceramic add-ons
+  // Filter add-ons based on service category
+  const BOAT_ADDON_CATEGORIES = ["boatAddon"];
   const allowedCategories =
     selectedServiceCategory === "ceramicCoating"
       ? CERAMIC_ADDON_CATEGORIES
-      : ADDON_CATEGORIES;
+      : selectedServiceCategory === "boatDetailing"
+        ? BOAT_ADDON_CATEGORIES
+        : ADDON_CATEGORIES.filter((c) => c !== "boatAddon");
 
   const defaultTab =
     selectedServiceCategory === "ceramicCoating"
       ? "ceramicAddon"
-      : "interiorAddon";
+      : selectedServiceCategory === "boatDetailing"
+        ? "boatAddon"
+        : "interiorAddon";
 
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
 

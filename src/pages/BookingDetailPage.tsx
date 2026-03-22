@@ -100,7 +100,7 @@ function PaymentDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [method, setMethod] = useState("card");
-  const [cardMode, setCardMode] = useState<"reader" | "link">("reader");
+  const [cardMode, setCardMode] = useState<"reader" | "link">("link");
   const [amount, setAmount] = useState((price / 100).toFixed(2));
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -123,35 +123,23 @@ function PaymentDialog({
       // Clipboard may not be available
     }
 
-    // Try opening Square POS app via deep link
-    // square-commerce-v1:// is the official Square POS URL scheme for iOS
+    // Open Square POS app — use the universal link that works on iOS/Android
+    // The squareup.com/register link opens the Square POS app if installed
     const noteText = `ProWorx ${confirmationCode} — ${serviceName} for ${customerName}`;
-    const posData = {
-      amount_money: {
-        amount: amountCents,
-        currency_code: "USD",
-      },
-      callback_url: window.location.href,
-      version: "1.3",
-      notes: noteText,
-      options: {
-        supported_tender_types: ["CREDIT_CARD", "CASH", "OTHER", "CARD_ON_FILE"],
-      },
-    };
-    const encodedData = encodeURIComponent(JSON.stringify(posData));
-
-    // Try the Square POS deep link first, fall back to just opening Square app
     try {
-      window.location.href = `square-commerce-v1://payment/create?data=${encodedData}`;
-    } catch {
-      // If deep link fails, try opening Square POS directly
-      window.open("https://squareup.com/dashboard/sales/transactions", "_blank");
-    }
+      await navigator.clipboard.writeText(amount);
+    } catch { /* ignore */ }
+
+    // Use the Square seller dashboard new-sale page which opens in Square POS on mobile
+    window.open(
+      `https://squareup.com/dashboard/sales/transactions/new?amount=${amountCents}&note=${encodeURIComponent(noteText)}`,
+      "_blank"
+    );
 
     // Show the confirmation UI after a short delay
     setTimeout(() => {
       setReaderOpened(true);
-    }, 1500);
+    }, 1000);
   };
 
   const handleGenerateLink = async () => {

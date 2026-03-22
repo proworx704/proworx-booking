@@ -626,6 +626,17 @@ export const listByDateRange = query({
 });
 
 /** Direct insert for bulk import — no service lookup, no customer creation */
+export const updateZipCode = mutation({
+  args: {
+    bookingId: v.id("bookings"),
+    zipCode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.bookingId, { zipCode: args.zipCode });
+    return true;
+  },
+});
+
 export const directInsert = mutation({
   args: {
     customerName: v.string(),

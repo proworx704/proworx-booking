@@ -624,3 +624,49 @@ export const listByDateRange = query({
       );
   },
 });
+
+/** Direct insert for bulk import — no service lookup, no customer creation */
+export const directInsert = mutation({
+  args: {
+    customerName: v.string(),
+    customerPhone: v.string(),
+    customerEmail: v.string(),
+    serviceAddress: v.string(),
+    serviceName: v.string(),
+    price: v.number(),
+    date: v.string(),
+    time: v.string(),
+    staffName: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("confirmed"),
+      v.literal("in_progress"),
+      v.literal("completed"),
+      v.literal("cancelled"),
+    ),
+    paymentStatus: v.union(
+      v.literal("unpaid"),
+      v.literal("paid"),
+      v.literal("refunded"),
+    ),
+    confirmationCode: v.string(),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("bookings", {
+      customerName: args.customerName,
+      customerPhone: args.customerPhone,
+      customerEmail: args.customerEmail,
+      serviceAddress: args.serviceAddress,
+      serviceName: args.serviceName,
+      price: args.price,
+      date: args.date,
+      time: args.time,
+      staffName: args.staffName,
+      status: args.status,
+      paymentStatus: args.paymentStatus,
+      confirmationCode: args.confirmationCode,
+      notes: args.notes,
+    });
+  },
+});

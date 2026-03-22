@@ -100,15 +100,64 @@ function PaymentDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [method, setMethod] = useState("card");
+  const [cardMode, setCardMode] = useState<"reader" | "link">("reader");
   const [amount, setAmount] = useState((price / 100).toFixed(2));
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [readerOpened, setReaderOpened] = useState(false);
   const [manualUrl, setManualUrl] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
   const markPaid = useMutation(api.bookings.markPaid);
   const createSquareLink = useAction(api.squarePayments.createPaymentLink);
   const setManualLink = useMutation(api.squarePayments.setPaymentLinkManual);
+
+  const amountCents = Math.round(Number.parseFloat(amount) * 100);
+  const amountFormatted = `$${Number.parseFloat(amount).toFixed(2)}`;
+
+  const handleChargeWithReader = async () => {
+    // Build Square POS deep link for iOS
+    const posData = {
+      amount_money: {
+        amount: amountCents.toString(),
+        currency_code: "USD",
+      },
+      callback_url: window.location.href,
+      client_id: "sq0idp-proworx-booking",
+      version: "1.3",
+      notes: `ProWorx ${confirmationCode} — ${serviceName} for ${customerName}`,
+      options: {
+        supported_tender_types: [
+          "CREDIT_CARD",
+          "CASH",
+          "OTHER",
+          "CARD_ON_FILE",
+        ],
+        auto_return: true,
+      },
+    };
+
+    const encodedData = encodeURIComponent(JSON.stringify(posData));
+    const iosUrl = `square-commerce-v1://payment/create?data=${encodedData}`;
+
+    // Also copy amount to clipboard as fallback
+    try {
+      await navigator.clipboard.writeText(amount);
+    } catch {
+      // Clipboard may not be available
+    }
+
+    // Try opening Square POS via deep link
+    // On iOS this opens Square POS with amount pre-filled
+    // If it fails, the user stays on this page and sees the fallback UI
+    window.location.href = iosUrl;
+
+    // Show "charged" confirmation UI after a short delay
+    // (if Square POS opened, user will leave; if not, they'll see fallback)
+    setTimeout(() => {
+      setReaderOpened(true);
+    }, 1500);
+  };
 
   const handleGenerateLink = async () => {
     setIsGenerating(true);
@@ -116,17 +165,21 @@ function PaymentDialog({
       const result = await createSquareLink({
         bookingId,
         serviceName,
-        amountCents: Math.round(Number.parseFloat(amount) * 100),
+        amountCents,
         customerName,
         confirmationCode,
       });
       if (!result.success) {
-        alert("Could not generate link automatically. You can paste a Square link manually.");
+        alert(
+          "Could not generate link automatically. You can paste a Square link manually."
+        );
         setShowManualInput(true);
       }
     } catch (e) {
       console.error("Failed to generate Square link:", e);
-      alert("Could not generate link automatically. You can paste a Square link manually.");
+      alert(
+        "Could not generate link automatically. You can paste a Square link manually."
+      );
       setShowManualInput(true);
     } finally {
       setIsGenerating(false);
@@ -159,31 +212,16 @@ function PaymentDialog({
     }
   };
 
-  const handlePayment = async () => {
-    if (method === "card" && squarePaymentLinkUrl) {
-      window.open(squarePaymentLinkUrl, "_blank");
-      setIsProcessing(true);
-      try {
-        await markPaid({
-          id: bookingId,
-          paymentMethod: "card",
-          paymentAmount: Math.round(Number.parseFloat(amount) * 100),
-        });
-        setOpen(false);
-      } finally {
-        setIsProcessing(false);
-      }
-      return;
-    }
-
+  const handleMarkPaid = async (payMethod: string) => {
     setIsProcessing(true);
     try {
       await markPaid({
         id: bookingId,
-        paymentMethod: method,
-        paymentAmount: Math.round(Number.parseFloat(amount) * 100),
+        paymentMethod: payMethod,
+        paymentAmount: amountCents,
       });
       setOpen(false);
+      setReaderOpened(false);
     } catch (e) {
       console.error("Payment failed:", e);
       alert("Payment recording failed");
@@ -192,8 +230,23 @@ function PaymentDialog({
     }
   };
 
+  const handlePayment = async () => {
+    if (method === "card" && squarePaymentLinkUrl && cardMode === "link") {
+      window.open(squarePaymentLinkUrl, "_blank");
+      await handleMarkPaid("card");
+      return;
+    }
+    await handleMarkPaid(method);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) setReaderOpened(false);
+      }}
+    >
       <DialogTrigger asChild>
         <Button className="w-full" size="lg">
           <CreditCard className="size-4 mr-2" />
@@ -231,100 +284,204 @@ function PaymentDialog({
           {/* Square Card Section */}
           {method === "card" && (
             <div className="space-y-3">
-              {squarePaymentLinkUrl ? (
-                <>
-                  {/* Square link ready */}
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="font-medium text-green-700 flex items-center gap-1.5 text-sm">
-                      <CheckCircle2 className="size-4" />
-                      Square Payment Link Ready
+              {/* Toggle: Reader vs Payment Link */}
+              <div className="flex rounded-lg border overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setCardMode("reader")}
+                  className={`flex-1 py-2.5 px-3 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                    cardMode === "reader"
+                      ? "bg-black text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <Phone className="size-3.5" />
+                  Charge with Reader
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCardMode("link")}
+                  className={`flex-1 py-2.5 px-3 text-sm font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                    cardMode === "link"
+                      ? "bg-black text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <Link2 className="size-3.5" />
+                  Payment Link
+                </button>
+              </div>
+
+              {/* READER MODE */}
+              {cardMode === "reader" && !readerOpened && (
+                <div className="space-y-3">
+                  <div className="p-4 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl text-white text-center">
+                    <p className="text-3xl font-bold tracking-tight">
+                      {amountFormatted}
                     </p>
-                    <p className="text-xs text-green-600 mt-1 truncate">
-                      {squarePaymentLinkUrl}
+                    <p className="text-gray-400 text-xs mt-1">
+                      {serviceName} — {customerName}
                     </p>
                   </div>
-                  {/* Quick actions for the link */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={handleCopyLink}
-                    >
-                      {linkCopied ? (
-                        <CheckCircle2 className="size-3.5 mr-1.5 text-green-500" />
-                      ) : (
-                        <Copy className="size-3.5 mr-1.5" />
+                  <Button
+                    className="w-full h-12 text-base font-semibold bg-black hover:bg-gray-800"
+                    onClick={handleChargeWithReader}
+                  >
+                    <Phone className="size-5 mr-2" />
+                    Open Square POS — {amountFormatted}
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Opens Square POS with {amountFormatted} ready to charge.
+                    <br />
+                    Tap to Pay, insert card, or swipe — tip prompt included.
+                  </p>
+                </div>
+              )}
+
+              {/* READER MODE — after opening Square POS */}
+              {cardMode === "reader" && readerOpened && (
+                <div className="space-y-3">
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                    <Loader2 className="size-6 text-amber-500 mx-auto mb-2 animate-spin" />
+                    <p className="font-medium text-amber-800">
+                      Waiting for payment in Square POS...
+                    </p>
+                    <p className="text-xs text-amber-600 mt-1">
+                      {amountFormatted} for {customerName}
+                    </p>
+                  </div>
+                  <Button
+                    className="w-full h-12 bg-green-600 hover:bg-green-700"
+                    onClick={() => handleMarkPaid("card")}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="size-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="size-5 mr-2" />
+                    )}
+                    {isProcessing
+                      ? "Recording..."
+                      : "I Charged in Square ✓"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-muted-foreground"
+                    onClick={() => setReaderOpened(false)}
+                  >
+                    ← Try again
+                  </Button>
+                </div>
+              )}
+
+              {/* LINK MODE */}
+              {cardMode === "link" && (
+                <div className="space-y-3">
+                  {squarePaymentLinkUrl ? (
+                    <>
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="font-medium text-green-700 flex items-center gap-1.5 text-sm">
+                          <CheckCircle2 className="size-4" />
+                          Square Payment Link Ready
+                        </p>
+                        <p className="text-xs text-green-600 mt-1 truncate">
+                          {squarePaymentLinkUrl}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={handleCopyLink}
+                        >
+                          {linkCopied ? (
+                            <CheckCircle2 className="size-3.5 mr-1.5 text-green-500" />
+                          ) : (
+                            <Copy className="size-3.5 mr-1.5" />
+                          )}
+                          {linkCopied ? "Copied!" : "Copy Link"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={handleTextLink}
+                        >
+                          <MessageSquare className="size-3.5 mr-1.5" />
+                          Text to Customer
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            window.open(squarePaymentLinkUrl, "_blank")
+                          }
+                        >
+                          <ExternalLink className="size-3.5" />
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="font-medium text-blue-700 text-sm flex items-center gap-1.5">
+                          <Link2 className="size-4" />
+                          Generate a Square checkout link
+                        </p>
+                        <p className="text-xs text-blue-600 mt-1">
+                          Creates a payment link you can text to the customer or
+                          open on their phone.
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="flex-1"
+                          onClick={handleGenerateLink}
+                          disabled={isGenerating}
+                        >
+                          {isGenerating ? (
+                            <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+                          ) : (
+                            <CreditCard className="size-3.5 mr-1.5" />
+                          )}
+                          {isGenerating
+                            ? "Generating..."
+                            : "Generate Square Link"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setShowManualInput(!showManualInput)
+                          }
+                        >
+                          Paste Link
+                        </Button>
+                      </div>
+                      {showManualInput && (
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="https://square.link/u/..."
+                            value={manualUrl}
+                            onChange={(e) => setManualUrl(e.target.value)}
+                            className="text-sm"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSaveManualLink}
+                            disabled={!manualUrl.trim()}
+                          >
+                            Save
+                          </Button>
+                        </div>
                       )}
-                      {linkCopied ? "Copied!" : "Copy Link"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={handleTextLink}
-                    >
-                      <MessageSquare className="size-3.5 mr-1.5" />
-                      Text to Customer
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(squarePaymentLinkUrl, "_blank")}
-                    >
-                      <ExternalLink className="size-3.5" />
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  {/* No Square link yet */}
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="font-medium text-blue-700 text-sm flex items-center gap-1.5">
-                      <Link2 className="size-4" />
-                      Generate a Square checkout link
-                    </p>
-                    <p className="text-xs text-blue-600 mt-1">
-                      Creates a payment link you can text to the customer or open on their phone.
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="flex-1"
-                      onClick={handleGenerateLink}
-                      disabled={isGenerating}
-                    >
-                      {isGenerating ? (
-                        <Loader2 className="size-3.5 mr-1.5 animate-spin" />
-                      ) : (
-                        <CreditCard className="size-3.5 mr-1.5" />
-                      )}
-                      {isGenerating ? "Generating..." : "Generate Square Link"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowManualInput(!showManualInput)}
-                    >
-                      Paste Link
-                    </Button>
-                  </div>
-                  {showManualInput && (
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="https://square.link/u/..."
-                        value={manualUrl}
-                        onChange={(e) => setManualUrl(e.target.value)}
-                        className="text-sm"
-                      />
-                      <Button size="sm" onClick={handleSaveManualLink} disabled={!manualUrl.trim()}>
-                        Save
-                      </Button>
-                    </div>
+                    </>
                   )}
-                </>
+                </div>
               )}
             </div>
           )}
@@ -348,15 +505,17 @@ function PaymentDialog({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handlePayment} disabled={isProcessing}>
-            {isProcessing
-              ? "Processing..."
-              : method === "card" && squarePaymentLinkUrl
-                ? "Open Square Checkout →"
-                : method === "card"
-                  ? "Record Card Payment"
-                  : "Confirm Payment"}
-          </Button>
+          {!(method === "card" && cardMode === "reader") && (
+            <Button onClick={handlePayment} disabled={isProcessing}>
+              {isProcessing
+                ? "Processing..."
+                : method === "card" && squarePaymentLinkUrl
+                  ? "Open Square Checkout →"
+                  : method === "card"
+                    ? "Record Card Payment"
+                    : "Confirm Payment"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

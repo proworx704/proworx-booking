@@ -292,7 +292,7 @@ function SidebarHeaderContent() {
 }
 
 export function AppSidebar() {
-  const { role, isEmployee } = useUserRole();
+  const { isEmployee } = useUserRole();
 
   return (
     <Sidebar>

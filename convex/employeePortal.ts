@@ -120,8 +120,22 @@ export const myWorkerInfo = query({
     const { profile } = await getEmployeeContext(ctx);
     if (!profile.payrollWorkerId) return null;
 
-    const worker = await ctx.db.get(profile.payrollWorkerId);
-    return worker;
+    const worker = await ctx.db.get(profile.payrollWorkerId) as {
+      name: string;
+      hourlyRate: number;
+      phone?: string;
+      email?: string;
+      isActive: boolean;
+    } | null;
+    if (!worker) return null;
+
+    return {
+      name: worker.name,
+      hourlyRate: worker.hourlyRate,
+      phone: worker.phone,
+      email: worker.email,
+      isActive: worker.isActive,
+    };
   },
 });
 

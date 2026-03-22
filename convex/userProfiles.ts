@@ -154,6 +154,35 @@ export const remove = mutation({
   },
 });
 
+/** List all registered users (for admin to assign roles) */
+export const listAllUsers = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const callerProfile = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (!callerProfile || (callerProfile.role !== "owner" && callerProfile.role !== "admin")) {
+      throw new Error("Access denied");
+    }
+
+    const allUsers = await ctx.db.query("users").collect();
+    const allProfiles = await ctx.db.query("userProfiles").collect();
+
+    const profileMap = new Map(allProfiles.map((p) => [p.userId as string, p]));
+
+    return allUsers.map((user) => ({
+      userId: user._id,
+      email: user.email,
+      name: user.name,
+      profile: profileMap.get(user._id as string) ?? null,
+    }));
+  },
+});
+
 /** Quick helper: set role for a user by email (used for seeding) */
 export const setRoleByEmail = mutation({
   args: {

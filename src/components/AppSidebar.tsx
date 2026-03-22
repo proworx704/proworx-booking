@@ -18,6 +18,7 @@ import {
   Snowflake,
   Sparkles,
   Sun,
+  UserCog,
   Users,
   Wallet,
 } from "lucide-react";
@@ -56,6 +57,7 @@ const mainNav = [
   { href: "/bookings", label: "Bookings", icon: CalendarCheck },
   { href: "/customers", label: "Clients", icon: Contact },
   { href: "/staff", label: "Staff", icon: Users },
+  { href: "/team", label: "Team Accounts", icon: UserCog },
 ];
 
 const payrollNav = [

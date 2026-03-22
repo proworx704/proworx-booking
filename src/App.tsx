@@ -38,6 +38,7 @@ import { PayrollPayoutsPage } from "./pages/PayrollPayoutsPage";
 import { PayrollTaxSettingsPage } from "./pages/PayrollTaxSettingsPage";
 import { WebsiteEditorPage } from "./pages/WebsiteEditorPage";
 import { EmployeeDashboardPage } from "./pages/EmployeeDashboardPage";
+import { TeamPage } from "./pages/TeamPage";
 import { MyTimeEntriesPage } from "./pages/MyTimeEntriesPage";
 import { MyPayPage } from "./pages/MyPayPage";
 
@@ -83,6 +84,7 @@ function App() {
               <Route path="/payroll/payouts" element={<PayrollPayoutsPage />} />
               <Route path="/payroll/tax-settings" element={<PayrollTaxSettingsPage />} />
               <Route path="/website" element={<WebsiteEditorPage />} />
+              <Route path="/team" element={<TeamPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               {/* Employee portal routes */}
               <Route path="/my/dashboard" element={<EmployeeDashboardPage />} />

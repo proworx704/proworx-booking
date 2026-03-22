@@ -309,3 +309,77 @@ export const getBlockedDatesInRange = query({
     return all.filter((d) => d.date >= startDate && d.date <= endDate);
   },
 });
+
+// ─── Tiered ZIP Clustering: find dates with same-ZIP bookings ─────────────────
+// Returns a map of dates → count of active bookings in that ZIP, for dates
+// within the given range. Used by the booking calendar to highlight "Tier 1"
+// recommended dates where route clustering is possible.
+export const getRecommendedDatesByZip = query({
+  args: {
+    zipCode: v.string(),
+    startDate: v.string(),
+    endDate: v.string(),
+  },
+  handler: async (ctx, { zipCode, startDate, endDate }) => {
+    const trimmedZip = zipCode.trim();
+    if (!trimmedZip || trimmedZip.length < 3) return {};
+
+    // Query bookings with this ZIP code
+    const bookings = await ctx.db
+      .query("bookings")
+      .withIndex("by_zip_date", (q) => q.eq("zipCode", trimmedZip))
+      .collect();
+
+    // Filter to date range and non-cancelled
+    const dateCounts: Record<string, number> = {};
+    for (const b of bookings) {
+      if (b.status === "cancelled") continue;
+      if (b.date >= startDate && b.date <= endDate) {
+        dateCounts[b.date] = (dateCounts[b.date] || 0) + 1;
+      }
+    }
+
+    return dateCounts;
+  },
+});
+
+// ─── Nearby ZIP clustering: find dates with bookings in nearby ZIPs ───────────
+// For Tier 1.5 — dates with bookings in the same ZIP prefix (first 3 digits).
+// This catches nearby areas when exact ZIP match isn't available.
+export const getNearbyZipDates = query({
+  args: {
+    zipCode: v.string(),
+    startDate: v.string(),
+    endDate: v.string(),
+  },
+  handler: async (ctx, { zipCode, startDate, endDate }) => {
+    const trimmedZip = zipCode.trim();
+    if (!trimmedZip || trimmedZip.length < 3) return {};
+
+    const prefix = trimmedZip.substring(0, 3);
+
+    // Get all active bookings in range with a zip code
+    const allBookings = await ctx.db
+      .query("bookings")
+      .withIndex("by_date")
+      .collect();
+
+    const dateCounts: Record<string, { count: number; zips: string[] }> = {};
+    for (const b of allBookings) {
+      if (b.status === "cancelled") continue;
+      if (!b.zipCode || b.zipCode === trimmedZip) continue; // skip exact matches (handled by getRecommendedDatesByZip)
+      if (b.date < startDate || b.date > endDate) continue;
+      if (b.zipCode.startsWith(prefix)) {
+        if (!dateCounts[b.date]) {
+          dateCounts[b.date] = { count: 0, zips: [] };
+        }
+        dateCounts[b.date].count++;
+        if (!dateCounts[b.date].zips.includes(b.zipCode)) {
+          dateCounts[b.date].zips.push(b.zipCode);
+        }
+      }
+    }
+
+    return dateCounts;
+  },
+});

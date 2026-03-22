@@ -644,6 +644,37 @@ function DateTimeStep({
   const availability = useQuery(api.availability.list);
   const blockedDates = useQuery(api.availability.listBlockedDates);
 
+  // Compute date range for next 60 days for ZIP clustering
+  const dateRange = useMemo(() => {
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() + 1);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 60);
+    return {
+      start: start.toISOString().split("T")[0],
+      end: end.toISOString().split("T")[0],
+    };
+  }, []);
+
+  // Tier 1: exact ZIP match dates
+  const zipDateCounts = useQuery(
+    api.availability.getRecommendedDatesByZip,
+    data.zipCode && data.zipCode.trim().length >= 3
+      ? { zipCode: data.zipCode.trim(), startDate: dateRange.start, endDate: dateRange.end }
+      : "skip",
+  );
+
+  // Tier 1.5: nearby ZIP (same 3-digit prefix) dates
+  const nearbyZipDates = useQuery(
+    api.availability.getNearbyZipDates,
+    data.zipCode && data.zipCode.trim().length >= 3
+      ? { zipCode: data.zipCode.trim(), startDate: dateRange.start, endDate: dateRange.end }
+      : "skip",
+  );
+
+  const hasZipClustering = !!(data.zipCode && data.zipCode.trim().length >= 3);
+
   const disabledDays = useMemo(() => {
     if (!availability) return [];
     return availability
@@ -669,6 +700,37 @@ function DateTimeStep({
     [disabledDays, blockedSet],
   );
 
+  // Calendar day modifiers for ZIP clustering highlights
+  const modifiers = useMemo(() => {
+    const exactDates: Date[] = [];
+    const nearbyDates: Date[] = [];
+    if (zipDateCounts) {
+      for (const d of Object.keys(zipDateCounts)) {
+        exactDates.push(new Date(d + "T12:00:00"));
+      }
+    }
+    if (nearbyZipDates) {
+      for (const d of Object.keys(nearbyZipDates)) {
+        nearbyDates.push(new Date(d + "T12:00:00"));
+      }
+    }
+    return { zipExact: exactDates, zipNearby: nearbyDates };
+  }, [zipDateCounts, nearbyZipDates]);
+
+  const modifiersStyles = {
+    zipExact: {
+      backgroundColor: "rgb(255 251 235)",
+      border: "2px solid rgb(245 158 11)",
+      borderRadius: "8px",
+      fontWeight: 700,
+    } as React.CSSProperties,
+    zipNearby: {
+      backgroundColor: "rgb(255 247 237)",
+      border: "2px solid rgb(251 191 36)",
+      borderRadius: "8px",
+    } as React.CSSProperties,
+  };
+
   return (
     <div className="space-y-4">
       <div className="text-center mb-6">
@@ -677,6 +739,24 @@ function DateTimeStep({
           Select an available appointment slot (~{formatDuration(totalDuration)})
         </p>
       </div>
+
+      {/* ZIP Clustering Legend */}
+      {hasZipClustering && (zipDateCounts && Object.keys(zipDateCounts).length > 0 || nearbyZipDates && Object.keys(nearbyZipDates).length > 0) && (
+        <div className="flex flex-wrap gap-3 justify-center text-xs">
+          {zipDateCounts && Object.keys(zipDateCounts).length > 0 && (
+            <span className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-300 rounded-full text-amber-800 font-medium">
+              <Zap className="size-3 text-amber-500" />
+              Same area ({data.zipCode})
+            </span>
+          )}
+          {nearbyZipDates && Object.keys(nearbyZipDates).length > 0 && (
+            <span className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-50 border border-amber-300 rounded-full text-orange-700 font-medium">
+              <MapPin className="size-3 text-orange-400" />
+              Nearby area
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex justify-center">
@@ -692,6 +772,8 @@ function DateTimeStep({
               }
             }}
             disabled={isDateDisabled}
+            modifiers={modifiers}
+            modifiersStyles={modifiersStyles}
             className="rounded-lg border shadow-sm"
           />
         </div>
@@ -702,6 +784,18 @@ function DateTimeStep({
               <h3 className="font-semibold mb-3 flex items-center gap-2">
                 <CalendarIcon className="size-4" />
                 {formatDate(data.date)}
+                {zipDateCounts && zipDateCounts[data.date] && (
+                  <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300 text-xs">
+                    <Zap className="size-3 mr-1" />
+                    {zipDateCounts[data.date]} same-area {zipDateCounts[data.date] === 1 ? "booking" : "bookings"}
+                  </Badge>
+                )}
+                {!zipDateCounts?.[data.date] && nearbyZipDates && nearbyZipDates[data.date] && (
+                  <Badge variant="secondary" className="bg-orange-50 text-orange-700 border-orange-300 text-xs">
+                    <MapPin className="size-3 mr-1" />
+                    Nearby area
+                  </Badge>
+                )}
               </h3>
               {slots === undefined ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">

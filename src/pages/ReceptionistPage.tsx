@@ -647,18 +647,16 @@ function ScheduleStep({
     date ? { date, durationMinutes: duration, zipCode: zip || undefined } : "skip",
   );
 
-  // Generate next 14 available dates
+  // Generate next 21 available dates (3 weeks out)
   const availableDates = useMemo(() => {
     const dates: string[] = [];
     const today = new Date();
-    // Start from tomorrow
     const start = new Date(today);
     start.setDate(start.getDate() + 1);
-    for (let i = 0; i < 30 && dates.length < 14; i++) {
+    for (let i = 0; i < 45 && dates.length < 21; i++) {
       const d = new Date(start);
       d.setDate(d.getDate() + i);
       const dayOfWeek = d.getDay();
-      // Skip Sunday (0) for now
       if (dayOfWeek !== 0) {
         const dateStr = d.toISOString().split("T")[0];
         dates.push(dateStr);
@@ -666,6 +664,49 @@ function ScheduleStep({
     }
     return dates;
   }, []);
+
+  // Date range for ZIP clustering query
+  const dateRange = useMemo(() => {
+    if (availableDates.length === 0) return null;
+    return { start: availableDates[0], end: availableDates[availableDates.length - 1] };
+  }, [availableDates]);
+
+  // Tier 1: exact ZIP match dates
+  const zipDateCounts = useQuery(
+    api.availability.getRecommendedDatesByZip,
+    zip && zip.trim().length >= 3 && dateRange
+      ? { zipCode: zip.trim(), startDate: dateRange.start, endDate: dateRange.end }
+      : "skip",
+  );
+
+  // Tier 1.5: nearby ZIP (same 3-digit prefix) dates
+  const nearbyZipDates = useQuery(
+    api.availability.getNearbyZipDates,
+    zip && zip.trim().length >= 3 && dateRange
+      ? { zipCode: zip.trim(), startDate: dateRange.start, endDate: dateRange.end }
+      : "skip",
+  );
+
+  // Split dates into tiers
+  const { tier1Dates, tier15Dates, tier2Dates } = useMemo(() => {
+    const t1: string[] = [];
+    const t15: string[] = [];
+    const t2: string[] = [];
+    for (const d of availableDates) {
+      if (zipDateCounts && zipDateCounts[d]) {
+        t1.push(d);
+      } else if (nearbyZipDates && nearbyZipDates[d]) {
+        t15.push(d);
+      } else {
+        t2.push(d);
+      }
+    }
+    return { tier1Dates: t1, tier15Dates: t15, tier2Dates: t2 };
+  }, [availableDates, zipDateCounts, nearbyZipDates]);
+
+  const hasZipClustering = !!(zip && zip.trim().length >= 3);
+  const hasTier1 = tier1Dates.length > 0;
+  const hasTier15 = tier15Dates.length > 0;
 
   const formatDateLabel = (dateStr: string) => {
     const d = new Date(dateStr + "T12:00:00");
@@ -681,44 +722,99 @@ function ScheduleStep({
     return `${h12}:${m.toString().padStart(2, "0")} ${ampm}`;
   };
 
-  // Separate recommended from regular
+  // Separate recommended from regular time slots
   const recommended = (slots || []).filter((s: { time: string; recommended: boolean }) => s.recommended);
   const regular = (slots || []).filter((s: { time: string; recommended: boolean }) => !s.recommended);
+
+  const DateButton = ({ d, tier }: { d: string; tier: "exact" | "nearby" | "other" }) => {
+    const isSelected = date === d;
+    const count = tier === "exact" ? (zipDateCounts as Record<string, number>)?.[d] : tier === "nearby" ? (nearbyZipDates as Record<string, { count: number; zips: string[] }>)?.[d]?.count : 0;
+    return (
+      <button
+        type="button"
+        onClick={() => { onDateChange(d); onTimeChange(""); }}
+        className={`rounded-lg border-2 p-2.5 text-center transition-all text-sm font-medium relative ${
+          isSelected
+            ? "border-blue-600 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 ring-2 ring-blue-300"
+            : tier === "exact"
+              ? "border-amber-300 bg-amber-50/60 dark:border-amber-700 dark:bg-amber-950/20 hover:border-amber-500 hover:bg-amber-50"
+              : tier === "nearby"
+                ? "border-orange-200 bg-orange-50/40 dark:border-orange-800 dark:bg-orange-950/10 hover:border-orange-400"
+                : "border-border hover:border-blue-300"
+        }`}
+      >
+        {formatDateLabel(d)}
+        {tier === "exact" && !!count && !isSelected && (
+          <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white text-[10px] font-bold rounded-full size-4 flex items-center justify-center">
+            {count}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div className="space-y-5">
       <div>
         <h2 className="text-xl font-bold mb-1">Schedule</h2>
         <p className="text-sm text-muted-foreground">
-          {zip
-            ? `Showing smart scheduling for ZIP ${zip}`
+          {hasZipClustering
+            ? `Smart scheduling for ZIP ${zip} — route-optimized dates shown first`
             : "Pick a date and time for this booking"}
         </p>
       </div>
 
-      {/* Date selection */}
-      <div className="space-y-2">
-        <Label className="font-semibold">Select Date</Label>
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-          {availableDates.map((d) => (
-            <button
-              type="button"
-              key={d}
-              onClick={() => {
-                onDateChange(d);
-                onTimeChange("");
-              }}
-              className={`rounded-lg border-2 p-2.5 text-center transition-all text-sm font-medium ${
-                date === d
-                  ? "border-blue-600 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
-                  : "border-border hover:border-blue-300"
-              }`}
-            >
-              {formatDateLabel(d)}
-            </button>
-          ))}
+      {/* Date selection — Tiered */}
+      <div className="space-y-3">
+        {/* Tier 1: Exact ZIP match */}
+        {hasZipClustering && hasTier1 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Zap className="size-4 text-amber-500" />
+              <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                Best Dates — same area ({zip})
+              </span>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {tier1Dates.map((d) => (
+                <DateButton key={d} d={d} tier="exact" />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tier 1.5: Nearby ZIP */}
+        {hasZipClustering && hasTier15 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <MapPin className="size-4 text-orange-400" />
+              <span className="text-sm font-semibold text-orange-500 dark:text-orange-400">
+                Nearby Area Dates
+              </span>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {tier15Dates.map((d) => (
+                <DateButton key={d} d={d} tier="nearby" />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tier 2: All other dates (always shown as fallback) */}
+        <div className="space-y-2">
+          {hasZipClustering && (hasTier1 || hasTier15) ? (
+            <span className="text-sm font-semibold text-muted-foreground">All Other Available Dates</span>
+          ) : (
+            <Label className="font-semibold">Select Date</Label>
+          )}
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {(hasZipClustering ? tier2Dates : availableDates).map((d) => (
+              <DateButton key={d} d={d} tier="other" />
+            ))}
+          </div>
         </div>
-        {/* Manual date */}
+
+        {/* Manual date fallback */}
         <div className="flex items-center gap-2 pt-1">
           <Label className="text-sm text-muted-foreground whitespace-nowrap">Or pick:</Label>
           <Input
@@ -802,6 +898,7 @@ function ScheduleStep({
     </div>
   );
 }
+
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 

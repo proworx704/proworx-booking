@@ -7,7 +7,8 @@ import { mutation } from "./_generated/server";
  * Week A: Cameron on Wed + Thu (4 PM onward)
  * Week B: Cameron on Mon + Tue + Fri (4 PM onward) + Sat (all day / 7 AM)
  *
- * Reference: Monday of Week A = 2026-03-23
+ * Reference: Monday of Week A = 2026-03-30
+ * (Week A = lighter week, no Saturday block — Tyler does NOT have Cameron on Sat Mar 21)
  */
 export const run = mutation({
   args: {},
@@ -16,7 +17,7 @@ export const run = mutation({
     const existing = await ctx.db.query("recurringBlockSettings").first();
     if (existing) {
       await ctx.db.patch(existing._id, {
-        weekAStartDate: "2026-03-23", // Monday of the Wed+Thu Cameron week
+        weekAStartDate: "2026-03-30", // Shifted: week of Mar 16 = Week A (no Sat block), week of Mar 23 = Week B
         isEnabled: true,
       });
     } else {
@@ -72,6 +73,6 @@ export const run = mutation({
       reason: "Cameron",
     });
 
-    return "Cameron's alternating schedule seeded: Week A (Wed+Thu 4PM), Week B (Mon+Tue+Fri 4PM + Sat all day). Reference Monday: 2026-03-23.";
+    return "Cameron's alternating schedule seeded: Week A (Wed+Thu 4PM), Week B (Mon+Tue+Fri 4PM + Sat all day). Reference Monday: 2026-03-30 (shifted so Mar 21 Sat = no Cameron).";
   },
 });

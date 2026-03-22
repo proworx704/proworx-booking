@@ -1,4 +1,6 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { ScrollToTop } from "./components/ScrollToTop";
 import { AppLayout } from "./components/AppLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -42,6 +44,7 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" switchable>
         <Toaster />
+        <ScrollToTop />
         <Routes>
           {/* Public pages */}
           <Route element={<PublicLayout />}>

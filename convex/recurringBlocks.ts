@@ -175,3 +175,48 @@ function computeWeekType(
   // Even weeks from reference = A, odd = B
   return diffWeeks % 2 === 0 ? "A" : "B";
 }
+
+// ─── Calendar view: get blocks for a range of dates ───────────────────────────
+export const getBlocksForRange = query({
+  args: { startDate: v.string(), endDate: v.string() },
+  handler: async (ctx, { startDate, endDate }) => {
+    const settings = await ctx.db.query("recurringBlockSettings").first();
+    if (!settings || !settings.isEnabled) return [];
+
+    const blocks = await ctx.db.query("recurringBlocks").collect();
+    if (blocks.length === 0) return [];
+
+    const results: Array<{
+      date: string;
+      dayOfWeek: number;
+      weekType: "A" | "B";
+      blockAfter: string;
+      reason?: string;
+    }> = [];
+
+    // Iterate dates in range
+    const start = new Date(startDate + "T12:00:00");
+    const end = new Date(endDate + "T12:00:00");
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split("T")[0];
+      const dayOfWeek = d.getDay(); // 0=Sunday
+
+      const weekType = computeWeekType(settings.weekAStartDate, dateStr);
+      const block = blocks.find(
+        (b) => b.weekType === weekType && b.dayOfWeek === dayOfWeek,
+      );
+      if (block) {
+        results.push({
+          date: dateStr,
+          dayOfWeek,
+          weekType,
+          blockAfter: block.blockAfter,
+          reason: block.reason,
+        });
+      }
+    }
+
+    return results;
+  },
+});

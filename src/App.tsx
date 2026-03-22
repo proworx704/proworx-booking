@@ -29,6 +29,7 @@ import { CatalogPage } from "./pages/CatalogPage";
 import { IntakePage } from "./pages/IntakePage";
 import { MembershipPage } from "./pages/MembershipPage";
 import { ReceptionistPage } from "./pages/ReceptionistPage";
+import { CalendarViewPage } from "./pages/CalendarViewPage";
 import { ScheduleBlocksPage } from "./pages/ScheduleBlocksPage";
 
 function App() {
@@ -54,6 +55,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/calendar" element={<CalendarViewPage />} />
               <Route path="/bookings" element={<BookingsPage />} />
               <Route path="/bookings/:id" element={<BookingDetailPage />} />
               <Route path="/customers" element={<CustomersPage />} />

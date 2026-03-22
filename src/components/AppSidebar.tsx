@@ -4,6 +4,7 @@ import {
   Calendar,
   CalendarCheck,
   CalendarClock,
+  CalendarDays,
   Clock,
   Contact,
   Headphones,
@@ -45,6 +46,7 @@ import {
 
 const mainNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/bookings", label: "Bookings", icon: CalendarCheck },
   { href: "/customers", label: "Clients", icon: Contact },
   { href: "/staff", label: "Staff", icon: Users },

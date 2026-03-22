@@ -584,3 +584,43 @@ export const submitFeedback = mutation({
     return { satisfaction };
   },
 });
+
+// ─── Calendar view: list bookings for a date range ────────────────────────────
+export const listByDateRange = query({
+  args: { startDate: v.string(), endDate: v.string() },
+  handler: async (ctx, { startDate, endDate }) => {
+    const bookings = await ctx.db
+      .query("bookings")
+      .filter((q) =>
+        q.and(
+          q.gte(q.field("date"), startDate),
+          q.lte(q.field("date"), endDate),
+          q.neq(q.field("status"), "cancelled"),
+        ),
+      )
+      .collect();
+
+    return bookings
+      .map((b) => ({
+        _id: b._id,
+        customerName: b.customerName,
+        serviceName: b.serviceName,
+        date: b.date,
+        time: b.time,
+        totalDuration: b.totalDuration,
+        totalPrice: b.totalPrice,
+        price: b.price,
+        status: b.status,
+        paymentStatus: b.paymentStatus,
+        staffName: b.staffName,
+        serviceAddress: b.serviceAddress,
+        zipCode: b.zipCode,
+        confirmationCode: b.confirmationCode,
+        selectedVariant: b.selectedVariant,
+      }))
+      .sort(
+        (a, b) =>
+          a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
+      );
+  },
+});

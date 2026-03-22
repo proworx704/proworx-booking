@@ -300,3 +300,12 @@ export const getAvailableSlots = query({
     return slots;
   },
 });
+
+// ─── Calendar: blocked dates in a range ───────────────────────────────────────
+export const getBlockedDatesInRange = query({
+  args: { startDate: v.string(), endDate: v.string() },
+  handler: async (ctx, { startDate, endDate }) => {
+    const all = await ctx.db.query("blockedDates").collect();
+    return all.filter((d) => d.date >= startDate && d.date <= endDate);
+  },
+});

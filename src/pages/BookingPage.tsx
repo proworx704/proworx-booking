@@ -150,6 +150,7 @@ function ServiceStep({
   catalog,
   filterCategory,
   isMembership,
+  autoExpandSlug,
 }: {
   data: BookingData;
   onSelect: (
@@ -163,8 +164,25 @@ function ServiceStep({
   catalog: CatalogItem[] | undefined;
   filterCategory?: string | null;
   isMembership?: boolean;
+  autoExpandSlug?: string | null;
 }) {
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
+  const autoExpandedRef = useRef(false);
+
+  // Auto-expand a multi-variant item when deep-linked via ?service=slug
+  useEffect(() => {
+    if (autoExpandSlug && catalog && !autoExpandedRef.current) {
+      const item = catalog.find((c) => c.slug === autoExpandSlug);
+      if (item && item.variants.length > 1) {
+        setExpandedItem(item._id);
+        autoExpandedRef.current = true;
+        // Scroll to the item after a brief delay
+        setTimeout(() => {
+          document.getElementById(`service-${item._id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 200);
+      }
+    }
+  }, [autoExpandSlug, catalog]);
 
   if (!catalog) {
     return (
@@ -217,6 +235,7 @@ function ServiceStep({
               return (
                 <Card
                   key={item._id}
+                  id={`service-${item._id}`}
                   className={`transition-all ${isSelected ? "border-primary ring-2 ring-primary/20" : isExpanded ? "border-primary/40" : "hover:border-primary/30"}`}
                 >
                   <CardContent
@@ -1312,6 +1331,7 @@ export function BookingPage() {
             catalog={catalog}
             filterCategory={categoryFilter}
             isMembership={isMembership}
+            autoExpandSlug={serviceSlug}
             onSelect={(id, name, category, variant, price, duration) => {
               setData((d) => ({
                 ...d,

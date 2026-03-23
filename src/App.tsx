@@ -43,6 +43,7 @@ import { TeamPage } from "./pages/TeamPage";
 import { MyTimeEntriesPage } from "./pages/MyTimeEntriesPage";
 import { MyPayPage } from "./pages/MyPayPage";
 import { StandaloneReceptionistPage } from "./pages/StandaloneReceptionistPage";
+import PosCallbackPage from "./pages/PosCallbackPage";
 
 function App() {
   return (
@@ -98,6 +99,8 @@ function App() {
               </Route>
             </Route>
           </Route>
+          {/* Square POS callback — redirects back to dashboard after payment */}
+          <Route path="/pos-callback" element={<PosCallbackPage />} />
 
           {/* Public standalone pages — shareable links, no login needed */}
           <Route path="/intake" element={<IntakePage />} />

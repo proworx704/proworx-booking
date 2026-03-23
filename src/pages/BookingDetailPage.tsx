@@ -116,40 +116,58 @@ function PaymentDialog({
   const amountCents = Math.round(Number.parseFloat(amount) * 100);
   const amountFormatted = `$${Number.parseFloat(amount).toFixed(2)}`;
 
+  const [deepLinkFailed, setDeepLinkFailed] = useState(false);
+
   const handleChargeWithReader = async () => {
     const noteText = `ProWorx ${confirmationCode} — ${serviceName} for ${customerName}`;
 
-    // Square Point of Sale API deep link with production Application ID
-    const posData = {
-      amount_money: {
-        amount: String(amountCents),
-        currency_code: "USD",
-      },
-      callback_url: window.location.href,
-      client_id: "sq0idp-K_iDYBH6KaPt8scVIgjv6w",
-      version: "1.3",
-      notes: noteText,
-      options: {
-        supported_tender_types: ["CREDIT_CARD", "CASH", "OTHER"],
-        auto_return: true,
-      },
-    };
-
-    const encodedData = encodeURIComponent(JSON.stringify(posData));
-    const posUrl = `square-commerce-v1://payment/create?data=${encodedData}`;
-
-    // Copy amount to clipboard as backup
+    // Copy amount to clipboard first as backup
     try {
       await navigator.clipboard.writeText(amount);
     } catch { /* ignore */ }
 
-    // Open Square POS app via deep link
-    window.location.href = posUrl;
+    // Square Point of Sale API deep link (Mobile Web format)
+    // Docs: https://developer.squareup.com/docs/pos-api/build-mobile-web
+    const dataParameter = {
+      amount_money: {
+        amount: String(amountCents),
+        currency_code: "USD",
+      },
+      callback_url: window.location.origin + "/pos-callback",
+      client_id: "sq0idp-K_iDYBH6KaPt8scVIgjv6w",
+      version: "1.3",
+      notes: noteText,
+      options: {
+        supported_tender_types: ["CREDIT_CARD", "CASH", "OTHER", "SQUARE_GIFT_CARD", "CARD_ON_FILE"],
+      },
+    };
 
-    // Show the confirmation UI after Square POS opens
+    const encodedData = encodeURIComponent(JSON.stringify(dataParameter));
+    const posUrl = "square-commerce-v1://payment/create?data=" + encodedData;
+
+    // Track whether the deep link opened successfully
+    // If the page is still visible after 2s, the deep link likely failed
+    const startTime = Date.now();
+    let didLeave = false;
+
+    const handleBlur = () => { didLeave = true; };
+    window.addEventListener("blur", handleBlur);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) didLeave = true;
+    });
+
+    // Attempt to open Square POS via deep link
+    window.location = posUrl as unknown as Location;
+
+    // Check after delay if we left the page (= deep link worked)
     setTimeout(() => {
+      window.removeEventListener("blur", handleBlur);
+      if (!didLeave && Date.now() - startTime < 3000) {
+        // Deep link failed — show manual fallback
+        setDeepLinkFailed(true);
+      }
       setReaderOpened(true);
-    }, 1500);
+    }, 2000);
   };
 
   const handleGenerateLink = async () => {
@@ -345,11 +363,55 @@ function PaymentDialog({
                       Amount copied to clipboard
                     </p>
                   </div>
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <p className="text-xs text-amber-800 text-center">
-                      Charge <span className="font-bold">{amountFormatted}</span> in Square POS, then tap the green button below to record it.
-                    </p>
-                  </div>
+
+                  {/* Deep link failed — show manual instructions */}
+                  {deepLinkFailed && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                      <p className="text-xs font-medium text-blue-800 text-center">
+                        Square POS didn't open automatically
+                      </p>
+                      <ol className="text-xs text-blue-700 space-y-1 pl-4 list-decimal">
+                        <li>Open <span className="font-semibold">Square POS</span> app on this device</li>
+                        <li>Tap <span className="font-semibold">Charge</span> → enter <span className="font-bold">{amountFormatted}</span></li>
+                        <li>Tap, insert, or swipe the card</li>
+                        <li>Come back here and tap the green button below</li>
+                      </ol>
+                      <div className="flex gap-2 pt-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 text-xs"
+                          onClick={() => {
+                            navigator.clipboard.writeText(amount).catch(() => {});
+                          }}
+                        >
+                          <Copy className="size-3 mr-1" />
+                          Copy Amount
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 text-xs"
+                          onClick={() => {
+                            window.open("https://squareup.com/dashboard/sales/transactions", "_blank");
+                          }}
+                        >
+                          <ExternalLink className="size-3 mr-1" />
+                          Open Square
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Standard flow — Square POS opened or manual charge */}
+                  {!deepLinkFailed && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs text-amber-800 text-center">
+                        Charge <span className="font-bold">{amountFormatted}</span> in Square POS, then tap the green button below to record it.
+                      </p>
+                    </div>
+                  )}
+
                   <Button
                     className="w-full h-12 bg-green-600 hover:bg-green-700"
                     onClick={() => handleMarkPaid("card")}
@@ -368,7 +430,7 @@ function PaymentDialog({
                     variant="ghost"
                     size="sm"
                     className="w-full text-muted-foreground"
-                    onClick={() => setReaderOpened(false)}
+                    onClick={() => { setReaderOpened(false); setDeepLinkFailed(false); }}
                   >
                     ← Try again
                   </Button>

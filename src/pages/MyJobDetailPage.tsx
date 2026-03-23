@@ -16,7 +16,7 @@ import {
   User,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -352,7 +352,6 @@ function EmployeePaymentDialog({
 
 export function MyJobDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const booking = useQuery(api.employeePortal.getMyJob, { id: id as Id<"bookings"> });
   const updateStatus = useMutation(api.employeePortal.updateMyJobStatus);
   const updateNotes = useMutation(api.employeePortal.updateMyJobNotes);

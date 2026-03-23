@@ -2,7 +2,6 @@ import { useMutation, useQuery } from "convex/react";
 import {
   Calendar,
   Check,
-  ChevronDown,
   Clock,
   Loader2,
   Pencil,
@@ -11,7 +10,6 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

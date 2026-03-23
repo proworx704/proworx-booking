@@ -88,6 +88,7 @@ const manageNav = [
 
 const employeeNav = [
   { href: "/my/dashboard", label: "My Dashboard", icon: LayoutDashboard },
+  { href: "/my/calendar", label: "My Schedule", icon: CalendarDays },
   { href: "/my/time-entries", label: "My Time", icon: ClipboardList },
   { href: "/my/pay", label: "My Pay", icon: Wallet },
 ];

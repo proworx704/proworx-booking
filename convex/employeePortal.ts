@@ -209,12 +209,151 @@ export const myJobs = query({
 
     // Filter to bookings assigned to this staff member
     const myBookings = bookings.filter(
-      (b: any) => b.assignedStaffId === profile.staffId,
+      (b: any) => b.staffId?.toString() === profile.staffId?.toString(),
     );
 
     return myBookings.sort((a: any, b: any) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
       return (a.startTime || "").localeCompare(b.startTime || "");
     });
+  },
+});
+
+// ─── My Calendar (bookings by date range) ─────────────────────────────────────
+
+/** Get employee's assigned bookings for a date range (for calendar view) */
+export const myJobsByDateRange = query({
+  args: { startDate: v.string(), endDate: v.string() },
+  handler: async (ctx, { startDate, endDate }) => {
+    const { profile } = await getEmployeeContext(ctx);
+    if (!profile.staffId) return [];
+
+    // Use the by_staff_date index for efficiency
+    const bookings = await ctx.db
+      .query("bookings")
+      .withIndex("by_staff_date", (q: any) =>
+        q.eq("staffId", profile.staffId).gte("date", startDate),
+      )
+      .collect();
+
+    // Filter by end date and exclude cancelled
+    return bookings
+      .filter(
+        (b: any) => b.date <= endDate && b.status !== "cancelled",
+      )
+      .map((b: any) => ({
+        _id: b._id,
+        customerName: b.customerName,
+        customerPhone: b.customerPhone,
+        serviceName: b.serviceName,
+        date: b.date,
+        time: b.time,
+        totalDuration: b.totalDuration,
+        totalPrice: b.totalPrice,
+        price: b.price,
+        status: b.status,
+        paymentStatus: b.paymentStatus,
+        serviceAddress: b.serviceAddress,
+        zipCode: b.zipCode,
+        confirmationCode: b.confirmationCode,
+        selectedVariant: b.selectedVariant,
+        staffName: b.staffName,
+      }))
+      .sort(
+        (a: any, b: any) =>
+          a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
+      );
+  },
+});
+
+// ─── Get Single Job Detail ────────────────────────────────────────────────────
+
+/** Get full booking detail — only if assigned to this employee */
+export const getMyJob = query({
+  args: { id: v.id("bookings") },
+  handler: async (ctx, { id }) => {
+    const { profile } = await getEmployeeContext(ctx);
+    const booking = await ctx.db.get(id);
+    if (!booking) return null;
+    if (booking.staffId?.toString() !== profile.staffId?.toString()) return null;
+    return booking;
+  },
+});
+
+// ─── Employee Status Update ───────────────────────────────────────────────────
+
+/** Employee can update status of their assigned bookings */
+export const updateMyJobStatus = mutation({
+  args: {
+    id: v.id("bookings"),
+    status: v.union(
+      v.literal("confirmed"),
+      v.literal("in_progress"),
+      v.literal("completed"),
+    ),
+  },
+  handler: async (ctx, { id, status }) => {
+    const { profile } = await getEmployeeContext(ctx);
+    const booking = await ctx.db.get(id);
+    if (!booking) throw new Error("Booking not found");
+    if (booking.staffId?.toString() !== profile.staffId?.toString()) {
+      throw new Error("Not your assigned booking");
+    }
+    await ctx.db.patch(id, { status });
+  },
+});
+
+// ─── Employee Payment Recording ───────────────────────────────────────────────
+
+/** Employee can record payment on their assigned bookings */
+export const markMyJobPaid = mutation({
+  args: {
+    id: v.id("bookings"),
+    paymentMethod: v.string(),
+    paymentAmount: v.number(),
+    paymentId: v.optional(v.string()),
+  },
+  handler: async (ctx, { id, paymentMethod, paymentAmount, paymentId }) => {
+    const { profile } = await getEmployeeContext(ctx);
+    const booking = await ctx.db.get(id);
+    if (!booking) throw new Error("Booking not found");
+    if (booking.staffId?.toString() !== profile.staffId?.toString()) {
+      throw new Error("Not your assigned booking");
+    }
+    await ctx.db.patch(id, {
+      paymentStatus: "paid",
+      paymentMethod,
+      paymentAmount,
+      paymentId,
+      paidAt: Date.now(),
+    });
+    // Update customer total spent
+    if (booking.customerId) {
+      const customer = await ctx.db.get(booking.customerId);
+      if (customer) {
+        await ctx.db.patch(customer._id, {
+          totalSpent: (customer.totalSpent || 0) + paymentAmount,
+        });
+      }
+    }
+  },
+});
+
+// ─── Employee Notes Update ────────────────────────────────────────────────────
+
+/** Employee can add/update notes on their assigned bookings */
+export const updateMyJobNotes = mutation({
+  args: {
+    id: v.id("bookings"),
+    notes: v.string(),
+  },
+  handler: async (ctx, { id, notes }) => {
+    const { profile } = await getEmployeeContext(ctx);
+    const booking = await ctx.db.get(id);
+    if (!booking) throw new Error("Booking not found");
+    if (booking.staffId?.toString() !== profile.staffId?.toString()) {
+      throw new Error("Not your assigned booking");
+    }
+    await ctx.db.patch(id, { notes });
   },
 });

@@ -44,6 +44,8 @@ import { MyTimeEntriesPage } from "./pages/MyTimeEntriesPage";
 import { MyPayPage } from "./pages/MyPayPage";
 import { StandaloneReceptionistPage } from "./pages/StandaloneReceptionistPage";
 import PosCallbackPage from "./pages/PosCallbackPage";
+import { MyCalendarPage } from "./pages/MyCalendarPage";
+import { MyJobDetailPage } from "./pages/MyJobDetailPage";
 
 function App() {
   return (
@@ -70,6 +72,8 @@ function App() {
             <Route element={<AppLayout />}>
               {/* Employee portal routes (accessible by all roles) */}
               <Route path="/my/dashboard" element={<EmployeeDashboardPage />} />
+              <Route path="/my/calendar" element={<MyCalendarPage />} />
+              <Route path="/my/jobs/:id" element={<MyJobDetailPage />} />
               <Route path="/my/time-entries" element={<MyTimeEntriesPage />} />
               <Route path="/my/pay" element={<MyPayPage />} />
 

@@ -34,15 +34,18 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const initProfile = useMutation(api.userProfiles.initMyProfile);
   const didInit = useRef(false);
 
-  // Auto-create a profile if the user is authenticated but has none.
-  // First user → owner. Everyone else → employee.
+  // Auto-create a profile if the user is authenticated but has none,
+  // OR auto-link payroll worker / staff if an employee profile is missing them.
   useEffect(() => {
-    if (
-      profile &&              // query resolved
-      profile.userId &&       // user is authenticated
-      profile.role === null && // no profile yet
-      !didInit.current        // haven't tried yet this session
-    ) {
+    if (!profile || !profile.userId || didInit.current) return;
+
+    const needsInit = profile.role === null; // no profile yet
+    const needsLink =
+      profile.role === "employee" &&
+      profile.profile &&
+      (!profile.profile.payrollWorkerId || !profile.profile.staffId);
+
+    if (needsInit || needsLink) {
       didInit.current = true;
       initProfile().catch(() => {
         // Reset so it can retry on next render

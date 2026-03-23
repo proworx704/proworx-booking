@@ -851,6 +851,7 @@ export function BookingDetailPage() {
                 if (!available || available.length === 0) return null;
                 return (
                   <Select
+                    key={ids.join(",")}
                     onValueChange={(staffId) =>
                       assignStaff({ id: booking._id, staffId: staffId as Id<"staff"> })
                     }

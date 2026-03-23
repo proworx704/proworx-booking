@@ -422,6 +422,36 @@ export const markPaid = mutation({
   },
 });
 
+// Admin: undo payment (mark as unpaid)
+export const markUnpaid = mutation({
+  args: {
+    id: v.id("bookings"),
+  },
+  handler: async (ctx, { id }) => {
+    const booking = await ctx.db.get(id);
+    if (!booking) throw new Error("Booking not found");
+    if (booking.paymentStatus !== "paid") throw new Error("Booking is not marked as paid");
+
+    // Reverse the customer's totalSpent if we tracked it
+    if (booking.customerId && booking.paymentAmount) {
+      const customer = await ctx.db.get(booking.customerId);
+      if (customer) {
+        await ctx.db.patch(customer._id, {
+          totalSpent: Math.max(0, (customer.totalSpent || 0) - booking.paymentAmount),
+        });
+      }
+    }
+
+    await ctx.db.patch(id, {
+      paymentStatus: "unpaid",
+      paymentMethod: undefined,
+      paymentAmount: undefined,
+      paymentId: undefined,
+      paidAt: undefined,
+    });
+  },
+});
+
 // Admin: store Square payment link
 export const setSquarePaymentLink = mutation({
   args: {

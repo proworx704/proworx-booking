@@ -17,6 +17,7 @@ import {
   Navigation,
   Phone,
   Truck,
+  Undo2,
   User,
   Users,
   XCircle,
@@ -532,8 +533,11 @@ export function BookingDetailPage() {
   const updateNotes = useMutation(api.bookings.updateNotes);
   const assignStaff = useMutation(api.bookings.assignStaff);
   const unassignStaff = useMutation(api.bookings.unassignStaff);
+  const markUnpaid = useMutation(api.bookings.markUnpaid);
   const [notes, setNotes] = useState<string | null>(null);
   const [savingNotes, setSavingNotes] = useState(false);
+  const [undoingPayment, setUndoingPayment] = useState(false);
+  const [showUndoConfirm, setShowUndoConfirm] = useState(false);
 
   if (!booking) {
     return (
@@ -827,17 +831,67 @@ export function BookingDetailPage() {
             </CardHeader>
             <CardContent>
               {booking.paymentStatus === "paid" ? (
-                <div className="text-center py-4">
-                  <CheckCircle2 className="size-10 text-green-500 mx-auto mb-2" />
-                  <p className="font-semibold text-green-700">Paid</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatPrice(booking.paymentAmount || booking.price)} via{" "}
-                    {booking.paymentMethod}
-                  </p>
-                  {booking.paidAt && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(booking.paidAt).toLocaleString()}
+                <div className="text-center py-4 space-y-3">
+                  <div>
+                    <CheckCircle2 className="size-10 text-green-500 mx-auto mb-2" />
+                    <p className="font-semibold text-green-700">Paid</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatPrice(booking.paymentAmount || booking.price)} via{" "}
+                      {booking.paymentMethod}
                     </p>
+                    {booking.paidAt && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(booking.paidAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  {!showUndoConfirm ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => setShowUndoConfirm(true)}
+                    >
+                      <Undo2 className="size-3.5 mr-1.5" />
+                      Undo Payment
+                    </Button>
+                  ) : (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg space-y-2">
+                      <p className="text-xs text-red-700 font-medium">
+                        Mark this booking as unpaid?
+                      </p>
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={undoingPayment}
+                          onClick={async () => {
+                            setUndoingPayment(true);
+                            try {
+                              await markUnpaid({ id: booking._id });
+                              setShowUndoConfirm(false);
+                            } catch (e) {
+                              console.error("Failed to undo payment:", e);
+                              alert("Failed to undo payment");
+                            } finally {
+                              setUndoingPayment(false);
+                            }
+                          }}
+                        >
+                          {undoingPayment ? (
+                            <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+                          ) : null}
+                          {undoingPayment ? "Undoing..." : "Yes, Undo"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowUndoConfirm(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
               ) : booking.status === "cancelled" ? (

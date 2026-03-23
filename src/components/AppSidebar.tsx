@@ -331,12 +331,12 @@ function SidebarHeaderContent() {
 }
 
 export function AppSidebar() {
-  const { isEmployee } = useUserRole();
+  const { isAdmin } = useUserRole();
 
   return (
     <Sidebar>
       <SidebarHeaderContent />
-      {isEmployee ? <EmployeeSidebarNav /> : <AdminSidebarNav />}
+      {isAdmin ? <AdminSidebarNav /> : <EmployeeSidebarNav />}
       <SidebarUserMenu />
     </Sidebar>
   );

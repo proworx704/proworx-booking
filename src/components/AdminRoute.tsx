@@ -3,19 +3,19 @@ import { useUserRole } from "@/contexts/RoleContext";
 
 /**
  * Route guard that only allows owner/admin users.
- * Employees get redirected to their personal dashboard.
- * While loading, renders nothing (prevents flash).
+ * Everyone else (employees AND users without a profile) gets
+ * redirected to the employee portal.
  */
 export function AdminRoute() {
-  const { isEmployee, isLoading } = useUserRole();
+  const { isAdmin, isLoading } = useUserRole();
 
   if (isLoading) return null;
 
-  if (isEmployee) {
+  // Only owner/admin roles can access admin routes.
+  // Employees and unassigned users go to the employee dashboard.
+  if (!isAdmin) {
     return <Navigate to="/my/dashboard" replace />;
   }
 
-  // If no role assigned yet, still let them see admin pages
-  // (Tyler or new signups before being assigned a role)
   return <Outlet />;
 }

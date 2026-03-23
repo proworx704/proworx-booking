@@ -1,5 +1,5 @@
-import { useQuery } from "convex/react";
-import { createContext, useContext, type ReactNode } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 
@@ -31,12 +31,34 @@ const RoleContext = createContext<RoleContextValue>({
 
 export function RoleProvider({ children }: { children: ReactNode }) {
   const profile = useQuery(api.userProfiles.getMyProfile);
+  const initProfile = useMutation(api.userProfiles.initMyProfile);
+  const didInit = useRef(false);
+
+  // Auto-create a profile if the user is authenticated but has none.
+  // First user → owner. Everyone else → employee.
+  useEffect(() => {
+    if (
+      profile &&              // query resolved
+      profile.userId &&       // user is authenticated
+      profile.role === null && // no profile yet
+      !didInit.current        // haven't tried yet this session
+    ) {
+      didInit.current = true;
+      initProfile().catch(() => {
+        // Reset so it can retry on next render
+        didInit.current = false;
+      });
+    }
+  }, [profile, initProfile]);
+
+  // Still loading if query hasn't resolved, or if we just triggered init
+  const isInitializing = profile?.userId && profile?.role === null;
 
   const value: RoleContextValue = {
     role: profile?.role ?? null,
     isAdmin: profile?.role === "owner" || profile?.role === "admin",
     isEmployee: profile?.role === "employee",
-    isLoading: profile === undefined,
+    isLoading: profile === undefined || isInitializing === true,
     displayName: profile?.profile?.displayName || profile?.name || profile?.email || "",
     staffId: (profile?.profile?.staffId as Id<"staff">) ?? null,
     payrollWorkerId: (profile?.profile?.payrollWorkerId as Id<"payrollWorkers">) ?? null,

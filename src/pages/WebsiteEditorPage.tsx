@@ -17,13 +17,11 @@ import {
   Image as ImageIcon,
   Upload,
   X,
-  ChevronDown,
   ChevronRight,
   Home,
   Car,
   Anchor,
   Shield,
-  Sparkles,
   Truck,
   MapPinned,
   Paintbrush,
@@ -31,7 +29,7 @@ import {
   Eye,
   FileText,
   Check,
-  RefreshCw,
+
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { toast } from "sonner";

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Square POS Deep Link Test</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; padding: 20px; max-width: 400px; margin: 0 auto; }
+    h2 { font-size: 18px; }
+    .btn { display: block; width: 100%; padding: 16px; margin: 10px 0; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; text-align: center; text-decoration: none; cursor: pointer; }
+    .black { background: #000; color: #fff; }
+    .blue { background: #007AFF; color: #fff; }
+    .gray { background: #E5E5EA; color: #000; }
+    .result { padding: 12px; margin-top: 10px; border-radius: 8px; font-size: 14px; display: none; }
+    .info { background: #F2F2F7; padding: 12px; border-radius: 8px; font-size: 13px; margin: 10px 0; }
+    code { background: #E5E5EA; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h2>🔧 Square POS Deep Link Test</h2>
+  <p style="font-size:14px;color:#666;">Tap each button below. If Square POS opens, the deep link works.</p>
+
+  <div class="info">
+    <strong>Test 1:</strong> Minimal deep link (bare scheme)
+  </div>
+  <a href="square-commerce-v1://payment/create?data=%7B%22amount_money%22%3A%7B%22amount%22%3A%22100%22%2C%22currency_code%22%3A%22USD%22%7D%2C%22callback_url%22%3A%22https%3A%2F%2Fproworx-booking-8ee2b7c6.viktor.space%2Fpos-callback%22%2C%22client_id%22%3A%22sq0idp-K_iDYBH6KaPt8scVIgjv6w%22%2C%22version%22%3A%221.3%22%7D" class="btn black">
+    Test 1: Open Square POS ($1.00)
+  </a>
+
+  <div class="info">
+    <strong>Test 2:</strong> Just the URL scheme (no parameters)
+  </div>
+  <a href="square-commerce-v1://" class="btn blue">
+    Test 2: Just open Square POS app
+  </a>
+
+  <div class="info">
+    <strong>Test 3:</strong> JavaScript window.location
+  </div>
+  <button class="btn gray" onclick="window.location.href='square-commerce-v1://payment/create?data=%7B%22amount_money%22%3A%7B%22amount%22%3A%22100%22%2C%22currency_code%22%3A%22USD%22%7D%2C%22callback_url%22%3A%22https%3A%2F%2Fproworx-booking-8ee2b7c6.viktor.space%2Fpos-callback%22%2C%22client_id%22%3A%22sq0idp-K_iDYBH6KaPt8scVIgjv6w%22%2C%22version%22%3A%221.3%22%7D';">
+    Test 3: JS window.location ($1.00)
+  </button>
+
+  <div class="info">
+    <strong>Test 4:</strong> Alternative scheme (squareup://)
+  </div>
+  <a href="squareup://" class="btn gray">
+    Test 4: Try squareup:// scheme
+  </a>
+
+  <br>
+  <p style="font-size:12px;color:#999;">
+    If Test 1 shows "Open this page in Square Point of Sale?" → deep link works, issue is in our app code.<br><br>
+    If Test 1 shows "Safari cannot open the page" → URL scheme not registered. Try: force-close Square POS app, open it once, then come back and try again.
+  </p>
+</body>
+</html>

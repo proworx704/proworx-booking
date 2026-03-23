@@ -794,3 +794,64 @@ export const directInsert = mutation({
     });
   },
 });
+
+/** Admin: update booking price and totalPrice */
+export const updatePrice = mutation({
+  args: {
+    bookingId: v.id("bookings"),
+    price: v.number(), // cents
+    selectedVariant: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const booking = await ctx.db.get(args.bookingId);
+    if (!booking) throw new Error("Booking not found");
+    
+    // Update price + totalPrice (recalculate with add-ons if any)
+    const addonTotal = (booking.addons || []).reduce((sum, a) => sum + a.price, 0);
+    const totalPrice = args.price + addonTotal;
+    
+    const patch: Record<string, unknown> = {
+      price: args.price,
+      totalPrice: totalPrice,
+    };
+    if (args.selectedVariant) {
+      patch.selectedVariant = args.selectedVariant;
+    }
+    
+    await ctx.db.patch(args.bookingId, patch);
+    return { updated: true, bookingId: args.bookingId, newPrice: args.price, newTotal: totalPrice };
+  },
+});
+
+/** Admin: batch update prices for multiple bookings */
+export const batchUpdatePrices = mutation({
+  args: {
+    updates: v.array(v.object({
+      bookingId: v.id("bookings"),
+      price: v.number(),
+      selectedVariant: v.optional(v.string()),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const results = [];
+    for (const u of args.updates) {
+      const booking = await ctx.db.get(u.bookingId);
+      if (!booking) {
+        results.push({ bookingId: u.bookingId, updated: false, error: "not found" });
+        continue;
+      }
+      const addonTotal = (booking.addons || []).reduce((sum, a) => sum + a.price, 0);
+      const totalPrice = u.price + addonTotal;
+      const patch: Record<string, unknown> = {
+        price: u.price,
+        totalPrice: totalPrice,
+      };
+      if (u.selectedVariant) {
+        patch.selectedVariant = u.selectedVariant;
+      }
+      await ctx.db.patch(u.bookingId, patch);
+      results.push({ bookingId: u.bookingId, updated: true, newPrice: u.price });
+    }
+    return results;
+  },
+});

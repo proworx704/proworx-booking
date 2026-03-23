@@ -8,6 +8,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    // Use a unique asset directory to avoid conflicts when proxied
+    // through proworxdetailing.com via Vercel rewrites
+    assetsDir: "booking-assets",
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),

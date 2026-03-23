@@ -118,18 +118,13 @@ function PaymentDialog({
 
   const [deepLinkFailed, setDeepLinkFailed] = useState(false);
 
-  const handleChargeWithReader = () => {
-    // IMPORTANT: Deep link MUST be the first synchronous action in the tap handler.
-    // Any async operation (like clipboard API) before this breaks iOS Safari's
-    // "user gesture" requirement and causes "address is invalid" error.
-
+  // Build the Square POS deep link URL (matches Square docs exactly)
+  // Docs: https://developer.squareup.com/docs/pos-api/build-mobile-web
+  const buildPosUrl = () => {
     const noteText = `ProWorx ${confirmationCode} - ${serviceName} for ${customerName}`;
-
-    // Square Point of Sale API deep link (Mobile Web format)
-    // Docs: https://developer.squareup.com/docs/pos-api/build-mobile-web
     const dataParameter = {
       amount_money: {
-        amount: amountCents,
+        amount: String(amountCents),  // Square docs: amount is a string
         currency_code: "USD",
       },
       callback_url: window.location.origin + "/pos-callback",
@@ -140,38 +135,29 @@ function PaymentDialog({
         supported_tender_types: ["CREDIT_CARD", "CASH", "OTHER", "SQUARE_GIFT_CARD", "CARD_ON_FILE"],
       },
     };
+    return "square-commerce-v1://payment/create?data=" + encodeURIComponent(JSON.stringify(dataParameter));
+  };
 
-    const encodedData = encodeURIComponent(JSON.stringify(dataParameter));
-    const posUrl = "square-commerce-v1://payment/create?data=" + encodedData;
+  const handleChargeWithReader = () => {
+    // Square docs: window.location = url (must be synchronous, no async before)
+    const posUrl = buildPosUrl();
+    window.location = posUrl as unknown as Location;
 
-    // Launch deep link via anchor tag click (most reliable on iOS Safari)
-    const anchor = document.createElement("a");
-    anchor.href = posUrl;
-    anchor.style.display = "none";
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-
-    // Copy amount to clipboard AFTER deep link (non-blocking)
+    // Copy amount to clipboard as backup (non-blocking, after navigation)
     navigator.clipboard.writeText(amount).catch(() => {});
 
-    // Track whether the deep link opened successfully
+    // Track whether the deep link opened
     const startTime = Date.now();
     let didLeave = false;
-
     const handleBlur = () => { didLeave = true; };
     window.addEventListener("blur", handleBlur);
-    const handleVisibility = () => {
-      if (document.hidden) didLeave = true;
-    };
+    const handleVisibility = () => { if (document.hidden) didLeave = true; };
     document.addEventListener("visibilitychange", handleVisibility);
 
-    // Check after delay if we left the page (= deep link worked)
     setTimeout(() => {
       window.removeEventListener("blur", handleBlur);
       document.removeEventListener("visibilitychange", handleVisibility);
       if (!didLeave && Date.now() - startTime < 3000) {
-        // Deep link failed — show manual fallback
         setDeepLinkFailed(true);
       }
       setReaderOpened(true);
@@ -374,14 +360,21 @@ function PaymentDialog({
 
                   {/* Deep link failed — show manual instructions */}
                   {deepLinkFailed && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2.5">
                       <p className="text-xs font-medium text-amber-900 text-center">
-                        ⚠️ Square POS didn't open
+                        ⚠️ Square POS didn't open automatically
                       </p>
-                      <p className="text-[11px] text-amber-800 text-center">
-                        Open Square POS manually, charge <span className="font-bold">{amountFormatted}</span>, then tap the green button below.
+                      {/* Direct deep link - user taps this directly */}
+                      <a
+                        href={buildPosUrl()}
+                        className="block w-full text-center py-2 px-3 bg-black text-white text-sm font-medium rounded-lg"
+                      >
+                        Tap here to open Square POS →
+                      </a>
+                      <p className="text-[11px] text-amber-700 text-center">
+                        If that doesn't work either, open Square POS manually and charge <span className="font-bold">{amountFormatted}</span>
                       </p>
-                      <div className="flex gap-2 pt-1">
+                      <div className="flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"

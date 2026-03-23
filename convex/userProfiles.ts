@@ -200,12 +200,61 @@ export const initMyProfile = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    // Already has a profile? Nothing to do.
+    // Already has a profile? Check if it needs payroll/staff linking.
     const existing = await ctx.db
       .query("userProfiles")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
-    if (existing) return existing;
+
+    if (existing) {
+      // Auto-link payroll worker + staff if missing
+      if (!existing.payrollWorkerId || !existing.staffId) {
+        const user = await ctx.db.get(userId);
+        const email = (user?.email ?? "").toLowerCase();
+        const patch: Record<string, unknown> = {};
+
+        if (!existing.payrollWorkerId) {
+          // Try to find existing payroll worker by email
+          let worker = email
+            ? await ctx.db
+                .query("payrollWorkers")
+                .withIndex("by_email", (q: any) => q.eq("email", email))
+                .first()
+            : null;
+          if (!worker) {
+            // Auto-create a payroll worker for this employee
+            const workerId = await ctx.db.insert("payrollWorkers", {
+              name: existing.displayName || email.split("@")[0] || "Team Member",
+              hourlyRate: 0, // Admin sets this later
+              email: email || undefined,
+              isActive: true,
+            });
+            worker = await ctx.db.get(workerId);
+            patch.payrollWorkerId = workerId;
+          } else {
+            patch.payrollWorkerId = worker._id;
+          }
+        }
+
+        if (!existing.staffId) {
+          // Try to find existing staff by email
+          const allStaff = await ctx.db.query("staff").collect();
+          const user = await ctx.db.get(userId);
+          const email = (user?.email ?? "").toLowerCase();
+          const matchedStaff = allStaff.find(
+            (s: any) => (s.email ?? "").toLowerCase() === email && email !== "",
+          );
+          if (matchedStaff) {
+            patch.staffId = matchedStaff._id;
+          }
+        }
+
+        if (Object.keys(patch).length > 0) {
+          await ctx.db.patch(existing._id, patch);
+        }
+      }
+      return existing;
+    }
 
     const user = await ctx.db.get(userId);
     const email = (user?.email ?? "").toLowerCase();
@@ -214,11 +263,50 @@ export const initMyProfile = mutation({
     const role = OWNER_EMAILS.includes(email) ? "owner" : "employee";
     const displayName = user?.name || email.split("@")[0] || "Team Member";
 
-    const profileId = await ctx.db.insert("userProfiles", {
+    // For employees, auto-link or create payroll worker + match staff
+    let payrollWorkerId: unknown = undefined;
+    let staffId: unknown = undefined;
+
+    if (role === "employee") {
+      // Try to find existing payroll worker by email
+      let worker = email
+        ? await ctx.db
+            .query("payrollWorkers")
+            .withIndex("by_email", (q: any) => q.eq("email", email))
+            .first()
+        : null;
+      if (!worker) {
+        // Auto-create one
+        const wId = await ctx.db.insert("payrollWorkers", {
+          name: displayName,
+          hourlyRate: 0, // Admin sets this later
+          email: email || undefined,
+          isActive: true,
+        });
+        payrollWorkerId = wId;
+      } else {
+        payrollWorkerId = worker._id;
+      }
+
+      // Try to match a staff record by email
+      const allStaff = await ctx.db.query("staff").collect();
+      const matchedStaff = allStaff.find(
+        (s: any) => (s.email ?? "").toLowerCase() === email && email !== "",
+      );
+      if (matchedStaff) {
+        staffId = matchedStaff._id;
+      }
+    }
+
+    const profileData: Record<string, unknown> = {
       userId,
       role,
       displayName,
-    });
+    };
+    if (payrollWorkerId) profileData.payrollWorkerId = payrollWorkerId;
+    if (staffId) profileData.staffId = staffId;
+
+    const profileId = await ctx.db.insert("userProfiles", profileData as any);
 
     return { _id: profileId, userId, role, displayName };
   },

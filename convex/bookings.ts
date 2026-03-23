@@ -823,6 +823,89 @@ export const updatePrice = mutation({
   },
 });
 
+/** Admin: full booking edit — change service, variant, add-ons, date/time, customer info */
+export const editBooking = mutation({
+  args: {
+    bookingId: v.id("bookings"),
+    // Service
+    catalogItemId: v.optional(v.id("serviceCatalog")),
+    serviceName: v.optional(v.string()),
+    selectedVariant: v.optional(v.string()),
+    price: v.optional(v.number()), // base price in cents
+    // Add-ons
+    addons: v.optional(
+      v.array(
+        v.object({
+          catalogItemId: v.optional(v.id("serviceCatalog")),
+          name: v.string(),
+          variantLabel: v.optional(v.string()),
+          price: v.number(),
+          durationMin: v.number(),
+        }),
+      ),
+    ),
+    // Schedule
+    date: v.optional(v.string()),
+    time: v.optional(v.string()),
+    // Customer info
+    customerName: v.optional(v.string()),
+    customerPhone: v.optional(v.string()),
+    customerEmail: v.optional(v.string()),
+    serviceAddress: v.optional(v.string()),
+    zipCode: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const booking = await ctx.db.get(args.bookingId);
+    if (!booking) throw new Error("Booking not found");
+
+    const patch: Record<string, unknown> = {};
+
+    // Service fields
+    if (args.catalogItemId !== undefined) patch.catalogItemId = args.catalogItemId;
+    if (args.serviceName !== undefined) patch.serviceName = args.serviceName;
+    if (args.selectedVariant !== undefined) patch.selectedVariant = args.selectedVariant;
+    if (args.price !== undefined) patch.price = args.price;
+
+    // Add-ons
+    if (args.addons !== undefined) patch.addons = args.addons;
+
+    // Recalculate totals
+    const basePrice = (args.price !== undefined ? args.price : booking.price);
+    const addonList = (args.addons !== undefined ? args.addons : booking.addons) || [];
+    const addonTotal = addonList.reduce((sum: number, a: { price: number; durationMin: number }) => sum + a.price, 0);
+    const addonDuration = addonList.reduce((sum: number, a: { price: number; durationMin: number }) => sum + a.durationMin, 0);
+    patch.totalPrice = basePrice + addonTotal;
+    // For duration, look up the catalog item if changed, else keep existing
+    if (args.catalogItemId !== undefined) {
+      const item = await ctx.db.get(args.catalogItemId);
+      if (item) {
+        const variant = item.variants.find((v: { label: string }) => v.label === (args.selectedVariant || ""));
+        const baseDuration = variant ? variant.durationMin : (item.variants[0]?.durationMin ?? 0);
+        patch.totalDuration = baseDuration + addonDuration;
+      }
+    } else if (args.addons !== undefined) {
+      // Addons changed but service didn't — recalculate duration
+      const existingBaseDuration = (booking.totalDuration ?? 0) -
+        ((booking.addons || []).reduce((s: number, a: { durationMin: number }) => s + a.durationMin, 0));
+      patch.totalDuration = existingBaseDuration + addonDuration;
+    }
+
+    // Schedule
+    if (args.date !== undefined) patch.date = args.date;
+    if (args.time !== undefined) patch.time = args.time;
+
+    // Customer info
+    if (args.customerName !== undefined) patch.customerName = args.customerName;
+    if (args.customerPhone !== undefined) patch.customerPhone = args.customerPhone;
+    if (args.customerEmail !== undefined) patch.customerEmail = args.customerEmail;
+    if (args.serviceAddress !== undefined) patch.serviceAddress = args.serviceAddress;
+    if (args.zipCode !== undefined) patch.zipCode = args.zipCode;
+
+    await ctx.db.patch(args.bookingId, patch);
+    return { updated: true, bookingId: args.bookingId, totalPrice: patch.totalPrice };
+  },
+});
+
 /** Admin: batch update prices for multiple bookings */
 export const batchUpdatePrices = mutation({
   args: {

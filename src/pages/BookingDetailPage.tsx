@@ -46,6 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { EditBookingDialog } from "@/components/EditBookingDialog";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 
@@ -643,6 +644,7 @@ export function BookingDetailPage() {
             {booking.confirmationCode}
           </p>
         </div>
+        <EditBookingDialog booking={booking} />
         <Badge variant="outline" className={`text-sm py-1 px-3 ${statusColors[booking.status]}`}>
           {booking.status.replace("_", " ")}
         </Badge>

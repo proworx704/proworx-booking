@@ -141,7 +141,7 @@ function PaymentDialog({
   const handleChargeWithReader = () => {
     // Square docs: window.location = url (must be synchronous, no async before)
     const posUrl = buildPosUrl();
-    window.location = posUrl as unknown as Location;
+    window.location.href = posUrl;
 
     // Copy amount to clipboard as backup (non-blocking, after navigation)
     navigator.clipboard.writeText(amount).catch(() => {});

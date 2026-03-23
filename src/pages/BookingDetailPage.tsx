@@ -118,17 +118,15 @@ function PaymentDialog({
 
   const [deepLinkFailed, setDeepLinkFailed] = useState(false);
 
-  const handleChargeWithReader = async () => {
-    const noteText = `ProWorx ${confirmationCode} — ${serviceName} for ${customerName}`;
+  const handleChargeWithReader = () => {
+    // IMPORTANT: Deep link MUST be the first synchronous action in the tap handler.
+    // Any async operation (like clipboard API) before this breaks iOS Safari's
+    // "user gesture" requirement and causes "address is invalid" error.
 
-    // Copy amount to clipboard first as backup
-    try {
-      await navigator.clipboard.writeText(amount);
-    } catch { /* ignore */ }
+    const noteText = `ProWorx ${confirmationCode} - ${serviceName} for ${customerName}`;
 
     // Square Point of Sale API deep link (Mobile Web format)
     // Docs: https://developer.squareup.com/docs/pos-api/build-mobile-web
-    // NOTE: Requires callback URL registered at developer.squareup.com → app → POS API → Web
     const dataParameter = {
       amount_money: {
         amount: amountCents,
@@ -146,8 +144,18 @@ function PaymentDialog({
     const encodedData = encodeURIComponent(JSON.stringify(dataParameter));
     const posUrl = "square-commerce-v1://payment/create?data=" + encodedData;
 
+    // Launch deep link via anchor tag click (most reliable on iOS Safari)
+    const anchor = document.createElement("a");
+    anchor.href = posUrl;
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+
+    // Copy amount to clipboard AFTER deep link (non-blocking)
+    navigator.clipboard.writeText(amount).catch(() => {});
+
     // Track whether the deep link opened successfully
-    // If the page is still visible after 2s, the deep link likely failed
     const startTime = Date.now();
     let didLeave = false;
 
@@ -158,18 +166,6 @@ function PaymentDialog({
     };
     document.addEventListener("visibilitychange", handleVisibility);
 
-    // Try deep link via hidden iframe first (more reliable on iOS Safari),
-    // fall back to window.location
-    try {
-      const iframe = document.createElement("iframe");
-      iframe.style.display = "none";
-      iframe.src = posUrl;
-      document.body.appendChild(iframe);
-      setTimeout(() => document.body.removeChild(iframe), 100);
-    } catch {
-      window.location.href = posUrl;
-    }
-
     // Check after delay if we left the page (= deep link worked)
     setTimeout(() => {
       window.removeEventListener("blur", handleBlur);
@@ -179,7 +175,7 @@ function PaymentDialog({
         setDeepLinkFailed(true);
       }
       setReaderOpened(true);
-    }, 2000);
+    }, 2500);
   };
 
   const handleGenerateLink = async () => {

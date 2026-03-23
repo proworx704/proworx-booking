@@ -100,7 +100,7 @@ function PaymentDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [method, setMethod] = useState("card");
-  const [cardMode, setCardMode] = useState<"reader" | "link">("link");
+  const [cardMode, setCardMode] = useState<"reader" | "link">("reader");
   const [amount, setAmount] = useState((price / 100).toFixed(2));
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -116,30 +116,39 @@ function PaymentDialog({
   const amountFormatted = `$${Number.parseFloat(amount).toFixed(2)}`;
 
   const handleChargeWithReader = async () => {
-    // Copy amount to clipboard so user can paste it in Square POS
-    try {
-      await navigator.clipboard.writeText(amount);
-    } catch {
-      // Clipboard may not be available
-    }
-
-    // Open Square POS app — use the universal link that works on iOS/Android
-    // The squareup.com/register link opens the Square POS app if installed
     const noteText = `ProWorx ${confirmationCode} — ${serviceName} for ${customerName}`;
+
+    // Square Point of Sale API deep link with production Application ID
+    const posData = {
+      amount_money: {
+        amount: String(amountCents),
+        currency_code: "USD",
+      },
+      callback_url: window.location.href,
+      client_id: "sq0idp-K_iDYBH6KaPt8scVIgjv6w",
+      version: "1.3",
+      notes: noteText,
+      options: {
+        supported_tender_types: ["CREDIT_CARD", "CASH", "OTHER"],
+        auto_return: true,
+      },
+    };
+
+    const encodedData = encodeURIComponent(JSON.stringify(posData));
+    const posUrl = `square-commerce-v1://payment/create?data=${encodedData}`;
+
+    // Copy amount to clipboard as backup
     try {
       await navigator.clipboard.writeText(amount);
     } catch { /* ignore */ }
 
-    // Use the Square seller dashboard new-sale page which opens in Square POS on mobile
-    window.open(
-      `https://squareup.com/dashboard/sales/transactions/new?amount=${amountCents}&note=${encodeURIComponent(noteText)}`,
-      "_blank"
-    );
+    // Open Square POS app via deep link
+    window.location.href = posUrl;
 
-    // Show the confirmation UI after a short delay
+    // Show the confirmation UI after Square POS opens
     setTimeout(() => {
       setReaderOpened(true);
-    }, 1000);
+    }, 1500);
   };
 
   const handleGenerateLink = async () => {

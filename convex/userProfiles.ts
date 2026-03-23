@@ -186,12 +186,11 @@ export const listAllUsers = query({
 /**
  * Auto-initialize profile on first login.
  *
- * • If NO profiles exist yet → the caller becomes "owner" (bootstrap).
- * • If profiles exist but the caller doesn't have one → they become "employee".
+ * • Owner emails (Tyler's accounts) → always "owner".
+ * • Everyone else → "employee" (restricted to employee portal).
  * • If the caller already has a profile → no-op.
  *
- * The owner email allow-list is a safety net: even after the first owner is
- * created, these emails always get "owner" if they somehow don't have a profile.
+ * Admins can later promote employees via the Team Management page.
  */
 const OWNER_EMAILS = ["tyler@proworxdetailing.com", "detailing@proworxdetailing.com"];
 
@@ -209,13 +208,10 @@ export const initMyProfile = mutation({
     if (existing) return existing;
 
     const user = await ctx.db.get(userId);
-    const email = user?.email ?? "";
+    const email = (user?.email ?? "").toLowerCase();
 
-    // Determine role
-    const anyProfile = await ctx.db.query("userProfiles").first();
-    const isOwnerEmail = OWNER_EMAILS.includes(email.toLowerCase());
-    const role = !anyProfile || isOwnerEmail ? "owner" : "employee";
-
+    // Only specific owner emails get admin access. Everyone else is employee.
+    const role = OWNER_EMAILS.includes(email) ? "owner" : "employee";
     const displayName = user?.name || email.split("@")[0] || "Team Member";
 
     const profileId = await ctx.db.insert("userProfiles", {

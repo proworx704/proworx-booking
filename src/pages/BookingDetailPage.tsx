@@ -157,7 +157,7 @@ function PaymentDialog({
     });
 
     // Attempt to open Square POS via deep link
-    window.location = posUrl as unknown as Location;
+    window.location.href = posUrl;
 
     // Check after delay if we left the page (= deep link worked)
     setTimeout(() => {

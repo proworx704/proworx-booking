@@ -270,13 +270,29 @@ export const list = query({
     staffId: v.optional(v.id("staff")),
   },
   handler: async (ctx, { status, date, staffId }) => {
+    // Helper: check if a booking is assigned to a specific staff (multi-staff aware)
+    const hasStaff = (b: any, sid: string) => {
+      if (b.staffIds?.some((id: any) => id.toString() === sid.toString())) return true;
+      return b.staffId?.toString() === sid.toString();
+    };
+
     if (staffId && date) {
-      const results = await ctx.db
+      // Use index for primary staff match, then also check multi-staff
+      const indexResults = await ctx.db
         .query("bookings")
         .withIndex("by_staff_date", (q) =>
           q.eq("staffId", staffId).eq("date", date),
         )
         .collect();
+      // Also get all bookings for this date to catch secondary staff assignments
+      const dateResults = await ctx.db
+        .query("bookings")
+        .withIndex("by_date", (q) => q.eq("date", date))
+        .collect();
+      const secondaryMatches = dateResults.filter(
+        (b) => !indexResults.some((ir) => ir._id === b._id) && hasStaff(b, staffId),
+      );
+      const results = [...indexResults, ...secondaryMatches];
       if (status) return results.filter((b) => b.status === status);
       return results.sort((a, b) => a.time.localeCompare(b.time));
     }
@@ -289,7 +305,7 @@ export const list = query({
       const filtered = status
         ? results.filter((b) => b.status === status)
         : results;
-      if (staffId) return filtered.filter((b) => b.staffId === staffId);
+      if (staffId) return filtered.filter((b) => hasStaff(b, staffId));
       return filtered.sort((a, b) => a.time.localeCompare(b.time));
     }
 
@@ -298,7 +314,7 @@ export const list = query({
         .query("bookings")
         .withIndex("by_status", (q) => q.eq("status", status))
         .collect();
-      if (staffId) return results.filter((b) => b.staffId === staffId);
+      if (staffId) return results.filter((b) => hasStaff(b, staffId));
       return results.sort(
         (a, b) =>
           a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
@@ -307,7 +323,7 @@ export const list = query({
 
     const results = await ctx.db.query("bookings").collect();
     const filtered = staffId
-      ? results.filter((b) => b.staffId === staffId)
+      ? results.filter((b) => hasStaff(b, staffId))
       : results;
     return filtered.sort(
       (a, b) =>
@@ -373,7 +389,7 @@ export const updateStatus = mutation({
   },
 });
 
-// Admin: assign staff to booking
+// Admin: add a staff member to a booking (multi-staff)
 export const assignStaff = mutation({
   args: {
     id: v.id("bookings"),
@@ -382,15 +398,67 @@ export const assignStaff = mutation({
   handler: async (ctx, { id, staffId }) => {
     const staff = await ctx.db.get(staffId);
     if (!staff) throw new Error("Staff member not found");
-    await ctx.db.patch(id, { staffId, staffName: staff.name });
+    const booking = await ctx.db.get(id);
+    if (!booking) throw new Error("Booking not found");
+
+    // Build new arrays (add if not already present)
+    const currentIds = booking.staffIds ?? (booking.staffId ? [booking.staffId] : []);
+    const currentNames = booking.staffNames ?? (booking.staffName ? [booking.staffName] : []);
+    if (currentIds.some((sid: any) => sid.toString() === staffId.toString())) return; // already assigned
+
+    const newIds = [...currentIds, staffId];
+    const newNames = [...currentNames, staff.name];
+
+    await ctx.db.patch(id, {
+      staffId: newIds[0],        // primary = first in list
+      staffName: newNames[0],
+      staffIds: newIds,
+      staffNames: newNames,
+    });
   },
 });
 
-// Admin: unassign staff
+// Admin: remove a staff member from a booking
 export const unassignStaff = mutation({
-  args: { id: v.id("bookings") },
-  handler: async (ctx, { id }) => {
-    await ctx.db.patch(id, { staffId: undefined, staffName: undefined });
+  args: {
+    id: v.id("bookings"),
+    staffId: v.optional(v.id("staff")),  // if omitted, removes ALL staff
+  },
+  handler: async (ctx, { id, staffId }) => {
+    const booking = await ctx.db.get(id);
+    if (!booking) throw new Error("Booking not found");
+
+    if (!staffId) {
+      // Remove all staff
+      await ctx.db.patch(id, {
+        staffId: undefined, staffName: undefined,
+        staffIds: undefined, staffNames: undefined,
+      });
+      return;
+    }
+
+    // Remove specific staff member
+    const currentIds = booking.staffIds ?? (booking.staffId ? [booking.staffId] : []);
+    const currentNames = booking.staffNames ?? (booking.staffName ? [booking.staffName] : []);
+    const idx = currentIds.findIndex((sid: any) => sid.toString() === staffId.toString());
+    if (idx === -1) return; // not assigned
+
+    const newIds = currentIds.filter((_: any, i: number) => i !== idx);
+    const newNames = currentNames.filter((_: any, i: number) => i !== idx);
+
+    if (newIds.length === 0) {
+      await ctx.db.patch(id, {
+        staffId: undefined, staffName: undefined,
+        staffIds: undefined, staffNames: undefined,
+      });
+    } else {
+      await ctx.db.patch(id, {
+        staffId: newIds[0],
+        staffName: newNames[0],
+        staffIds: newIds,
+        staffNames: newNames,
+      });
+    }
   },
 });
 
@@ -517,15 +585,30 @@ export const listByStaff = query({
     endDate: v.optional(v.string()),
   },
   handler: async (ctx, { staffId, startDate, endDate }) => {
-    const bookings = await ctx.db
+    // Get bookings where this staff is primary (via index)
+    const primaryBookings = await ctx.db
       .query("bookings")
       .withIndex("by_staff", (q) => q.eq("staffId", staffId))
       .filter((q) => q.neq(q.field("status"), "cancelled"))
       .collect();
 
-    let filtered = bookings;
-    if (startDate) filtered = filtered.filter((b) => b.date >= startDate);
-    if (endDate) filtered = filtered.filter((b) => b.date <= endDate);
+    // Also find bookings where this staff is a secondary assignee
+    let allBookings = await ctx.db
+      .query("bookings")
+      .filter((q) => q.neq(q.field("status"), "cancelled"))
+      .collect();
+    if (startDate) allBookings = allBookings.filter((b) => b.date >= (startDate as string));
+    if (endDate) allBookings = allBookings.filter((b) => b.date <= (endDate as string));
+
+    const secondaryBookings = allBookings.filter(
+      (b) =>
+        !primaryBookings.some((pb) => pb._id === b._id) &&
+        b.staffIds?.some((sid: any) => sid.toString() === staffId.toString()),
+    );
+
+    let filtered = [...primaryBookings, ...secondaryBookings];
+    if (startDate) filtered = filtered.filter((b) => b.date >= (startDate as string));
+    if (endDate) filtered = filtered.filter((b) => b.date <= (endDate as string));
 
     return filtered.sort(
       (a, b) =>

@@ -519,6 +519,25 @@ export function MyJobDetailPage() {
         </Card>
       </div>
 
+      {/* Crew */}
+      {((booking as any).staffNames?.length > 1 || ((booking as any).staffNames?.length === 1 && (booking as any).staffNames[0])) && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Crew on This Job</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {((booking as any).staffNames || [booking.staffName]).filter(Boolean).map((name: string, i: number) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-muted/60 rounded-full">
+                  <div className="size-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-medium">
+                    {name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+                  </div>
+                  <span className="text-sm font-medium">{name}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Add-ons */}
       {booking.addons && booking.addons.length > 0 && (
         <Card>

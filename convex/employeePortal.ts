@@ -186,12 +186,18 @@ export const myWeekStats = query({
 
 // ─── My Assigned Jobs (from bookings) ─────────────────────────────────────────
 
-/** Get bookings assigned to this employee's staff record */
+/** Get bookings assigned to this employee's staff record (multi-staff aware) */
 export const myJobs = query({
   args: { date: v.optional(v.string()) },
   handler: async (ctx, { date }) => {
     const { profile } = await getEmployeeContext(ctx);
     if (!profile.staffId) return [];
+    const myStaffId = profile.staffId.toString();
+
+    // Helper: check if booking is assigned to this employee
+    const isMyBooking = (b: any) =>
+      b.staffId?.toString() === myStaffId ||
+      b.staffIds?.some((sid: any) => sid.toString() === myStaffId);
 
     // Get all bookings (optionally filtered by date)
     let bookings;
@@ -201,43 +207,57 @@ export const myJobs = query({
         .withIndex("by_date", (q: any) => q.eq("date", date))
         .collect();
     } else {
-      // Default: today + upcoming
       const today = new Date().toISOString().split("T")[0];
       bookings = await ctx.db.query("bookings").collect();
       bookings = bookings.filter((b: any) => b.date >= today);
     }
 
-    // Filter to bookings assigned to this staff member
-    const myBookings = bookings.filter(
-      (b: any) => b.staffId?.toString() === profile.staffId?.toString(),
-    );
-
+    const myBookings = bookings.filter(isMyBooking);
     return myBookings.sort((a: any, b: any) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
-      return (a.startTime || "").localeCompare(b.startTime || "");
+      return (a.time || "").localeCompare(b.time || "");
     });
   },
 });
 
 // ─── My Calendar (bookings by date range) ─────────────────────────────────────
 
-/** Get employee's assigned bookings for a date range (for calendar view) */
+/** Get employee's assigned bookings for a date range (for calendar view, multi-staff aware) */
 export const myJobsByDateRange = query({
   args: { startDate: v.string(), endDate: v.string() },
   handler: async (ctx, { startDate, endDate }) => {
     const { profile } = await getEmployeeContext(ctx);
     if (!profile.staffId) return [];
+    const myStaffId = profile.staffId.toString();
 
-    // Use the by_staff_date index for efficiency
-    const bookings = await ctx.db
+    const isMyBooking = (b: any) =>
+      b.staffId?.toString() === myStaffId ||
+      b.staffIds?.some((sid: any) => sid.toString() === myStaffId);
+
+    // Get primary matches via index
+    const primaryBookings = await ctx.db
       .query("bookings")
       .withIndex("by_staff_date", (q: any) =>
         q.eq("staffId", profile.staffId).gte("date", startDate),
       )
       .collect();
 
-    // Filter by end date and exclude cancelled
-    return bookings
+    // Also scan by date range for secondary assignments
+    const dateBookings = await ctx.db
+      .query("bookings")
+      .withIndex("by_date", (q: any) => q.gte("date", startDate))
+      .collect();
+
+    const secondaryBookings = dateBookings.filter(
+      (b: any) =>
+        b.date <= endDate &&
+        !primaryBookings.some((pb: any) => pb._id === b._id) &&
+        isMyBooking(b),
+    );
+
+    const allBookings = [...primaryBookings, ...secondaryBookings];
+
+    return allBookings
       .filter(
         (b: any) => b.date <= endDate && b.status !== "cancelled",
       )
@@ -258,6 +278,7 @@ export const myJobsByDateRange = query({
         confirmationCode: b.confirmationCode,
         selectedVariant: b.selectedVariant,
         staffName: b.staffName,
+        staffNames: b.staffNames,
       }))
       .sort(
         (a: any, b: any) =>
@@ -268,14 +289,19 @@ export const myJobsByDateRange = query({
 
 // ─── Get Single Job Detail ────────────────────────────────────────────────────
 
-/** Get full booking detail — only if assigned to this employee */
+/** Get full booking detail — only if assigned to this employee (multi-staff aware) */
 export const getMyJob = query({
   args: { id: v.id("bookings") },
   handler: async (ctx, { id }) => {
     const { profile } = await getEmployeeContext(ctx);
+    if (!profile.staffId) return null;
     const booking = await ctx.db.get(id);
     if (!booking) return null;
-    if (booking.staffId?.toString() !== profile.staffId?.toString()) return null;
+    const myStaffId = profile.staffId.toString();
+    const isAssigned =
+      booking.staffId?.toString() === myStaffId ||
+      (booking as any).staffIds?.some((sid: any) => sid.toString() === myStaffId);
+    if (!isAssigned) return null;
     return booking;
   },
 });
@@ -294,11 +320,14 @@ export const updateMyJobStatus = mutation({
   },
   handler: async (ctx, { id, status }) => {
     const { profile } = await getEmployeeContext(ctx);
+    if (!profile.staffId) throw new Error("No staff profile linked");
     const booking = await ctx.db.get(id);
     if (!booking) throw new Error("Booking not found");
-    if (booking.staffId?.toString() !== profile.staffId?.toString()) {
-      throw new Error("Not your assigned booking");
-    }
+    const myStaffId = profile.staffId.toString();
+    const isAssigned =
+      booking.staffId?.toString() === myStaffId ||
+      (booking as any).staffIds?.some((sid: any) => sid.toString() === myStaffId);
+    if (!isAssigned) throw new Error("Not your assigned booking");
     await ctx.db.patch(id, { status });
   },
 });
@@ -315,11 +344,14 @@ export const markMyJobPaid = mutation({
   },
   handler: async (ctx, { id, paymentMethod, paymentAmount, paymentId }) => {
     const { profile } = await getEmployeeContext(ctx);
+    if (!profile.staffId) throw new Error("No staff profile linked");
     const booking = await ctx.db.get(id);
     if (!booking) throw new Error("Booking not found");
-    if (booking.staffId?.toString() !== profile.staffId?.toString()) {
-      throw new Error("Not your assigned booking");
-    }
+    const myStaffId = profile.staffId.toString();
+    const isAssigned =
+      booking.staffId?.toString() === myStaffId ||
+      (booking as any).staffIds?.some((sid: any) => sid.toString() === myStaffId);
+    if (!isAssigned) throw new Error("Not your assigned booking");
     await ctx.db.patch(id, {
       paymentStatus: "paid",
       paymentMethod,
@@ -349,11 +381,14 @@ export const updateMyJobNotes = mutation({
   },
   handler: async (ctx, { id, notes }) => {
     const { profile } = await getEmployeeContext(ctx);
+    if (!profile.staffId) throw new Error("No staff profile linked");
     const booking = await ctx.db.get(id);
     if (!booking) throw new Error("Booking not found");
-    if (booking.staffId?.toString() !== profile.staffId?.toString()) {
-      throw new Error("Not your assigned booking");
-    }
+    const myStaffId = profile.staffId.toString();
+    const isAssigned =
+      booking.staffId?.toString() === myStaffId ||
+      (booking as any).staffIds?.some((sid: any) => sid.toString() === myStaffId);
+    if (!isAssigned) throw new Error("Not your assigned booking");
     await ctx.db.patch(id, { notes });
   },
 });

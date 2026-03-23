@@ -181,9 +181,9 @@ function ZipClusterPanel() {
                         {formatDateShort(b.date)}
                       </span>
                     )}
-                    {b.staffName && (
+                    {((b as any).staffNames?.length > 0 || b.staffName) && (
                       <Badge variant="outline" className="text-xs ml-auto">
-                        {b.staffName}
+                        {(b as any).staffNames?.join(", ") || b.staffName}
                       </Badge>
                     )}
                   </Link>

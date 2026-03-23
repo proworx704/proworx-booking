@@ -184,9 +184,11 @@ const schema = defineSchema({
     date: v.string(),
     time: v.string(),
 
-    // Staff assignment
-    staffId: v.optional(v.id("staff")),
-    staffName: v.optional(v.string()),
+    // Staff assignment (multi-staff)
+    staffId: v.optional(v.id("staff")),       // primary/lead staff (kept for index compat)
+    staffName: v.optional(v.string()),         // primary staff name
+    staffIds: v.optional(v.array(v.id("staff"))),   // ALL assigned staff
+    staffNames: v.optional(v.array(v.string())),     // ALL staff names (parallel array)
 
     // Status
     status: v.union(

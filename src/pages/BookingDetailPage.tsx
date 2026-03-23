@@ -813,44 +813,61 @@ export function BookingDetailPage() {
                 Assigned Staff
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              {booking.staffName ? (
-                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
-                  <div className="flex items-center gap-3">
-                    <div className="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
-                      {booking.staffName.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+            <CardContent className="space-y-3">
+              {/* Show all currently assigned staff */}
+              {(() => {
+                const ids: string[] = (booking as any).staffIds ?? (booking.staffId ? [booking.staffId] : []);
+                const names: string[] = (booking as any).staffNames ?? (booking.staffName ? [booking.staffName] : []);
+                if (ids.length === 0) return (
+                  <p className="text-sm text-muted-foreground">No staff assigned yet</p>
+                );
+                return ids.map((sid: string, i: number) => (
+                  <div key={sid} className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
+                    <div className="flex items-center gap-3">
+                      <div className="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                        {(names[i] || "?").split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+                      </div>
+                      <div>
+                        <p className="font-medium">{names[i] || "Unknown"}</p>
+                        {i === 0 && ids.length > 1 && (
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Lead</span>
+                        )}
+                      </div>
                     </div>
-                    <p className="font-medium">{booking.staffName}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => unassignStaff({ id: booking._id, staffId: sid as Id<"staff"> })}
+                    >
+                      Remove
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => unassignStaff({ id: booking._id })}
-                  >
-                    Unassign
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground mb-2">No staff assigned yet</p>
+                ));
+              })()}
+              {/* Add another staff member */}
+              {(() => {
+                const ids: string[] = (booking as any).staffIds ?? (booking.staffId ? [booking.staffId] : []);
+                const available = activeStaff?.filter((s) => !ids.includes(s._id));
+                if (!available || available.length === 0) return null;
+                return (
                   <Select
                     onValueChange={(staffId) =>
                       assignStaff({ id: booking._id, staffId: staffId as Id<"staff"> })
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Assign a staff member..." />
+                      <SelectValue placeholder={ids.length > 0 ? "Add another staff member..." : "Assign a staff member..."} />
                     </SelectTrigger>
                     <SelectContent>
-                      {activeStaff?.map((s) => (
+                      {available.map((s) => (
                         <SelectItem key={s._id} value={s._id}>
                           {s.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-              )}
+                );
+              })()}
             </CardContent>
           </Card>
 

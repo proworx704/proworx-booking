@@ -110,6 +110,7 @@ type Booking = {
   confirmationCode: string;
   selectedVariant?: string;
   staffName?: string;
+  staffNames?: string[];
 };
 
 // ─── Booking Block ────────────────────────────────────────────────────────────

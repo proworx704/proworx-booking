@@ -268,7 +268,9 @@ export const getAvailableSlots = query({
       if (useStaffScheduling) {
         const anyStaffFree = staffAvailable.some((s) => {
           if (m < s.startMinutes || m + durationMinutes > s.endMinutes) return false;
-          const staffBookings = bookings.filter((b) => b.staffId === s._id);
+          const staffBookings = bookings.filter(
+            (b) => b.staffId === s._id || (b as any).staffIds?.some((sid: any) => sid.toString() === s._id.toString()),
+          );
           const hasConflict = staffBookings.some((b) => {
             const [bH, bM] = b.time.split(":").map(Number);
             const bookingStart = bH * 60 + bM;

@@ -271,9 +271,9 @@ function BookingPopover({ booking, onClose }: { booking: Booking; onClose: () =>
               </Badge>
             </div>
           )}
-          {booking.staffName && (
+          {((booking as any).staffNames?.length > 0 || booking.staffName) && (
             <div className="text-xs text-muted-foreground">
-              Assigned: {booking.staffName}
+              Assigned: {(booking as any).staffNames?.join(", ") || booking.staffName}
             </div>
           )}
         </div>

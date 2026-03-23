@@ -128,9 +128,10 @@ function PaymentDialog({
 
     // Square Point of Sale API deep link (Mobile Web format)
     // Docs: https://developer.squareup.com/docs/pos-api/build-mobile-web
+    // NOTE: Requires callback URL registered at developer.squareup.com → app → POS API → Web
     const dataParameter = {
       amount_money: {
-        amount: String(amountCents),
+        amount: amountCents,
         currency_code: "USD",
       },
       callback_url: window.location.origin + "/pos-callback",
@@ -152,16 +153,27 @@ function PaymentDialog({
 
     const handleBlur = () => { didLeave = true; };
     window.addEventListener("blur", handleBlur);
-    document.addEventListener("visibilitychange", () => {
+    const handleVisibility = () => {
       if (document.hidden) didLeave = true;
-    });
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
-    // Attempt to open Square POS via deep link
-    window.location.href = posUrl;
+    // Try deep link via hidden iframe first (more reliable on iOS Safari),
+    // fall back to window.location
+    try {
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = posUrl;
+      document.body.appendChild(iframe);
+      setTimeout(() => document.body.removeChild(iframe), 100);
+    } catch {
+      window.location.href = posUrl;
+    }
 
     // Check after delay if we left the page (= deep link worked)
     setTimeout(() => {
       window.removeEventListener("blur", handleBlur);
+      document.removeEventListener("visibilitychange", handleVisibility);
       if (!didLeave && Date.now() - startTime < 3000) {
         // Deep link failed — show manual fallback
         setDeepLinkFailed(true);
@@ -366,16 +378,13 @@ function PaymentDialog({
 
                   {/* Deep link failed — show manual instructions */}
                   {deepLinkFailed && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
-                      <p className="text-xs font-medium text-blue-800 text-center">
-                        Square POS didn't open automatically
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
+                      <p className="text-xs font-medium text-amber-900 text-center">
+                        ⚠️ Square POS didn't open
                       </p>
-                      <ol className="text-xs text-blue-700 space-y-1 pl-4 list-decimal">
-                        <li>Open <span className="font-semibold">Square POS</span> app on this device</li>
-                        <li>Tap <span className="font-semibold">Charge</span> → enter <span className="font-bold">{amountFormatted}</span></li>
-                        <li>Tap, insert, or swipe the card</li>
-                        <li>Come back here and tap the green button below</li>
-                      </ol>
+                      <p className="text-[11px] text-amber-800 text-center">
+                        Open Square POS manually, charge <span className="font-bold">{amountFormatted}</span>, then tap the green button below.
+                      </p>
                       <div className="flex gap-2 pt-1">
                         <Button
                           variant="outline"
@@ -386,14 +395,14 @@ function PaymentDialog({
                           }}
                         >
                           <Copy className="size-3 mr-1" />
-                          Copy Amount
+                          Copy ${amount}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="flex-1 text-xs"
                           onClick={() => {
-                            window.open("https://squareup.com/dashboard/sales/transactions", "_blank");
+                            window.open("https://squareup.com/dashboard/sales/transactions/new", "_blank");
                           }}
                         >
                           <ExternalLink className="size-3 mr-1" />

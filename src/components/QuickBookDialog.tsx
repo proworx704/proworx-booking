@@ -54,13 +54,17 @@ function formatPrice(cents: number): string {
 }
 
 function formatTime12(h: number, m: number): string {
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 || 12;
-  return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
+  const safeH = Number.isFinite(h) ? h : 0;
+  const safeM = Number.isFinite(m) ? m : 0;
+  const ampm = safeH >= 12 ? "PM" : "AM";
+  const hour = safeH % 12 || 12;
+  return `${hour}:${safeM.toString().padStart(2, "0")} ${ampm}`;
 }
 
 function formatDateDisplay(dateStr: string): string {
+  if (!dateStr || !dateStr.includes("-")) return "—";
   const [y, m, d] = dateStr.split("-").map(Number);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return "—";
   const date = new Date(y, m - 1, d);
   return date.toLocaleDateString("en-US", {
     weekday: "short",
@@ -109,9 +113,9 @@ export function QuickBookDialog({
   const [serviceAddress, setServiceAddress] = useState("");
   const [zipCode, setZipCode] = useState("");
 
-  // Schedule
-  const [date, setDate] = useState(initialDate);
-  const [time, setTime] = useState(initialTime);
+  // Schedule — default to valid values so first render never crashes
+  const [date, setDate] = useState(initialDate || new Date().toISOString().split("T")[0]);
+  const [time, setTime] = useState(initialTime || "09:00");
 
   // Staff
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
@@ -186,8 +190,9 @@ export function QuickBookDialog({
     return selectedService.variants.find((v) => v.label === selectedVariant) || null;
   }, [selectedService, selectedVariant]);
 
-  // ─── Parse time ─────────────────────────────────────────
-  const [timeH, timeM] = time.split(":").map(Number);
+  // ─── Parse time (use initialTime as fallback before effect syncs) ────
+  const effectiveTime = time && time.includes(":") ? time : initialTime && initialTime.includes(":") ? initialTime : "09:00";
+  const [timeH, timeM] = effectiveTime.split(":").map(Number);
 
   // ─── Submit ─────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
@@ -641,10 +646,7 @@ export function QuickBookDialog({
                     <Clock className="size-3.5" />
                     <span>
                       {formatDateDisplay(date)} at{" "}
-                      {formatTime12(
-                        parseInt(time.split(":")[0]),
-                        parseInt(time.split(":")[1]),
-                      )}
+                      {formatTime12(timeH, timeM)}
                     </span>
                   </div>
                 </div>

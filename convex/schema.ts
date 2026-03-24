@@ -212,10 +212,13 @@ const schema = defineSchema({
     squarePaymentLinkId: v.optional(v.string()),
     paidAt: v.optional(v.number()),
 
-    // Follow-up
+    // Follow-up & Review Gate
     followUpSent: v.optional(v.boolean()),
+    followUpSentAt: v.optional(v.number()), // ms epoch — when feedback request was sent
     satisfaction: v.optional(v.union(v.literal("yes"), v.literal("no"))),
+    satisfactionRating: v.optional(v.number()), // 1-5 star rating
     followUpNote: v.optional(v.string()),
+    googleReviewClicked: v.optional(v.boolean()), // tracked when customer clicks review link
 
     // Notes
     notes: v.optional(v.string()),
@@ -231,6 +234,8 @@ const schema = defineSchema({
     confirmationSmsSent: v.optional(v.boolean()),
     reminder24hSent: v.optional(v.boolean()),
     reminder2hSent: v.optional(v.boolean()),
+    feedbackEmailSent: v.optional(v.boolean()),
+    feedbackSmsSent: v.optional(v.boolean()),
   })
     .index("by_date", ["date"])
     .index("by_status", ["status"])

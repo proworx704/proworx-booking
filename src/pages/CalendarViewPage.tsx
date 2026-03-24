@@ -48,18 +48,24 @@ function formatDayHeader(d: Date): { dayName: string; dayNum: number; monthShort
 }
 
 function formatTime12(t: string): string {
-  const [h, m] = t.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 || 12;
-  return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
+  if (!t || !t.includes(":")) return "—";
+  const [h = 0, m = 0] = t.split(":").map(Number);
+  const safeH = Number.isFinite(h) ? h : 0;
+  const safeM = Number.isFinite(m) ? m : 0;
+  const ampm = safeH >= 12 ? "PM" : "AM";
+  const hour = safeH % 12 || 12;
+  return `${hour}:${safeM.toString().padStart(2, "0")} ${ampm}`;
 }
 
 function formatTimeShort(t: string): string {
-  const [h, m] = t.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 || 12;
-  if (m === 0) return `${hour}${ampm}`;
-  return `${hour}:${m.toString().padStart(2, "0")}${ampm}`;
+  if (!t || !t.includes(":")) return "—";
+  const [h = 0, m = 0] = t.split(":").map(Number);
+  const safeH = Number.isFinite(h) ? h : 0;
+  const safeM = Number.isFinite(m) ? m : 0;
+  const ampm = safeH >= 12 ? "PM" : "AM";
+  const hour = safeH % 12 || 12;
+  if (safeM === 0) return `${hour}${ampm}`;
+  return `${hour}:${safeM.toString().padStart(2, "0")}${ampm}`;
 }
 
 function formatPrice(cents: number): string {

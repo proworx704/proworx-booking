@@ -412,6 +412,18 @@ export const updateStatus = mutation({
   handler: async (ctx, { id, status }) => {
     await requireAdmin(ctx);
     await ctx.db.patch(id, { status });
+
+    // When booking is completed, schedule feedback request (2 hour delay)
+    if (status === "completed") {
+      const booking = await ctx.db.get(id);
+      if (booking && !booking.followUpSent) {
+        await ctx.scheduler.runAfter(
+          2 * 60 * 60 * 1000, // 2 hours
+          internal.notifications.sendFeedbackRequest,
+          { bookingId: id },
+        );
+      }
+    }
   },
 });
 
@@ -712,9 +724,10 @@ export const submitFeedback = mutation({
   args: {
     confirmationCode: v.string(),
     satisfaction: v.union(v.literal("yes"), v.literal("no")),
+    rating: v.optional(v.number()), // 1-5 star rating
     note: v.optional(v.string()),
   },
-  handler: async (ctx, { confirmationCode, satisfaction, note }) => {
+  handler: async (ctx, { confirmationCode, satisfaction, rating, note }) => {
     const booking = await ctx.db
       .query("bookings")
       .withIndex("by_confirmation", (q) =>
@@ -725,11 +738,57 @@ export const submitFeedback = mutation({
 
     await ctx.db.patch(booking._id, {
       satisfaction,
+      satisfactionRating: rating,
       followUpNote: note,
       followUpSent: true,
     });
 
     return { satisfaction };
+  },
+});
+
+// Public: track when a customer clicks the Google Review link
+export const trackReviewClick = mutation({
+  args: { confirmationCode: v.string() },
+  handler: async (ctx, { confirmationCode }) => {
+    const booking = await ctx.db
+      .query("bookings")
+      .withIndex("by_confirmation", (q) =>
+        q.eq("confirmationCode", confirmationCode),
+      )
+      .first();
+    if (!booking) return;
+    await ctx.db.patch(booking._id, { googleReviewClicked: true });
+  },
+});
+
+// Admin: review gate stats
+export const reviewStats = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    const bookings = await ctx.db.query("bookings").collect();
+    const completed = bookings.filter((b) => b.status === "completed");
+    const feedbackSent = completed.filter((b) => b.followUpSent);
+    const responded = completed.filter((b) => b.satisfaction);
+    const happy = completed.filter((b) => b.satisfaction === "yes");
+    const unhappy = completed.filter((b) => b.satisfaction === "no");
+    const reviewClicked = completed.filter((b) => b.googleReviewClicked);
+
+    return {
+      totalCompleted: completed.length,
+      feedbackSent: feedbackSent.length,
+      responded: responded.length,
+      happy: happy.length,
+      unhappy: unhappy.length,
+      reviewClicked: reviewClicked.length,
+      responseRate: feedbackSent.length > 0
+        ? Math.round((responded.length / feedbackSent.length) * 100)
+        : 0,
+      happyRate: responded.length > 0
+        ? Math.round((happy.length / responded.length) * 100)
+        : 0,
+    };
   },
 });
 

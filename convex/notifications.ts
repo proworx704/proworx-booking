@@ -519,3 +519,184 @@ export const checkAndSendReminders = internalAction({
     }
   },
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REVIEW GATE — Automatic feedback request after service completion
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const APP_URL = process.env.VITE_APP_URL || "https://proworx-booking-8ee2b7c6.viktor.space";
+
+function feedbackRequestEmailBody(b: {
+  customerName: string;
+  serviceName: string;
+  selectedVariant?: string;
+  date: string;
+  confirmationCode: string;
+}): { subject: string; body: string } {
+  const dateFmt = formatDateReadable(b.date);
+  const variant = b.selectedVariant ? ` (${b.selectedVariant})` : "";
+  const feedbackUrl = `${APP_URL}/feedback?code=${b.confirmationCode}`;
+
+  const subject = `How was your detail, ${b.customerName.split(" ")[0]}?`;
+  const body = `# How Was Your Experience? ⭐
+
+Hi ${b.customerName.split(" ")[0]},
+
+We recently completed your **${b.serviceName}${variant}** on ${dateFmt} — and we'd love to hear how it went!
+
+---
+
+## 👉 [Rate Your Experience](${feedbackUrl})
+
+It only takes 10 seconds. Your feedback helps us keep delivering 5-star quality.
+
+---
+
+### Why It Matters
+
+- We read every single response
+- Your feedback directly shapes how we improve
+- If anything wasn't perfect, we want to make it right
+
+---
+
+Thank you for choosing **${BUSINESS_NAME}**! We appreciate your trust.
+
+📞 **${BUSINESS_PHONE}** · ✉️ **${BUSINESS_EMAIL}**
+
+---
+
+*${BUSINESS_NAME} · Charlotte, NC & Surrounding Areas*`;
+
+  return { subject, body };
+}
+
+function feedbackRequestSms(b: {
+  customerName: string;
+  serviceName: string;
+  confirmationCode: string;
+}): string {
+  const feedbackUrl = `${APP_URL}/feedback?code=${b.confirmationCode}`;
+  return `Hi ${b.customerName.split(" ")[0]}! 👋 How was your ${b.serviceName} with ProWorx? We'd love your quick feedback:\n\n${feedbackUrl}\n\nTakes 10 seconds — thank you! ⭐\n— ${BUSINESS_NAME}`;
+}
+
+// Internal mutation to mark feedback request as sent
+export const markFeedbackSent = internalMutation({
+  args: {
+    bookingId: v.id("bookings"),
+    emailSent: v.boolean(),
+    smsSent: v.boolean(),
+  },
+  handler: async (ctx, { bookingId, emailSent, smsSent }) => {
+    await ctx.db.patch(bookingId, {
+      followUpSent: true,
+      followUpSentAt: Date.now(),
+      feedbackEmailSent: emailSent,
+      feedbackSmsSent: smsSent,
+    });
+  },
+});
+
+/**
+ * Send feedback/review request after service completion.
+ * Scheduled by bookings.updateStatus when marked "completed" (2-hour delay).
+ * Also triggered by the cron fallback scanner.
+ */
+export const sendFeedbackRequest = internalAction({
+  args: { bookingId: v.id("bookings") },
+  handler: async (ctx, { bookingId }) => {
+    const booking = await ctx.runQuery(internal.notifications.getBookingById, { bookingId });
+    if (!booking) {
+      console.error(`[review] Booking ${bookingId} not found`);
+      return;
+    }
+
+    // Skip if already sent, cancelled, or not completed
+    if (booking.followUpSent || booking.status !== "completed") {
+      console.log(`[review] Skipping ${bookingId}: followUpSent=${booking.followUpSent}, status=${booking.status}`);
+      return;
+    }
+
+    // ── Email ──
+    let emailSent = false;
+    if (booking.customerEmail) {
+      const { subject, body } = feedbackRequestEmailBody({
+        customerName: booking.customerName,
+        serviceName: booking.serviceName,
+        selectedVariant: booking.selectedVariant,
+        date: booking.date,
+        confirmationCode: booking.confirmationCode,
+      });
+      emailSent = await sendEmail(booking.customerEmail, subject, "", body);
+    }
+
+    // ── SMS ──
+    let smsSent = false;
+    if (booking.customerPhone) {
+      smsSent = await sendSms(
+        booking.customerPhone,
+        feedbackRequestSms({
+          customerName: booking.customerName,
+          serviceName: booking.serviceName,
+          confirmationCode: booking.confirmationCode,
+        }),
+      );
+    }
+
+    await ctx.runMutation(internal.notifications.markFeedbackSent, {
+      bookingId,
+      emailSent,
+      smsSent,
+    });
+
+    console.log(
+      `[review] Feedback request for ${booking.confirmationCode}: email=${emailSent}, sms=${smsSent}`,
+    );
+  },
+});
+
+/**
+ * Cron fallback: scan completed bookings that haven't had feedback requests sent.
+ * Sends feedback if completed > 2 hours ago and no followUpSent.
+ * This catches bookings that were completed before the auto-trigger was added,
+ * or where the scheduler failed.
+ */
+export const checkAndSendFeedbackRequests = internalAction({
+  handler: async (ctx) => {
+    // Get all completed bookings
+    const completed = await ctx.runQuery(
+      internal.notifications.getCompletedWithoutFeedback,
+    );
+
+    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+    let scheduled = 0;
+
+    for (const booking of completed) {
+      // Only send if the booking was created more than 2 hours ago
+      // (using _creationTime as proxy since we don't track completedAt)
+      if (booking._creationTime < twoHoursAgo) {
+        await ctx.scheduler.runAfter(0, internal.notifications.sendFeedbackRequest, {
+          bookingId: booking._id,
+        });
+        scheduled++;
+      }
+    }
+
+    if (scheduled > 0) {
+      console.log(`[review] Cron: scheduled ${scheduled} feedback requests`);
+    }
+  },
+});
+
+// Internal query for the cron to find completed bookings without feedback
+export const getCompletedWithoutFeedback = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const bookings = await ctx.db
+      .query("bookings")
+      .withIndex("by_status", (q) => q.eq("status", "completed"))
+      .collect();
+
+    return bookings.filter((b) => !b.followUpSent && !b.satisfaction);
+  },
+});

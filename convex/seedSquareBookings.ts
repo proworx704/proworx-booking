@@ -1,5 +1,5 @@
 import { mutation } from "./_generated/server";
-import { requireAuth, requireAdmin } from "./authHelpers";
+import { requireAdmin } from "./authHelpers";
 
 /** One-time seed: import Square bookings */
 export const seedSquareBookings = mutation({

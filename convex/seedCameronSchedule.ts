@@ -1,5 +1,5 @@
 import { mutation } from "./_generated/server";
-import { requireAuth, requireAdmin } from "./authHelpers";
+import { requireAdmin } from "./authHelpers";
 
 /**
  * Seed Cameron's alternating custody schedule.

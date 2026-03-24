@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireAuth, requireAdmin } from "./authHelpers";
+import { requireAdmin } from "./authHelpers";
 
 function calculateHours(startTime: string, endTime: string): number {
   const [startH, startM] = startTime.split(":").map(Number);

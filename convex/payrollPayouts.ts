@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireAuth, requireAdmin } from "./authHelpers";
+import { requireAdmin } from "./authHelpers";
 
 function getPayDate(weekEnd: string): string {
   const d = new Date(`${weekEnd}T12:00:00`);

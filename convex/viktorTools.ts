@@ -11,6 +11,7 @@
  */
 import { v } from "convex/values";
 import { action } from "./_generated/server";
+import { requireActionAuth } from "./authHelpers";
 
 
 declare const process: { env: Record<string, string | undefined> };
@@ -45,7 +46,8 @@ async function callTool<T>(role: string, args: Record<string, unknown> = {}): Pr
 export const quickAiSearch = action({
   args: { query: v.string() },
   returns: v.string(),
-  handler: async (_ctx, { query }) => {
+  handler: async (ctx, { query }) => {
+    await requireActionAuth(ctx);
     const result = await callTool<{ search_response: string }>("quick_ai_search", {
       search_question: query,
     });
@@ -67,7 +69,8 @@ export const generateImage = action({
     ),
   },
   returns: v.string(),
-  handler: async (_ctx, { prompt, aspectRatio }) => {
+  handler: async (ctx, { prompt, aspectRatio }) => {
+    await requireActionAuth(ctx);
     const result = await callTool<{ response_text: string }>("text2im", {
       prompt,
       aspect_ratio: aspectRatio ?? "1:1",

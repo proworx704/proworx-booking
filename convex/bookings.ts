@@ -250,14 +250,26 @@ export const create = mutation({
   },
 });
 
-// Public: look up booking by confirmation code
+// Public: look up booking by confirmation code (feedback page only)
+// Returns ONLY the fields needed for the public feedback form —
+// never exposes phone, email, address, or payment details.
 export const getByConfirmation = query({
   args: { code: v.string() },
   handler: async (ctx, { code }) => {
-    return await ctx.db
+    const booking = await ctx.db
       .query("bookings")
       .withIndex("by_confirmation", (q) => q.eq("confirmationCode", code))
       .first();
+    if (!booking) return null;
+    return {
+      _id: booking._id,
+      customerName: booking.customerName,
+      serviceName: booking.serviceName,
+      date: booking.date,
+      satisfaction: booking.satisfaction,
+      followUpNote: booking.followUpNote,
+      confirmationCode: booking.confirmationCode,
+    };
   },
 });
 
@@ -379,7 +391,10 @@ export const listUpcoming = query({
 // Admin: get a single booking
 export const get = query({
   args: { id: v.id("bookings") },
-  handler: async (ctx, { id }) => ctx.db.get(id),
+  handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
+    return ctx.db.get(id);
+  },
 });
 
 // Admin: update booking status

@@ -27,6 +27,7 @@ export const importBookings = mutation({
     ),
   },
   handler: async (ctx, { bookings }) => {
+    await requireAdmin(ctx);
     let created = 0;
     let skipped = 0;
 

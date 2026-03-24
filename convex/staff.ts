@@ -210,7 +210,8 @@ export const getAssignedServices = query({
   },
 });
 
-// Get staff who can perform a specific service
+// Get staff who can perform a specific service (public — booking form)
+// Returns only name/ID, never phone or email.
 export const getStaffForService = query({
   args: { serviceId: v.id("services") },
   handler: async (ctx, { serviceId }) => {
@@ -222,7 +223,9 @@ export const getStaffForService = query({
     const staffMembers = await Promise.all(
       assignments.map((a) => ctx.db.get(a.staffId)),
     );
-    return staffMembers.filter((s) => s && s.isActive);
+    return staffMembers
+      .filter((s) => s && s.isActive)
+      .map((s) => ({ _id: s!._id, name: s!.name, color: s!.color }));
   },
 });
 

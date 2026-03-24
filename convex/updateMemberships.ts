@@ -19,7 +19,7 @@ export const run = mutation({
       description: string;
       variants: Array<{ label: string; price: number; durationMin: number }>;
     }> = {
-      "membership-clean": {
+      "membership-exterior-only": {
         description: "Monthly exterior maintenance wash — hand wash, tires, exterior windows, door jambs, and tire shine. Keeps your vehicle looking fresh between full details.",
         variants: [
           { label: "Coupe/Sedan", price: 5900, durationMin: 30 },
@@ -28,7 +28,7 @@ export const run = mutation({
           { label: "Vans", price: 5900, durationMin: 60 },
         ],
       },
-      "membership-shield": {
+      "membership-interior-only": {
         description: "Monthly interior maintenance detail — vacuum, wipe-down, dashboard care, leather/vinyl conditioning, interior windows, and air freshener. The most popular choice.",
         variants: [
           { label: "Coupe/Sedan", price: 9900, durationMin: 35 },
@@ -37,7 +37,7 @@ export const run = mutation({
           { label: "Vans", price: 9900, durationMin: 70 },
         ],
       },
-      "membership-armor": {
+      "membership-full-inside-out": {
         description: "Premium monthly inside & out detail with ceramic wet-coat protection — paint sealant, tire shine, and priority scheduling. The ultimate maintenance plan.",
         variants: [
           { label: "Coupe/Sedan", price: 15900, durationMin: 60 },

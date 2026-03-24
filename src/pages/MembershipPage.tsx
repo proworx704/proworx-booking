@@ -27,14 +27,14 @@ function formatPrice(cents: number) {
 
 // Feature bullets per tier
 const TIER_FEATURES: Record<string, string[]> = {
-  "membership-clean": [
+  "membership-exterior-only": [
     "Monthly exterior hand wash",
     "Tire & wheel clean",
     "Exterior window cleaning",
     "Door jamb wipe-down",
     "Tire shine & dressing",
   ],
-  "membership-shield": [
+  "membership-interior-only": [
     "Monthly interior detail",
     "Full vacuum & wipe-down",
     "Dashboard & console detail",
@@ -42,7 +42,7 @@ const TIER_FEATURES: Record<string, string[]> = {
     "Interior windows",
     "Air freshener",
   ],
-  "membership-armor": [
+  "membership-full-inside-out": [
     "Full inside & out detail",
     "Everything in Exterior + Interior",
     "Ceramic wet-coat protection",
@@ -53,15 +53,15 @@ const TIER_FEATURES: Record<string, string[]> = {
 };
 
 const TIER_GRADIENTS: Record<string, string> = {
-  "membership-clean": "from-slate-500 to-slate-400",
-  "membership-shield": "from-blue-600 to-cyan-500",
-  "membership-armor": "from-amber-500 to-orange-500",
+  "membership-exterior-only": "from-slate-500 to-slate-400",
+  "membership-interior-only": "from-blue-600 to-cyan-500",
+  "membership-full-inside-out": "from-amber-500 to-orange-500",
 };
 
 const TIER_ACCENT: Record<string, string> = {
-  "membership-clean": "border-slate-300 dark:border-slate-600",
-  "membership-shield": "border-blue-400/50 ring-2 ring-blue-400/20",
-  "membership-armor": "border-amber-400/50 ring-1 ring-amber-400/20",
+  "membership-exterior-only": "border-slate-300 dark:border-slate-600",
+  "membership-interior-only": "border-blue-400/50 ring-2 ring-blue-400/20",
+  "membership-full-inside-out": "border-amber-400/50 ring-1 ring-amber-400/20",
 };
 
 export function MembershipPage() {

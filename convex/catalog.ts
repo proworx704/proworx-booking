@@ -790,8 +790,8 @@ export const seed = mutation({
 
       // ─── MEMBERSHIPS ───────────────────────────────────────
       {
-        name: "Clean Membership",
-        slug: "membership-clean",
+        name: "Exterior Only Membership",
+        slug: "membership-exterior-only",
         description: "Monthly exterior maintenance wash. Keep your vehicle looking its best between full details. Requires initial detail to join.",
         category: "membership",
         variants: [{ label: "Monthly", price: 5900, durationMin: 45 }],
@@ -799,8 +799,8 @@ export const seed = mutation({
         sortOrder: 1,
       },
       {
-        name: "Shield Membership",
-        slug: "membership-shield",
+        name: "Interior Only Membership",
+        slug: "membership-interior-only",
         description: "Monthly interior + exterior maintenance detail with paint sealant refresh. The most popular choice. Requires initial detail to join.",
         category: "membership",
         variants: [{ label: "Monthly", price: 9900, durationMin: 90 }],
@@ -809,8 +809,8 @@ export const seed = mutation({
         popular: true,
       },
       {
-        name: "Armor Membership",
-        slug: "membership-armor",
+        name: "Full Inside & Out Membership",
+        slug: "membership-full-inside-out",
         description: "Premium monthly full detail — interior deep clean, exterior compound & sealant, engine bay, and ceramic top-up. Requires initial detail to join.",
         category: "membership",
         variants: [{ label: "Monthly", price: 15900, durationMin: 150 }],

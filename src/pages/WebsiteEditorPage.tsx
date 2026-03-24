@@ -315,15 +315,15 @@ interface MembershipEdit {
 }
 
 const TIER_GRADIENTS: Record<string, string> = {
-  "membership-clean": "from-slate-500 to-slate-400",
-  "membership-shield": "from-blue-600 to-cyan-500",
-  "membership-armor": "from-amber-500 to-orange-500",
+  "membership-exterior-only": "from-slate-500 to-slate-400",
+  "membership-interior-only": "from-blue-600 to-cyan-500",
+  "membership-full-inside-out": "from-amber-500 to-orange-500",
 };
 
 const DEFAULT_FEATURES: Record<string, string[]> = {
-  "membership-clean": ["Monthly exterior hand wash", "Tire & wheel clean", "Exterior window cleaning", "Door jamb wipe-down", "Tire shine & dressing"],
-  "membership-shield": ["Monthly interior detail", "Full vacuum & wipe-down", "Dashboard & console detail", "Leather / vinyl conditioning", "Interior windows", "Air freshener"],
-  "membership-armor": ["Full inside & out detail", "Everything in Exterior + Interior", "Ceramic wet-coat protection", "Paint sealant refresh", "Tire shine & trim dressing", "Priority scheduling"],
+  "membership-exterior-only": ["Monthly exterior hand wash", "Tire & wheel clean", "Exterior window cleaning", "Door jamb wipe-down", "Tire shine & dressing"],
+  "membership-interior-only": ["Monthly interior detail", "Full vacuum & wipe-down", "Dashboard & console detail", "Leather / vinyl conditioning", "Interior windows", "Air freshener"],
+  "membership-full-inside-out": ["Full inside & out detail", "Everything in Exterior + Interior", "Ceramic wet-coat protection", "Paint sealant refresh", "Tire shine & trim dressing", "Priority scheduling"],
 };
 
 function MembershipEditor({ mem, onChange }: { mem: MembershipEdit; onChange: (m: MembershipEdit) => void }) {

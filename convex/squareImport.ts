@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 /**
  * Import a batch of bookings from Square.
@@ -118,6 +119,7 @@ export const importBookings = mutation({
 /** List all Square-imported bookings for verification */
 export const listImported = query({
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const all = await ctx.db.query("bookings").collect();
     return all.filter((b) => b.squareBookingId).map((b) => ({
       id: b._id,

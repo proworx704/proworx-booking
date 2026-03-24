@@ -11,6 +11,7 @@
  */
 import { v } from "convex/values";
 import { action } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 declare const process: { env: Record<string, string | undefined> };
 

@@ -1,18 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
-
-async function requireAuth(ctx: { auth: unknown; db: unknown }) {
-  const userId = await getAuthUserId(ctx as never);
-  if (!userId) throw new Error("Not authenticated");
-  return userId;
-}
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 /** Get all site config as a key-value map */
 export const getAll = query({
   args: {},
   handler: async (ctx) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const rows = await ctx.db.query("siteConfig").collect();
     const map: Record<string, string> = {};
     for (const row of rows) {
@@ -26,7 +20,7 @@ export const getAll = query({
 export const getByKey = query({
   args: { key: v.string() },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const row = await ctx.db
       .query("siteConfig")
       .withIndex("by_key", (q) => q.eq("key", args.key))
@@ -43,7 +37,7 @@ export const set = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const existing = await ctx.db
       .query("siteConfig")
       .withIndex("by_key", (q) => q.eq("key", args.key))
@@ -72,7 +66,7 @@ export const setMany = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     for (const entry of args.entries) {
       const existing = await ctx.db
         .query("siteConfig")
@@ -96,7 +90,7 @@ export const remove = mutation({
   args: { key: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const existing = await ctx.db
       .query("siteConfig")
       .withIndex("by_key", (q) => q.eq("key", args.key))

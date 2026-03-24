@@ -1,4 +1,5 @@
 import { mutation } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 /**
  * Seed Cameron's alternating custody schedule.
@@ -13,6 +14,7 @@ import { mutation } from "./_generated/server";
 export const run = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     // ── 1. Enable recurring blocks with Week A reference ──
     const existing = await ctx.db.query("recurringBlockSettings").first();
     if (existing) {

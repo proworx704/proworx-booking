@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAdmin } from "./authHelpers";
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
@@ -70,6 +71,9 @@ export const list = query({
 export const getByUserId = query({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
+    // Admin only
+    const authUserId = await getAuthUserId(ctx);
+    if (!authUserId) throw new Error("Authentication required");
     return await ctx.db
       .query("userProfiles")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -320,6 +324,8 @@ export const setRoleByEmail = mutation({
     displayName: v.string(),
   },
   handler: async (ctx, { email, role, displayName }) => {
+    // Only owners can set roles
+    await requireAdmin(ctx);
     // Find user by email
     const user = await ctx.db
       .query("users")

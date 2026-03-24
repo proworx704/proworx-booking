@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 const sectionValidator = v.object({
   key: v.string(),
@@ -13,6 +14,7 @@ const sectionValidator = v.object({
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     return await ctx.db.query("sitePages").collect();
   },
 });
@@ -36,6 +38,7 @@ export const upsert = mutation({
     sections: v.array(sectionValidator),
   },
   handler: async (ctx, { slug, title, sections }) => {
+    await requireAdmin(ctx);
     const existing = await ctx.db
       .query("sitePages")
       .withIndex("by_slug", (q) => q.eq("slug", slug))
@@ -54,6 +57,7 @@ export const upsert = mutation({
 export const seed = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const existing = await ctx.db.query("sitePages").first();
     if (existing) return "Pages already seeded";
 

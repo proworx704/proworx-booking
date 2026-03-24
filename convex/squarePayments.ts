@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { action, mutation } from "./_generated/server";
 import { api } from "./_generated/api";
+import { requireAdmin, requireActionAuth } from "./authHelpers";
 
 declare const process: { env: Record<string, string | undefined> };
 
@@ -19,6 +20,7 @@ export const createPaymentLink = action({
     confirmationCode: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireActionAuth(ctx);
     const VIKTOR_API_URL = process.env.VIKTOR_SPACES_API_URL;
     const PROJECT_NAME = process.env.VIKTOR_SPACES_PROJECT_NAME;
     const PROJECT_SECRET = process.env.VIKTOR_SPACES_PROJECT_SECRET;
@@ -141,6 +143,7 @@ export const setPaymentLinkManual = mutation({
     url: v.string(),
   },
   handler: async (ctx, { bookingId, url }) => {
+    await requireAdmin(ctx);
     await ctx.db.patch(bookingId, {
       squarePaymentLinkUrl: url,
     });

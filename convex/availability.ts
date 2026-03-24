@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 // Get all availability settings
 export const list = query({
@@ -30,6 +31,7 @@ export const upsert = mutation({
     isAvailable: v.boolean(),
   },
   handler: async (ctx, { dayOfWeek, startTime, endTime, isAvailable }) => {
+    await requireAdmin(ctx);
     const existing = await ctx.db
       .query("availability")
       .withIndex("by_day", (q) => q.eq("dayOfWeek", dayOfWeek))
@@ -52,6 +54,7 @@ export const upsert = mutation({
 export const seed = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const existing = await ctx.db.query("availability").first();
     if (existing) return "Availability already seeded";
 
@@ -88,6 +91,7 @@ export const addBlockedDate = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const existing = await ctx.db
       .query("blockedDates")
       .withIndex("by_date", (q) => q.eq("date", args.date))
@@ -100,6 +104,7 @@ export const addBlockedDate = mutation({
 export const removeBlockedDate = mutation({
   args: { id: v.id("blockedDates") },
   handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
     await ctx.db.delete(id);
   },
 });

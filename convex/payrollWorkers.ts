@@ -1,17 +1,11 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
-
-async function requireAuth(ctx: { auth: unknown; db: unknown }) {
-  const userId = await getAuthUserId(ctx as never);
-  if (!userId) throw new Error("Not authenticated");
-  return userId;
-}
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     return await ctx.db.query("payrollWorkers").collect();
   },
 });
@@ -19,7 +13,7 @@ export const list = query({
 export const get = query({
   args: { id: v.id("payrollWorkers") },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     return await ctx.db.get(args.id);
   },
 });
@@ -33,7 +27,7 @@ export const create = mutation({
   },
   returns: v.id("payrollWorkers"),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     return await ctx.db.insert("payrollWorkers", {
       ...args,
       isActive: true,
@@ -52,7 +46,7 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const worker = await ctx.db.get(args.id);
     if (!worker) throw new Error("Not found");
     const { id, ...updates } = args;
@@ -68,7 +62,7 @@ export const remove = mutation({
   args: { id: v.id("payrollWorkers") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const worker = await ctx.db.get(args.id);
     if (!worker) throw new Error("Not found");
     await ctx.db.delete(args.id);

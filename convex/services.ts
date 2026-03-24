@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 // Public: list active services for booking page
 export const listActive = query({
@@ -17,6 +18,7 @@ export const listActive = query({
 export const listAll = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const services = await ctx.db.query("services").collect();
     return services.sort((a, b) => a.sortOrder - b.sortOrder);
   },
@@ -26,6 +28,7 @@ export const listAll = query({
 export const get = query({
   args: { id: v.id("services") },
   handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
     return await ctx.db.get(id);
   },
 });
@@ -42,6 +45,7 @@ export const create = mutation({
     sortOrder: v.number(),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     return await ctx.db.insert("services", args);
   },
 });
@@ -59,6 +63,7 @@ export const update = mutation({
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, { id, ...updates }) => {
+    await requireAdmin(ctx);
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== undefined),
     );
@@ -70,6 +75,7 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id("services") },
   handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
     await ctx.db.delete(id);
   },
 });
@@ -78,6 +84,7 @@ export const remove = mutation({
 export const seed = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     // Check if services already exist
     const existing = await ctx.db.query("services").first();
     if (existing) return "Services already seeded";

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 // List all customers with optional search
 export const list = query({
@@ -7,6 +8,7 @@ export const list = query({
     search: v.optional(v.string()),
   },
   handler: async (ctx, { search }) => {
+    await requireAdmin(ctx);
     const all = await ctx.db.query("customers").collect();
 
     let filtered = all;
@@ -31,6 +33,7 @@ export const list = query({
 export const get = query({
   args: { id: v.id("customers") },
   handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
     return await ctx.db.get(id);
   },
 });
@@ -39,6 +42,7 @@ export const get = query({
 export const getBookings = query({
   args: { customerId: v.id("customers") },
   handler: async (ctx, { customerId }) => {
+    await requireAdmin(ctx);
     const customer = await ctx.db.get(customerId);
     if (!customer) return [];
 
@@ -95,6 +99,7 @@ export const create = mutation({
     squareCustomerId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     return await ctx.db.insert("customers", {
       ...args,
       totalBookings: 0,
@@ -120,6 +125,7 @@ export const update = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...fields }) => {
+    await requireAdmin(ctx);
     // Only update fields that are provided
     const updates: Record<string, unknown> = {};
     for (const [k, val] of Object.entries(fields)) {
@@ -133,6 +139,7 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id("customers") },
   handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
     await ctx.db.delete(id);
   },
 });
@@ -164,6 +171,7 @@ export const bulkImport = mutation({
     ),
   },
   handler: async (ctx, { customers }) => {
+    await requireAdmin(ctx);
     let imported = 0;
     let skipped = 0;
 
@@ -215,6 +223,7 @@ export const bulkImport = mutation({
 export const stats = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const all = await ctx.db.query("customers").collect();
     return {
       total: all.length,

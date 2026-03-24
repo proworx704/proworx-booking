@@ -1,10 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 // Get availability for a staff member
 export const getForStaff = query({
   args: { staffId: v.id("staff") },
   handler: async (ctx, { staffId }) => {
+    await requireAdmin(ctx);
     const avail = await ctx.db
       .query("staffAvailability")
       .withIndex("by_staff", (q) => q.eq("staffId", staffId))
@@ -23,6 +25,7 @@ export const upsert = mutation({
     isAvailable: v.boolean(),
   },
   handler: async (ctx, { staffId, dayOfWeek, startTime, endTime, isAvailable }) => {
+    await requireAdmin(ctx);
     const existing = await ctx.db
       .query("staffAvailability")
       .withIndex("by_staff_day", (q) =>
@@ -59,6 +62,7 @@ export const bulkUpdate = mutation({
     ),
   },
   handler: async (ctx, { staffId, schedule }) => {
+    await requireAdmin(ctx);
     for (const day of schedule) {
       const existing = await ctx.db
         .query("staffAvailability")
@@ -92,6 +96,7 @@ export const getAvailableStaff = query({
     durationMinutes: v.number(),
   },
   handler: async (ctx, { date, time, serviceId, durationMinutes }) => {
+    await requireAdmin(ctx);
     // Get day of week
     const dateObj = new Date(date + "T12:00:00");
     const dayOfWeek = dateObj.getUTCDay();

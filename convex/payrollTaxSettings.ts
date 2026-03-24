@@ -1,12 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
-
-async function requireAuth(ctx: { auth: unknown; db: unknown }) {
-  const userId = await getAuthUserId(ctx as never);
-  if (!userId) throw new Error("Not authenticated");
-  return userId;
-}
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 const DEFAULT_TAX_SETTINGS = {
   federalRate: 10,
@@ -18,7 +12,7 @@ const DEFAULT_TAX_SETTINGS = {
 export const get = query({
   args: {},
   handler: async (ctx) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     return await ctx.db.query("payrollTaxSettings").first();
   },
 });
@@ -39,7 +33,7 @@ export const upsert = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const existing = await ctx.db.query("payrollTaxSettings").first();
     if (existing) {
       await ctx.db.patch(existing._id, args);

@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,7 @@ export const listBySection = query({
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -39,6 +41,7 @@ export const create = mutation({
     alt: v.optional(v.string()),
   },
   handler: async (ctx, { storageId, filename, section, alt }) => {
+    await requireAdmin(ctx);
     const url = await ctx.storage.getUrl(storageId);
     if (!url) throw new Error("Failed to get storage URL");
 
@@ -70,6 +73,7 @@ export const update = mutation({
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, { id, ...updates }) => {
+    await requireAdmin(ctx);
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([, val]) => val !== undefined),
     );
@@ -82,6 +86,7 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id("sitePhotos") },
   handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
     const photo = await ctx.db.get(id);
     if (photo) {
       await ctx.storage.delete(photo.storageId);

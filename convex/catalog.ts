@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 // ─── Public queries ───────────────────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ export const getBySlug = query({
 export const listAll = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const items = await ctx.db.query("serviceCatalog").collect();
     return items.sort((a, b) => {
       const catOrder: Record<string, number> = {
@@ -135,6 +137,7 @@ export const update = mutation({
     subscriptionUrl: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...updates }) => {
+    await requireAdmin(ctx);
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([, val]) => val !== undefined),
     );
@@ -152,6 +155,7 @@ export const remove = mutation({
 export const seed = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const existing = await ctx.db.query("serviceCatalog").first();
     if (existing) return "Catalog already seeded";
 

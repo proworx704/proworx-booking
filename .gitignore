@@ -8,3 +8,4 @@ tmp/
 *.log
 convex/_generated/
 convex/_generated/
+.env.prod

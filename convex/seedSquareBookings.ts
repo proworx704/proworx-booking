@@ -1,8 +1,10 @@
 import { mutation } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 /** One-time seed: import Square bookings */
 export const seedSquareBookings = mutation({
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const bookings = [
       {
         squareBookingId: "bxe9vrerew29z5",

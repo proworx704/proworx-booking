@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 /**
  * Week A / Week B recurring schedule blocks.
@@ -15,6 +16,7 @@ import { mutation, query } from "./_generated/server";
 export const getSettings = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     return await ctx.db.query("recurringBlockSettings").first();
   },
 });
@@ -26,6 +28,7 @@ export const saveSettings = mutation({
     isEnabled: v.boolean(),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const existing = await ctx.db.query("recurringBlockSettings").first();
     if (existing) {
       await ctx.db.patch(existing._id, args);
@@ -41,6 +44,7 @@ export const saveSettings = mutation({
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const blocks = await ctx.db.query("recurringBlocks").collect();
     return blocks.sort((a, b) => {
       if (a.weekType !== b.weekType) return a.weekType === "A" ? -1 : 1;
@@ -53,6 +57,7 @@ export const list = query({
 export const listByWeek = query({
   args: { weekType: v.union(v.literal("A"), v.literal("B")) },
   handler: async (ctx, { weekType }) => {
+    await requireAdmin(ctx);
     const blocks = await ctx.db
       .query("recurringBlocks")
       .collect();
@@ -71,6 +76,7 @@ export const upsert = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     // Check for existing block on this week+day
     const existing = await ctx.db
       .query("recurringBlocks")
@@ -94,6 +100,7 @@ export const upsert = mutation({
 export const remove = mutation({
   args: { id: v.id("recurringBlocks") },
   handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
     await ctx.db.delete(id);
   },
 });
@@ -105,6 +112,7 @@ export const removeByWeekDay = mutation({
     dayOfWeek: v.number(),
   },
   handler: async (ctx, { weekType, dayOfWeek }) => {
+    await requireAdmin(ctx);
     const block = await ctx.db
       .query("recurringBlocks")
       .withIndex("by_week_day", (q) =>
@@ -124,6 +132,7 @@ export const removeByWeekDay = mutation({
 export const getWeekType = query({
   args: { date: v.string() },
   handler: async (ctx, { date }) => {
+    await requireAdmin(ctx);
     const settings = await ctx.db.query("recurringBlockSettings").first();
     if (!settings || !settings.isEnabled) return null;
 
@@ -138,6 +147,7 @@ export const getWeekType = query({
 export const getBlockForDate = query({
   args: { date: v.string() },
   handler: async (ctx, { date }) => {
+    await requireAdmin(ctx);
     const settings = await ctx.db.query("recurringBlockSettings").first();
     if (!settings || !settings.isEnabled) return null;
 
@@ -180,6 +190,7 @@ function computeWeekType(
 export const getBlocksForRange = query({
   args: { startDate: v.string(), endDate: v.string() },
   handler: async (ctx, { startDate, endDate }) => {
+    await requireAdmin(ctx);
     const settings = await ctx.db.query("recurringBlockSettings").first();
     if (!settings || !settings.isEnabled) return [];
 

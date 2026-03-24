@@ -1,12 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
-
-async function requireAuth(ctx: { auth: unknown; db: unknown }) {
-  const userId = await getAuthUserId(ctx as never);
-  if (!userId) throw new Error("Not authenticated");
-  return userId;
-}
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 function calculateHours(startTime: string, endTime: string): number {
   const [startH, startM] = startTime.split(":").map(Number);
@@ -19,7 +13,7 @@ function calculateHours(startTime: string, endTime: string): number {
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     return await ctx.db.query("payrollTimeEntries").collect();
   },
 });
@@ -30,7 +24,7 @@ export const listByWeek = query({
     weekEnd: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const entries = await ctx.db.query("payrollTimeEntries").collect();
     return entries.filter(
       (e) => e.date >= args.weekStart && e.date <= args.weekEnd,
@@ -45,7 +39,7 @@ export const listByWorkerAndWeek = query({
     weekEnd: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const all = await ctx.db
       .query("payrollTimeEntries")
       .withIndex("by_worker", (q) => q.eq("workerId", args.workerId))
@@ -59,7 +53,7 @@ export const listByWorkerAndWeek = query({
 export const listPending = query({
   args: {},
   handler: async (ctx) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     return await ctx.db
       .query("payrollTimeEntries")
       .withIndex("by_status", (q) => q.eq("status", "pending"))
@@ -77,7 +71,7 @@ export const create = mutation({
   },
   returns: v.id("payrollTimeEntries"),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const worker = await ctx.db.get(args.workerId);
     if (!worker) throw new Error("Worker not found");
     const hoursWorked = calculateHours(args.startTime, args.endTime);
@@ -100,7 +94,7 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const entry = await ctx.db.get(args.id);
     if (!entry) throw new Error("Not found");
     const startTime = args.startTime ?? entry.startTime;
@@ -119,7 +113,7 @@ export const remove = mutation({
   args: { id: v.id("payrollTimeEntries") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const entry = await ctx.db.get(args.id);
     if (!entry) throw new Error("Not found");
     await ctx.db.delete(args.id);
@@ -131,7 +125,7 @@ export const approve = mutation({
   args: { id: v.id("payrollTimeEntries") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const entry = await ctx.db.get(args.id);
     if (!entry) throw new Error("Not found");
     await ctx.db.patch(args.id, {
@@ -149,7 +143,7 @@ export const reject = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const entry = await ctx.db.get(args.id);
     if (!entry) throw new Error("Not found");
     await ctx.db.patch(args.id, {
@@ -170,7 +164,7 @@ export const adjustAndApprove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const entry = await ctx.db.get(args.id);
     if (!entry) throw new Error("Not found");
     const startTime = args.startTime ?? entry.startTime;

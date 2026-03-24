@@ -1,12 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
-
-async function requireAuth(ctx: { auth: unknown; db: unknown }) {
-  const userId = await getAuthUserId(ctx as never);
-  if (!userId) throw new Error("Not authenticated");
-  return userId;
-}
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 function getPayDate(weekEnd: string): string {
   const d = new Date(`${weekEnd}T12:00:00`);
@@ -19,7 +13,7 @@ function getPayDate(weekEnd: string): string {
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const payouts = await ctx.db.query("payrollPayouts").collect();
     return payouts.sort((a, b) => b.weekStart.localeCompare(a.weekStart));
   },
@@ -28,7 +22,7 @@ export const list = query({
 export const listByWeek = query({
   args: { weekStart: v.string() },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     return await ctx.db
       .query("payrollPayouts")
       .withIndex("by_weekStart", (q) => q.eq("weekStart", args.weekStart))
@@ -42,7 +36,7 @@ export const generate = mutation({
     weekEnd: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
 
     // Get tax settings
     const taxSettings = await ctx.db.query("payrollTaxSettings").first();
@@ -124,7 +118,7 @@ export const markPaid = mutation({
   args: { id: v.id("payrollPayouts") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const payout = await ctx.db.get(args.id);
     if (!payout) throw new Error("Not found");
     await ctx.db.patch(args.id, {
@@ -139,7 +133,7 @@ export const markUnpaid = mutation({
   args: { id: v.id("payrollPayouts") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const payout = await ctx.db.get(args.id);
     if (!payout) throw new Error("Not found");
     await ctx.db.patch(args.id, {
@@ -154,7 +148,7 @@ export const remove = mutation({
   args: { id: v.id("payrollPayouts") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const payout = await ctx.db.get(args.id);
     if (!payout) throw new Error("Not found");
     await ctx.db.delete(args.id);

@@ -1,10 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 // List all staff
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const staff = await ctx.db.query("staff").collect();
     return staff.sort((a, b) => {
       // Owner first, then managers, then technicians
@@ -18,6 +20,7 @@ export const list = query({
 export const listActive = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const staff = await ctx.db
       .query("staff")
       .withIndex("by_active", (q) => q.eq("isActive", true))
@@ -30,6 +33,7 @@ export const listActive = query({
 export const get = query({
   args: { id: v.id("staff") },
   handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
     return await ctx.db.get(id);
   },
 });
@@ -45,6 +49,7 @@ export const create = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     return await ctx.db.insert("staff", {
       ...args,
       isActive: true,
@@ -65,6 +70,7 @@ export const update = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...updates }) => {
+    await requireAdmin(ctx);
     const filtered = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== undefined),
     );
@@ -76,6 +82,7 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id("staff") },
   handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
     // Remove service assignments
     const assignments = await ctx.db
       .query("staffServices")
@@ -102,6 +109,7 @@ export const remove = mutation({
 export const getWithServices = query({
   args: { id: v.id("staff") },
   handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
     const staff = await ctx.db.get(id);
     if (!staff) return null;
 
@@ -128,6 +136,7 @@ export const getWithServices = query({
 export const listWithServiceCounts = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const staff = await ctx.db.query("staff").collect();
     const allAssignments = await ctx.db.query("staffServices").collect();
 
@@ -150,6 +159,7 @@ export const assignService = mutation({
     serviceId: v.id("services"),
   },
   handler: async (ctx, { staffId, serviceId }) => {
+    await requireAdmin(ctx);
     // Check if already assigned
     const existing = await ctx.db
       .query("staffServices")
@@ -170,6 +180,7 @@ export const unassignService = mutation({
     serviceId: v.id("services"),
   },
   handler: async (ctx, { staffId, serviceId }) => {
+    await requireAdmin(ctx);
     const existing = await ctx.db
       .query("staffServices")
       .withIndex("by_staff_service", (q) =>
@@ -186,6 +197,7 @@ export const unassignService = mutation({
 export const getAssignedServices = query({
   args: { staffId: v.id("staff") },
   handler: async (ctx, { staffId }) => {
+    await requireAdmin(ctx);
     const assignments = await ctx.db
       .query("staffServices")
       .withIndex("by_staff", (q) => q.eq("staffId", staffId))
@@ -218,6 +230,7 @@ export const getStaffForService = query({
 export const seed = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const existing = await ctx.db.query("staff").first();
     if (existing) return "Staff already seeded";
 

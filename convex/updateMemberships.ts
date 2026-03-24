@@ -1,4 +1,5 @@
 import { mutation } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 /**
  * Update membership catalog items with vehicle-size-based variants
@@ -12,6 +13,7 @@ import { mutation } from "./_generated/server";
 export const run = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const allItems = await ctx.db.query("serviceCatalog").collect();
     const membershipItems = allItems.filter(i => i.category === "membership");
 

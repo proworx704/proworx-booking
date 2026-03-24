@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 function generateConfirmationCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -276,6 +277,7 @@ export const list = query({
     staffId: v.optional(v.id("staff")),
   },
   handler: async (ctx, { status, date, staffId }) => {
+    await requireAdmin(ctx);
     // Helper: check if a booking is assigned to a specific staff (multi-staff aware)
     const hasStaff = (b: any, sid: string) => {
       if (b.staffIds?.some((id: any) => id.toString() === sid.toString())) return true;
@@ -342,6 +344,7 @@ export const list = query({
 export const listToday = query({
   args: { today: v.string() },
   handler: async (ctx, { today }) => {
+    await requireAdmin(ctx);
     const bookings = await ctx.db
       .query("bookings")
       .withIndex("by_date", (q) => q.eq("date", today))
@@ -355,6 +358,7 @@ export const listToday = query({
 export const listUpcoming = query({
   args: { startDate: v.string(), endDate: v.string() },
   handler: async (ctx, { startDate, endDate }) => {
+    await requireAdmin(ctx);
     const bookings = await ctx.db
       .query("bookings")
       .filter((q) =>
@@ -391,6 +395,7 @@ export const updateStatus = mutation({
     ),
   },
   handler: async (ctx, { id, status }) => {
+    await requireAdmin(ctx);
     await ctx.db.patch(id, { status });
   },
 });
@@ -402,6 +407,7 @@ export const assignStaff = mutation({
     staffId: v.id("staff"),
   },
   handler: async (ctx, { id, staffId }) => {
+    await requireAdmin(ctx);
     const staff = await ctx.db.get(staffId);
     if (!staff) throw new Error("Staff member not found");
     const booking = await ctx.db.get(id);
@@ -431,6 +437,7 @@ export const unassignStaff = mutation({
     staffId: v.optional(v.id("staff")),  // if omitted, removes ALL staff
   },
   handler: async (ctx, { id, staffId }) => {
+    await requireAdmin(ctx);
     const booking = await ctx.db.get(id);
     if (!booking) throw new Error("Booking not found");
 
@@ -477,6 +484,7 @@ export const markPaid = mutation({
     paymentId: v.optional(v.string()),
   },
   handler: async (ctx, { id, paymentMethod, paymentAmount, paymentId }) => {
+    await requireAdmin(ctx);
     const booking = await ctx.db.get(id);
     await ctx.db.patch(id, {
       paymentStatus: "paid",
@@ -502,6 +510,7 @@ export const markUnpaid = mutation({
     id: v.id("bookings"),
   },
   handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
     const booking = await ctx.db.get(id);
     if (!booking) throw new Error("Booking not found");
     if (booking.paymentStatus !== "paid") throw new Error("Booking is not marked as paid");
@@ -534,6 +543,7 @@ export const setSquarePaymentLink = mutation({
     linkId: v.optional(v.string()),
   },
   handler: async (ctx, { id, url, linkId }) => {
+    await requireAdmin(ctx);
     await ctx.db.patch(id, {
       squarePaymentLinkUrl: url,
       squarePaymentLinkId: linkId,
@@ -548,6 +558,7 @@ export const updateNotes = mutation({
     notes: v.string(),
   },
   handler: async (ctx, { id, notes }) => {
+    await requireAdmin(ctx);
     await ctx.db.patch(id, { notes });
   },
 });
@@ -556,6 +567,7 @@ export const updateNotes = mutation({
 export const stats = query({
   args: { today: v.string() },
   handler: async (ctx, { today }) => {
+    await requireAdmin(ctx);
     const allBookings = await ctx.db.query("bookings").collect();
 
     const todayBookings = allBookings.filter(
@@ -591,6 +603,7 @@ export const listByStaff = query({
     endDate: v.optional(v.string()),
   },
   handler: async (ctx, { staffId, startDate, endDate }) => {
+    await requireAdmin(ctx);
     // Get bookings where this staff is primary (via index)
     const primaryBookings = await ctx.db
       .query("bookings")
@@ -627,6 +640,7 @@ export const listByStaff = query({
 export const listByZipCluster = query({
   args: { startDate: v.string(), endDate: v.string() },
   handler: async (ctx, { startDate, endDate }) => {
+    await requireAdmin(ctx);
     const bookings = await ctx.db
       .query("bookings")
       .filter((q) =>
@@ -708,6 +722,7 @@ export const submitFeedback = mutation({
 export const listByDateRange = query({
   args: { startDate: v.string(), endDate: v.string() },
   handler: async (ctx, { startDate, endDate }) => {
+    await requireAdmin(ctx);
     const bookings = await ctx.db
       .query("bookings")
       .filter((q) =>
@@ -751,6 +766,7 @@ export const updateZipCode = mutation({
     zipCode: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     await ctx.db.patch(args.bookingId, { zipCode: args.zipCode });
     return true;
   },
@@ -783,6 +799,7 @@ export const directInsert = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     return await ctx.db.insert("bookings", {
       customerName: args.customerName,
       customerPhone: args.customerPhone,
@@ -809,6 +826,7 @@ export const updatePrice = mutation({
     selectedVariant: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const booking = await ctx.db.get(args.bookingId);
     if (!booking) throw new Error("Booking not found");
     
@@ -861,6 +879,7 @@ export const editBooking = mutation({
     zipCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const booking = await ctx.db.get(args.bookingId);
     if (!booking) throw new Error("Booking not found");
 
@@ -922,6 +941,7 @@ export const batchUpdatePrices = mutation({
     })),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const results = [];
     for (const u of args.updates) {
       const booking = await ctx.db.get(u.bookingId);

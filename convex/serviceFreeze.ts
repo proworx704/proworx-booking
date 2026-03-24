@@ -1,10 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./authHelpers";
 
 // List all service freezes
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const freezes = await ctx.db.query("serviceFreeze").collect();
     // Enrich with service names
     const enriched = await Promise.all(
@@ -24,6 +26,7 @@ export const list = query({
 export const listForService = query({
   args: { serviceId: v.id("services") },
   handler: async (ctx, { serviceId }) => {
+    await requireAdmin(ctx);
     const freezes = await ctx.db
       .query("serviceFreeze")
       .withIndex("by_service", (q) => q.eq("serviceId", serviceId))
@@ -39,6 +42,7 @@ export const isFrozen = query({
     date: v.string(),
   },
   handler: async (ctx, { serviceId, date }) => {
+    await requireAdmin(ctx);
     const freeze = await ctx.db
       .query("serviceFreeze")
       .withIndex("by_service_date", (q) =>
@@ -57,6 +61,7 @@ export const add = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     // Check if already frozen
     const existing = await ctx.db
       .query("serviceFreeze")
@@ -78,6 +83,7 @@ export const addBulk = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, { serviceId, dates, reason }) => {
+    await requireAdmin(ctx);
     const ids = [];
     for (const date of dates) {
       const existing = await ctx.db
@@ -101,6 +107,7 @@ export const addBulk = mutation({
 export const remove = mutation({
   args: { id: v.id("serviceFreeze") },
   handler: async (ctx, { id }) => {
+    await requireAdmin(ctx);
     await ctx.db.delete(id);
   },
 });
@@ -112,6 +119,7 @@ export const removeByServiceDate = mutation({
     date: v.string(),
   },
   handler: async (ctx, { serviceId, date }) => {
+    await requireAdmin(ctx);
     const existing = await ctx.db
       .query("serviceFreeze")
       .withIndex("by_service_date", (q) =>
@@ -128,6 +136,7 @@ export const removeByServiceDate = mutation({
 export const listGrouped = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const freezes = await ctx.db.query("serviceFreeze").collect();
     const services = await ctx.db.query("services").collect();
 

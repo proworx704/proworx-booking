@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 function generateConfirmationCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -232,6 +233,11 @@ export const create = mutation({
     if (totalDuration !== undefined) bookingData.totalDuration = totalDuration;
 
     const bookingId = await ctx.db.insert("bookings", bookingData);
+
+    // ── Schedule confirmation email + SMS (async, non-blocking) ──
+    await ctx.scheduler.runAfter(0, internal.notifications.sendConfirmation, {
+      bookingId,
+    });
 
     return {
       bookingId,

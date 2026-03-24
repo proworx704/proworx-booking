@@ -225,6 +225,12 @@ const schema = defineSchema({
 
     // Square import link
     squareBookingId: v.optional(v.string()),
+
+    // ─── Notification tracking ──
+    confirmationEmailSent: v.optional(v.boolean()),
+    confirmationSmsSent: v.optional(v.boolean()),
+    reminder24hSent: v.optional(v.boolean()),
+    reminder2hSent: v.optional(v.boolean()),
   })
     .index("by_date", ["date"])
     .index("by_status", ["status"])

@@ -6,12 +6,14 @@ import {
   Clock,
   MapPin,
   DollarSign,
+  Plus,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { QuickBookDialog } from "@/components/QuickBookDialog";
 import { api } from "../../convex/_generated/api";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -319,6 +321,7 @@ function DayColumn({
   blockedDates,
   isCompact,
   onBookingClick,
+  onSlotClick,
 }: {
   date: Date;
   bookings: Booking[];
@@ -326,6 +329,7 @@ function DayColumn({
   blockedDates: string[];
   isCompact: boolean;
   onBookingClick: (b: Booking) => void;
+  onSlotClick: (date: string, time: string) => void;
 }) {
   const dateStr = formatDateStr(date);
   const dayInfo = formatDayHeader(date);
@@ -333,6 +337,56 @@ function DayColumn({
   const dayBlocks = blocks.filter((b) => b.date === dateStr);
   const isBlockedDate = blockedDates.includes(dateStr);
   const isTodayCol = isToday(dateStr);
+
+  // ─── Click-to-book handler on the grid ────────────────────
+  const handleGridClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (isBlockedDate) return;
+      // Don't trigger if clicking on a booking block
+      const target = e.target as HTMLElement;
+      if (target.closest("a")) return;
+
+      const rect = e.currentTarget.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      // Snap to 30-minute intervals
+      const rawMinutes = (y / HOUR_HEIGHT) * 60 + HOUR_START * 60;
+      const snappedMinutes = Math.round(rawMinutes / 30) * 30;
+      const clampedMinutes = Math.max(
+        HOUR_START * 60,
+        Math.min(snappedMinutes, (HOUR_END - 1) * 60 + 30),
+      );
+      const h = Math.floor(clampedMinutes / 60);
+      const m = clampedMinutes % 60;
+      const timeStr = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+      onSlotClick(dateStr, timeStr);
+    },
+    [dateStr, isBlockedDate, onSlotClick],
+  );
+
+  // ─── Hover state for "+" indicator ─────────────────────────
+  const [hoverY, setHoverY] = useState<number | null>(null);
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (isBlockedDate) return;
+      const target = e.target as HTMLElement;
+      if (target.closest("a")) {
+        setHoverY(null);
+        return;
+      }
+      const rect = e.currentTarget.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      const rawMinutes = (y / HOUR_HEIGHT) * 60 + HOUR_START * 60;
+      const snappedMinutes = Math.round(rawMinutes / 30) * 30;
+      const clampedMinutes = Math.max(
+        HOUR_START * 60,
+        Math.min(snappedMinutes, (HOUR_END - 1) * 60 + 30),
+      );
+      const topPx = ((clampedMinutes - HOUR_START * 60) / 60) * HOUR_HEIGHT;
+      setHoverY(topPx);
+    },
+    [isBlockedDate],
+  );
 
   return (
     <div className="flex-1 min-w-0">
@@ -363,8 +417,13 @@ function DayColumn({
 
       {/* Time grid */}
       <div
-        className={`relative border-r ${isTodayCol ? "bg-blue-50/30 dark:bg-blue-950/10" : ""}`}
+        className={`relative border-r ${isTodayCol ? "bg-blue-50/30 dark:bg-blue-950/10" : ""} ${
+          !isBlockedDate ? "cursor-pointer" : ""
+        }`}
         style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}
+        onClick={handleGridClick}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoverY(null)}
       >
         {/* Hour grid lines */}
         {Array.from({ length: TOTAL_HOURS }, (_, i) => (
@@ -374,6 +433,18 @@ function DayColumn({
             style={{ top: `${i * HOUR_HEIGHT}px` }}
           />
         ))}
+
+        {/* Hover indicator — shows where the booking will be placed */}
+        {hoverY !== null && !isBlockedDate && (
+          <div
+            className="absolute left-0 right-0 z-[6] pointer-events-none transition-all duration-75"
+            style={{ top: `${hoverY}px` }}
+          >
+            <div className="mx-0.5 h-[34px] rounded-md border-2 border-dashed border-primary/40 bg-primary/5 flex items-center justify-center">
+              <Plus className="size-3.5 text-primary/60" />
+            </div>
+          </div>
+        )}
 
         {/* Blocked date overlay */}
         {isBlockedDate && <BlockedDateOverlay />}
@@ -431,6 +502,17 @@ export function CalendarViewPage() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
+  // ─── Quick-book state ───────────────────────────────────
+  const [quickBookOpen, setQuickBookOpen] = useState(false);
+  const [quickBookDate, setQuickBookDate] = useState("");
+  const [quickBookTime, setQuickBookTime] = useState("");
+
+  const handleSlotClick = useCallback((date: string, time: string) => {
+    setQuickBookDate(date);
+    setQuickBookTime(time);
+    setQuickBookOpen(true);
+  }, []);
+
   // Calculate current week boundaries
   const today = new Date();
   const baseMonday = getMonday(today);
@@ -485,6 +567,20 @@ export function CalendarViewPage() {
           <p className="text-sm text-muted-foreground">{monthLabel}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => {
+              const now = new Date();
+              const todayStr = formatDateStr(now);
+              const nextHour = now.getHours() + 1;
+              const timeStr = `${Math.min(nextHour, 19).toString().padStart(2, "0")}:00`;
+              handleSlotClick(todayStr, timeStr);
+            }}
+          >
+            <Plus className="size-4 mr-1.5" />
+            <span className="hidden sm:inline">New Booking</span>
+            <span className="sm:hidden">Book</span>
+          </Button>
           <Button variant="outline" size="sm" onClick={goToday} className={weekOffset === 0 ? "invisible" : ""}>
             Today
           </Button>
@@ -531,6 +627,7 @@ export function CalendarViewPage() {
               blockedDates={blockedDates}
               isCompact={isCompact}
               onBookingClick={setSelectedBooking}
+              onSlotClick={handleSlotClick}
             />
           ))}
         </div>
@@ -567,6 +664,14 @@ export function CalendarViewPage() {
           onClose={() => setSelectedBooking(null)}
         />
       )}
+
+      {/* Quick-book dialog */}
+      <QuickBookDialog
+        open={quickBookOpen}
+        onClose={() => setQuickBookOpen(false)}
+        initialDate={quickBookDate}
+        initialTime={quickBookTime}
+      />
     </div>
   );
 }

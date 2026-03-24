@@ -979,3 +979,146 @@ export const batchUpdatePrices = mutation({
     return results;
   },
 });
+
+// ─── Admin quick-book from calendar ────────────────────────────────────────────
+
+export const adminCreate = mutation({
+  args: {
+    // Customer
+    customerName: v.string(),
+    customerPhone: v.string(),
+    customerEmail: v.string(),
+    serviceAddress: v.string(),
+    zipCode: v.optional(v.string()),
+    customerId: v.optional(v.id("customers")),
+    // Service
+    catalogItemId: v.optional(v.id("serviceCatalog")),
+    serviceName: v.string(),
+    selectedVariant: v.optional(v.string()),
+    price: v.number(), // cents
+    totalPrice: v.optional(v.number()),
+    totalDuration: v.optional(v.number()),
+    addons: v.optional(
+      v.array(
+        v.object({
+          catalogItemId: v.optional(v.id("serviceCatalog")),
+          name: v.string(),
+          variantLabel: v.optional(v.string()),
+          price: v.number(),
+          durationMin: v.number(),
+        }),
+      ),
+    ),
+    // Schedule
+    date: v.string(),
+    time: v.string(),
+    // Staff
+    staffId: v.optional(v.id("staff")),
+    staffName: v.optional(v.string()),
+    // Status
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("confirmed"),
+        v.literal("in_progress"),
+        v.literal("completed"),
+      ),
+    ),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    const confirmationCode = generateConfirmationCode();
+
+    // ─── Auto-create or link customer ────────────────────
+    let customerId = args.customerId;
+    if (!customerId && args.customerEmail) {
+      const existing = await ctx.db
+        .query("customers")
+        .withIndex("by_email", (q) => q.eq("email", args.customerEmail))
+        .first();
+      if (existing) {
+        customerId = existing._id;
+        await ctx.db.patch(existing._id, {
+          totalBookings: (existing.totalBookings || 0) + 1,
+          lastServiceDate: args.date,
+          address: args.serviceAddress || existing.address,
+          phone: args.customerPhone || existing.phone,
+          zipCode: args.zipCode || existing.zipCode,
+        });
+      } else {
+        customerId = await ctx.db.insert("customers", {
+          name: args.customerName,
+          phone: args.customerPhone,
+          email: args.customerEmail,
+          address: args.serviceAddress,
+          zipCode: args.zipCode,
+          source: "manual",
+          totalBookings: 1,
+          totalSpent: 0,
+          lastServiceDate: args.date,
+        });
+      }
+    }
+
+    // ─── Resolve catalog duration if not provided ─────────
+    let totalDuration = args.totalDuration;
+    if (!totalDuration && args.catalogItemId) {
+      const item = await ctx.db.get(args.catalogItemId);
+      if (item) {
+        const variant = args.selectedVariant
+          ? item.variants.find((v) => v.label === args.selectedVariant)
+          : item.variants[0];
+        totalDuration = variant?.durationMin ?? 120;
+        if (args.addons) {
+          totalDuration += args.addons.reduce((s, a) => s + a.durationMin, 0);
+        }
+      }
+    }
+
+    const totalPrice =
+      args.totalPrice ??
+      args.price + (args.addons || []).reduce((s, a) => s + a.price, 0);
+
+    // ─── Multi-staff arrays ──────────────────────────────
+    const staffIds = args.staffId ? [args.staffId] : undefined;
+    const staffNames = args.staffName ? [args.staffName] : undefined;
+
+    const bookingData: any = {
+      customerName: args.customerName,
+      customerPhone: args.customerPhone,
+      customerEmail: args.customerEmail,
+      serviceAddress: args.serviceAddress,
+      zipCode: args.zipCode,
+      customerId: customerId as any,
+      serviceName: args.serviceName,
+      price: args.price,
+      totalPrice,
+      totalDuration: totalDuration ?? 120,
+      date: args.date,
+      time: args.time,
+      status: args.status || ("confirmed" as const),
+      paymentStatus: "unpaid" as const,
+      confirmationCode,
+      notes: args.notes,
+      staffId: args.staffId as any,
+      staffName: args.staffName,
+      staffIds: staffIds as any,
+      staffNames,
+    };
+
+    if (args.catalogItemId) bookingData.catalogItemId = args.catalogItemId;
+    if (args.selectedVariant) bookingData.selectedVariant = args.selectedVariant;
+    if (args.addons && args.addons.length > 0) bookingData.addons = args.addons;
+
+    const bookingId = await ctx.db.insert("bookings", bookingData);
+
+    // Send confirmation
+    await ctx.scheduler.runAfter(0, internal.notifications.sendConfirmation, {
+      bookingId,
+    });
+
+    return { bookingId, confirmationCode, totalPrice };
+  },
+});

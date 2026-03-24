@@ -1,6 +1,5 @@
 import { createAccount, retrieveAccount } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { Scrypt } from "lucia";
 import { internalAction } from "./_generated/server";
 
 const TEST_USER = {
@@ -27,12 +26,12 @@ export const seedTestUser = internalAction({
     }
 
     try {
-      const hashedPassword = await new Scrypt().hash(TEST_USER.password);
+      // Pass raw password - createAccount will hash it via the provider's crypto
       await createAccount(ctx, {
         provider: "test",
         account: {
           id: TEST_USER.email,
-          secret: hashedPassword,
+          secret: TEST_USER.password,
         },
         profile: {
           email: TEST_USER.email,

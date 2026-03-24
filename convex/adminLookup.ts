@@ -1,11 +1,12 @@
-import { internalQuery } from "./_generated/server";
+import { query } from "./_generated/server";
 
 // Temporary admin lookup — will be deleted after use
-export const listAllProfiles = internalQuery({
+export const listAllProfiles = query({
   args: {},
   handler: async (ctx) => {
     const profiles = await ctx.db.query("userProfiles").collect();
     const staff = await ctx.db.query("staff").collect();
-    return { profiles, staff };
+    const users = await ctx.db.query("users").collect();
+    return { profiles, staff, users: users.map(u => ({ _id: u._id, email: u.email, name: u.name })) };
   },
 });

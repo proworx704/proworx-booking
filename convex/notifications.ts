@@ -1,7 +1,8 @@
 /**
  * Notifications — Email + SMS confirmations & reminders for bookings.
  *
- * Email: Uses Viktor Spaces transactional email API (works immediately).
+ * Email: Uses Viktor Tools Gateway (coworker_send_email) — markdown body,
+ *        automatically rendered by the email service.
  * SMS:   Uses Twilio REST API (requires TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
  *        TWILIO_PHONE_NUMBER environment variables — gracefully skips if missing).
  *
@@ -60,7 +61,12 @@ function normalizePhone(phone: string): string {
 // LOW-LEVEL SENDERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-async function sendEmail(to: string, subject: string, html: string, text: string): Promise<boolean> {
+/**
+ * Send an email via the Viktor Tools Gateway.
+ * Uses `coworker_send_email` which accepts markdown body.
+ * We send the text version (markdown-formatted) since the gateway handles rendering.
+ */
+async function sendEmail(to: string, subject: string, _html: string, text: string): Promise<boolean> {
   const apiUrl = process.env.VIKTOR_SPACES_API_URL;
   const projectName = process.env.VIKTOR_SPACES_PROJECT_NAME;
   const projectSecret = process.env.VIKTOR_SPACES_PROJECT_SECRET;
@@ -69,25 +75,29 @@ async function sendEmail(to: string, subject: string, html: string, text: string
     return false;
   }
   try {
-    const resp = await fetch(`${apiUrl}/api/viktor-spaces/send-email`, {
+    const resp = await fetch(`${apiUrl}/api/viktor-spaces/tools/call`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         project_name: projectName,
         project_secret: projectSecret,
-        to_email: to,
-        subject,
-        html_content: html,
-        text_content: text,
-        email_type: "transactional",
+        role: "coworker_send_email",
+        arguments: {
+          to: [to],
+          subject,
+          body: text,
+        },
       }),
     });
     if (!resp.ok) {
       console.error(`[notif] Email HTTP ${resp.status}: ${await resp.text()}`);
       return false;
     }
-    const json = (await resp.json()) as { success: boolean; error?: string };
-    if (!json.success) { console.error(`[notif] Email API: ${json.error}`); return false; }
+    const json = (await resp.json()) as { success: boolean; result?: { success: boolean }; error?: string };
+    if (!json.success || !json.result?.success) {
+      console.error(`[notif] Email API: ${json.error}`);
+      return false;
+    }
     console.log(`[notif] ✉️  Email sent to ${to}: "${subject}"`);
     return true;
   } catch (err) {
@@ -131,120 +141,115 @@ async function sendSms(to: string, body: string): Promise<boolean> {
 // EMAIL TEMPLATES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function confirmationEmailHtml(b: {
+function confirmationEmailBody(b: {
   customerName: string; serviceName: string; selectedVariant?: string;
   date: string; time: string; serviceAddress: string;
   totalPrice?: number; price: number; confirmationCode: string;
   addons?: Array<{ name: string; price: number }>; notes?: string;
-}): { html: string; text: string } {
+}): { subject: string; body: string } {
   const priceFmt = formatPrice(b.totalPrice ?? b.price);
   const dateFmt = formatDateReadable(b.date);
   const timeFmt = formatTime12h(b.time);
   const variant = b.selectedVariant ? ` (${b.selectedVariant})` : "";
-  const addonRows = (b.addons || []).map(a =>
-    `<tr><td style="padding:6px 0;color:#555;">+ ${a.name}</td><td style="padding:6px 0;text-align:right;color:#555;">${formatPrice(a.price)}</td></tr>`
-  ).join("");
+  const addonLines = (b.addons || []).map(a => `  - + ${a.name}: ${formatPrice(a.price)}`).join("\n");
 
-  const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f7f7f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-<div style="max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:12px 12px 0 0;padding:32px 24px;text-align:center;">
-    <h1 style="margin:0;color:#f5a623;font-size:24px;letter-spacing:1px;">PROWORX</h1>
-    <p style="margin:4px 0 0;color:#ccc;font-size:13px;">Mobile Detailing</p>
-  </div>
-  <div style="background:#fff;padding:32px 24px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,.08);">
-    <h2 style="margin:0 0 8px;color:#1a1a2e;font-size:20px;">Booking Confirmed! ✅</h2>
-    <p style="color:#555;margin:0 0 24px;font-size:15px;">Hi ${b.customerName.split(" ")[0]}, your appointment has been confirmed.</p>
-    <div style="background:#f0f7ff;border:2px solid #3b82f6;border-radius:10px;padding:16px;text-align:center;margin:0 0 24px;">
-      <p style="margin:0 0 4px;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Confirmation Code</p>
-      <p style="margin:0;color:#1a1a2e;font-size:28px;font-weight:700;letter-spacing:3px;">${b.confirmationCode}</p>
-    </div>
-    <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
-      <tr><td style="padding:10px 0;border-bottom:1px solid #eee;color:#888;font-size:13px;width:120px;">📅 Date</td><td style="padding:10px 0;border-bottom:1px solid #eee;color:#1a1a2e;font-weight:600;">${dateFmt}</td></tr>
-      <tr><td style="padding:10px 0;border-bottom:1px solid #eee;color:#888;font-size:13px;">⏰ Time</td><td style="padding:10px 0;border-bottom:1px solid #eee;color:#1a1a2e;font-weight:600;">${timeFmt}</td></tr>
-      <tr><td style="padding:10px 0;border-bottom:1px solid #eee;color:#888;font-size:13px;">🚗 Service</td><td style="padding:10px 0;border-bottom:1px solid #eee;color:#1a1a2e;font-weight:600;">${b.serviceName}${variant}</td></tr>
-      <tr><td style="padding:10px 0;border-bottom:1px solid #eee;color:#888;font-size:13px;">📍 Location</td><td style="padding:10px 0;border-bottom:1px solid #eee;color:#1a1a2e;font-weight:600;">${b.serviceAddress}</td></tr>
-      <tr><td style="padding:10px 0;${addonRows ? "border-bottom:1px solid #eee;" : ""}color:#888;font-size:13px;">💰 Total</td><td style="padding:10px 0;${addonRows ? "border-bottom:1px solid #eee;" : ""}color:#1a1a2e;font-weight:700;font-size:18px;">${priceFmt}</td></tr>
-      ${addonRows ? `<tr><td colspan="2" style="padding:8px 0 4px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Add-Ons</td></tr>${addonRows}` : ""}
-    </table>
-    ${b.notes ? `<div style="background:#fffbeb;border-left:3px solid #f5a623;padding:12px 16px;border-radius:0 8px 8px 0;margin:0 0 24px;"><p style="margin:0;color:#555;font-size:14px;"><strong>Notes:</strong> ${b.notes}</p></div>` : ""}
-    <div style="background:#f9fafb;border-radius:8px;padding:16px;margin:0 0 24px;">
-      <h3 style="margin:0 0 8px;color:#1a1a2e;font-size:15px;">What to Expect</h3>
-      <ul style="margin:0;padding:0 0 0 20px;color:#555;font-size:14px;line-height:1.8;">
-        <li>We'll arrive at your location — no need to go anywhere</li>
-        <li>Please make sure the vehicle is accessible</li>
-        <li>We bring all equipment, water, and power</li>
-        <li>You'll receive a reminder before your appointment</li>
-      </ul>
-    </div>
-    <div style="text-align:center;padding:16px 0;border-top:1px solid #eee;">
-      <p style="color:#888;font-size:13px;margin:0 0 8px;">Need to reschedule or have questions?</p>
-      <p style="margin:0;"><a href="tel:+19802721903" style="color:#3b82f6;text-decoration:none;font-weight:600;">${BUSINESS_PHONE}</a> · <a href="mailto:${BUSINESS_EMAIL}" style="color:#3b82f6;text-decoration:none;font-weight:600;">${BUSINESS_EMAIL}</a></p>
-    </div>
-  </div>
-  <div style="text-align:center;padding:24px 0 0;"><p style="color:#999;font-size:12px;margin:0;">${BUSINESS_NAME} · Charlotte, NC & Surrounding Areas</p></div>
-</div></body></html>`;
+  const subject = `Booking Confirmed — ${dateFmt} at ${timeFmt}`;
+  const body = `# Booking Confirmed! ✅
 
-  const text = `BOOKING CONFIRMED ✅\n\nHi ${b.customerName.split(" ")[0]},\n\nYour appointment with ${BUSINESS_NAME} is confirmed!\n\nConfirmation Code: ${b.confirmationCode}\n\n📅 ${dateFmt}\n⏰ ${timeFmt}\n🚗 ${b.serviceName}${variant}\n📍 ${b.serviceAddress}\n💰 ${priceFmt}\n${b.notes ? `\nNotes: ${b.notes}\n` : ""}\nWe'll come to you — no need to go anywhere.\nNeed to reschedule? Call ${BUSINESS_PHONE} or email ${BUSINESS_EMAIL}\n\n— ${BUSINESS_NAME}`;
+Hi ${b.customerName.split(" ")[0]},
 
-  return { html, text };
+Your appointment with **${BUSINESS_NAME}** is confirmed!
+
+---
+
+### Confirmation Code: \`${b.confirmationCode}\`
+
+---
+
+| Detail | Info |
+|--------|------|
+| 📅 Date | **${dateFmt}** |
+| ⏰ Time | **${timeFmt}** |
+| 🚗 Service | **${b.serviceName}${variant}** |
+| 📍 Location | **${b.serviceAddress}** |
+| 💰 Total | **${priceFmt}** |
+${addonLines ? `\n**Add-Ons:**\n${addonLines}\n` : ""}${b.notes ? `\n> **Notes:** ${b.notes}\n` : ""}
+---
+
+### What to Expect
+
+- We'll arrive at your location — no need to go anywhere
+- Please make sure the vehicle is accessible
+- We bring all equipment, water, and power
+- You'll receive a reminder before your appointment
+
+---
+
+Need to reschedule or have questions?
+
+📞 **${BUSINESS_PHONE}** · ✉️ **${BUSINESS_EMAIL}**
+
+---
+
+*${BUSINESS_NAME} · Charlotte, NC & Surrounding Areas*`;
+
+  return { subject, body };
 }
 
-function reminderEmailHtml(b: {
+function reminderEmailBody(b: {
   customerName: string; serviceName: string; selectedVariant?: string;
   date: string; time: string; serviceAddress: string;
   totalPrice?: number; price: number; confirmationCode: string;
   timeframe: "24h" | "2h";
-}): { html: string; text: string } {
+}): { subject: string; body: string } {
   const priceFmt = formatPrice(b.totalPrice ?? b.price);
   const dateFmt = formatDateReadable(b.date);
   const timeFmt = formatTime12h(b.time);
   const variant = b.selectedVariant ? ` (${b.selectedVariant})` : "";
   const urgency = b.timeframe === "2h" ? "in about 2 hours" : "tomorrow";
   const emoji = b.timeframe === "2h" ? "⏰" : "📅";
+  const urgencyLabel = b.timeframe === "24h" ? "Tomorrow" : "In 2 Hours";
 
-  const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f7f7f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-<div style="max-width:600px;margin:0 auto;padding:20px;">
-  <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:12px 12px 0 0;padding:32px 24px;text-align:center;">
-    <h1 style="margin:0;color:#f5a623;font-size:24px;letter-spacing:1px;">PROWORX</h1>
-    <p style="margin:4px 0 0;color:#ccc;font-size:13px;">Mobile Detailing</p>
-  </div>
-  <div style="background:#fff;padding:32px 24px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,.08);">
-    <h2 style="margin:0 0 8px;color:#1a1a2e;font-size:20px;">${emoji} Appointment Reminder</h2>
-    <p style="color:#555;margin:0 0 24px;font-size:15px;">Hi ${b.customerName.split(" ")[0]}, friendly reminder — your detailing is ${urgency}!</p>
-    <div style="background:#fff8e1;border:2px solid #f5a623;border-radius:10px;padding:16px;text-align:center;margin:0 0 24px;">
-      <p style="margin:0 0 4px;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Confirmation Code</p>
-      <p style="margin:0;color:#1a1a2e;font-size:24px;font-weight:700;letter-spacing:3px;">${b.confirmationCode}</p>
-    </div>
-    <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
-      <tr><td style="padding:10px 0;border-bottom:1px solid #eee;color:#888;font-size:13px;width:120px;">📅 Date</td><td style="padding:10px 0;border-bottom:1px solid #eee;color:#1a1a2e;font-weight:600;">${dateFmt}</td></tr>
-      <tr><td style="padding:10px 0;border-bottom:1px solid #eee;color:#888;font-size:13px;">⏰ Time</td><td style="padding:10px 0;border-bottom:1px solid #eee;color:#1a1a2e;font-weight:600;">${timeFmt}</td></tr>
-      <tr><td style="padding:10px 0;border-bottom:1px solid #eee;color:#888;font-size:13px;">🚗 Service</td><td style="padding:10px 0;border-bottom:1px solid #eee;color:#1a1a2e;font-weight:600;">${b.serviceName}${variant}</td></tr>
-      <tr><td style="padding:10px 0;border-bottom:1px solid #eee;color:#888;font-size:13px;">📍 Location</td><td style="padding:10px 0;border-bottom:1px solid #eee;color:#1a1a2e;font-weight:600;">${b.serviceAddress}</td></tr>
-      <tr><td style="padding:10px 0;color:#888;font-size:13px;">💰 Total</td><td style="padding:10px 0;color:#1a1a2e;font-weight:700;font-size:18px;">${priceFmt}</td></tr>
-    </table>
-    <div style="background:#f0fdf4;border-radius:8px;padding:16px;margin:0 0 24px;">
-      <h3 style="margin:0 0 8px;color:#166534;font-size:15px;">✅ Quick Checklist</h3>
-      <ul style="margin:0;padding:0 0 0 20px;color:#555;font-size:14px;line-height:1.8;">
-        <li>Vehicle accessible at the service address</li>
-        <li>Remove personal items from the vehicle</li>
-        <li>We bring all equipment — nothing needed from you</li>
-      </ul>
-    </div>
-    <div style="text-align:center;padding:16px 0;border-top:1px solid #eee;">
-      <p style="color:#888;font-size:13px;margin:0 0 8px;">Need to reschedule?</p>
-      <p style="margin:0;"><a href="tel:+19802721903" style="color:#3b82f6;text-decoration:none;font-weight:600;">${BUSINESS_PHONE}</a> · <a href="mailto:${BUSINESS_EMAIL}" style="color:#3b82f6;text-decoration:none;font-weight:600;">${BUSINESS_EMAIL}</a></p>
-    </div>
-  </div>
-  <div style="text-align:center;padding:24px 0 0;"><p style="color:#999;font-size:12px;margin:0;">${BUSINESS_NAME} · Charlotte, NC & Surrounding Areas</p></div>
-</div></body></html>`;
+  const subject = `${emoji} Reminder: Your Detailing is ${urgencyLabel} — ${timeFmt}`;
+  const body = `# ${emoji} Appointment Reminder
 
-  const text = `${emoji} APPOINTMENT REMINDER\n\nHi ${b.customerName.split(" ")[0]},\n\nFriendly reminder — your detailing is ${urgency}!\n\nConfirmation: ${b.confirmationCode}\n📅 ${dateFmt}\n⏰ ${timeFmt}\n🚗 ${b.serviceName}${variant}\n📍 ${b.serviceAddress}\n💰 ${priceFmt}\n\nPlease make sure your vehicle is accessible.\nNeed to reschedule? Call ${BUSINESS_PHONE}\n\n— ${BUSINESS_NAME}`;
+Hi ${b.customerName.split(" ")[0]},
 
-  return { html, text };
+Friendly reminder — your detailing is **${urgency}**!
+
+---
+
+### Confirmation Code: \`${b.confirmationCode}\`
+
+---
+
+| Detail | Info |
+|--------|------|
+| 📅 Date | **${dateFmt}** |
+| ⏰ Time | **${timeFmt}** |
+| 🚗 Service | **${b.serviceName}${variant}** |
+| 📍 Location | **${b.serviceAddress}** |
+| 💰 Total | **${priceFmt}** |
+
+---
+
+### ✅ Quick Checklist
+
+- Vehicle accessible at the service address
+- Remove personal items from the vehicle
+- We bring all equipment — nothing needed from you
+
+---
+
+Need to reschedule?
+
+📞 **${BUSINESS_PHONE}** · ✉️ **${BUSINESS_EMAIL}**
+
+---
+
+*${BUSINESS_NAME} · Charlotte, NC & Surrounding Areas*`;
+
+  return { subject, body };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -346,7 +351,7 @@ export const sendConfirmation = internalAction({
     // ── Email ──
     let emailSent = booking.confirmationEmailSent ?? false;
     if (!emailSent && booking.customerEmail) {
-      const { html, text } = confirmationEmailHtml({
+      const { subject, body } = confirmationEmailBody({
         customerName: booking.customerName,
         serviceName: booking.serviceName,
         selectedVariant: booking.selectedVariant,
@@ -359,12 +364,7 @@ export const sendConfirmation = internalAction({
         addons: booking.addons,
         notes: booking.notes,
       });
-      emailSent = await sendEmail(
-        booking.customerEmail,
-        `Booking Confirmed — ${formatDateReadable(booking.date)} at ${formatTime12h(booking.time)}`,
-        html,
-        text,
-      );
+      emailSent = await sendEmail(booking.customerEmail, subject, "", body);
     }
 
     // ── SMS ──
@@ -410,7 +410,7 @@ export const sendReminder = internalAction({
     // ── Email ──
     let emailSent = false;
     if (booking.customerEmail) {
-      const { html, text } = reminderEmailHtml({
+      const { subject, body } = reminderEmailBody({
         customerName: booking.customerName,
         serviceName: booking.serviceName,
         selectedVariant: booking.selectedVariant,
@@ -422,13 +422,7 @@ export const sendReminder = internalAction({
         confirmationCode: booking.confirmationCode,
         timeframe,
       });
-      const urgencyLabel = timeframe === "24h" ? "Tomorrow" : "In 2 Hours";
-      emailSent = await sendEmail(
-        booking.customerEmail,
-        `⏰ Reminder: Your Detailing is ${urgencyLabel} — ${formatTime12h(booking.time)}`,
-        html,
-        text,
-      );
+      emailSent = await sendEmail(booking.customerEmail, subject, "", body);
     }
 
     // ── SMS ──

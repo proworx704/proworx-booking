@@ -1049,6 +1049,50 @@ export function BookingDetailPage() {
             </CardContent>
           </Card>
 
+          {/* Notification Status */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Mail className="size-4" />
+                Notifications
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Confirmation Email</span>
+                {booking.confirmationEmailSent ? (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">✅ Sent</Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800">⏳ Pending</Badge>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Confirmation SMS</span>
+                {booking.confirmationSmsSent ? (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">✅ Sent</Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-zinc-50 text-zinc-500 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-700">— Not configured</Badge>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">24h Reminder</span>
+                {booking.reminder24hSent ? (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">✅ Sent</Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">🔔 Scheduled</Badge>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">2h Reminder</span>
+                {booking.reminder2hSent ? (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">✅ Sent</Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">🔔 Scheduled</Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Satisfaction (if completed) */}
           {booking.status === "completed" && booking.satisfaction && (
             <Card>

@@ -2,15 +2,15 @@ import { useMutation, useQuery } from "convex/react";
 import {
   CalendarPlus,
   Check,
-  ChevronDown,
   Clock,
   Loader2,
   MapPin,
+  Plus,
   Search,
   User,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -87,7 +87,7 @@ export function QuickBookDialog({
 }: QuickBookDialogProps) {
   const navigate = useNavigate();
   const createBooking = useMutation(api.bookings.adminCreate);
-  const catalog = useQuery(api.catalog.listActive);
+  const catalog = useQuery(api.catalog.listActive, {});
   const customers = useQuery(api.customers.list, { search: "" });
   const staffList = useQuery(api.staff.listActive);
 

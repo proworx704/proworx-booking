@@ -12,38 +12,28 @@ import { requireActionAuth } from "./authHelpers";
 
 declare const process: { env: Record<string, string | undefined> };
 
-const VIKTOR_API_URL = process.env.VIKTOR_SPACES_API_URL!;
-const PROJECT_NAME = process.env.VIKTOR_SPACES_PROJECT_NAME!;
-const PROJECT_SECRET = process.env.VIKTOR_SPACES_PROJECT_SECRET!;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
+const GEMINI_MODEL = "gemini-2.0-flash";
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Viktor Gateway Helper
+// Gemini API Helper (OpenAI-compatible endpoint)
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function callViktorTool<T>(
-  role: string,
-  args: Record<string, unknown> = {},
-): Promise<T> {
-  const response = await fetch(
-    `${VIKTOR_API_URL}/api/viktor-spaces/tools/call`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        project_name: PROJECT_NAME,
-        project_secret: PROJECT_SECRET,
-        role,
-        arguments: args,
-      }),
+async function callGemini(body: Record<string, unknown>): Promise<any> {
+  const response = await fetch(`${GEMINI_BASE_URL}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${GEMINI_API_KEY}`,
     },
-  );
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Viktor API ${response.status}: ${text}`);
+    throw new Error(`Gemini API ${response.status}: ${text}`);
   }
-  const json = await response.json();
-  if (!json.success) throw new Error(json.error ?? "Tool call failed");
-  return json.result as T;
+  return response.json();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -704,16 +694,13 @@ export const chat = action({
     // 3. Function-calling loop (max 5 iterations to prevent runaway)
     const MAX_TOOL_ROUNDS = 5;
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const result = await callViktorTool<any>("pd_openai_proxy_post", {
-        path: "/v1/chat/completions",
-        data: {
-          model: "gpt-4o-mini",
-          messages: llmMessages,
-          tools: LLM_TOOLS,
-          tool_choice: "auto",
-          temperature: 0.4,
-          max_tokens: 2500,
-        },
+      const result = await callGemini({
+        model: GEMINI_MODEL,
+        messages: llmMessages,
+        tools: LLM_TOOLS,
+        tool_choice: "auto",
+        temperature: 0.4,
+        max_tokens: 2500,
       });
 
       const choice = result?.choices?.[0];

@@ -320,9 +320,9 @@ export const list = query({
       if (status) result = result.filter((b) => b.status === status);
       if (paymentStatus) {
         result = result.filter((b) => b.paymentStatus === paymentStatus);
-        // Exclude $0 membership maintenance bookings from unpaid filter
+        // Exclude $0 membership maintenance bookings and cancelled bookings from unpaid filter
         if (paymentStatus === "unpaid") {
-          result = result.filter((b) => (b.totalPrice ?? b.price) > 0);
+          result = result.filter((b) => (b.totalPrice ?? b.price) > 0 && b.status !== "cancelled");
         }
       }
       if (startDate) result = result.filter((b) => b.date >= startDate);

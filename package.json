@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "check": "biome check .",
     "format": "biome check --write .",
@@ -21,7 +21,7 @@
     "screenshot": "bun run --bun scripts/screenshot.ts",
     "env:get": "bunx convex env get",
     "env:list": "bunx convex env list",
-    "build:frontend": "tsc -b && vite build"
+    "build:frontend": "vite build"
   },
   "dependencies": {
     "@auth/core": "^0.37.4",

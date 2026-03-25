@@ -264,12 +264,16 @@ function CsvImportDialog() {
 
       const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
 
-      // Map common header names to our fields
+      // Map common header names to our fields (including Square CSV format)
       const fieldMap: Record<string, string> = {
         name: "name",
         "full name": "name",
         "client name": "name",
         "customer name": "name",
+        "first name": "firstName",
+        "given name": "firstName",
+        "last name": "lastName",
+        "family name": "lastName",
         phone: "phone",
         "phone number": "phone",
         telephone: "phone",
@@ -278,6 +282,12 @@ function CsvImportDialog() {
         address: "address",
         "street address": "address",
         "service address": "address",
+        "street address 1": "address",
+        "address line 1": "address",
+        city: "city",
+        locality: "city",
+        state: "state",
+        "administrative district level 1": "state",
         zip: "zipCode",
         "zip code": "zipCode",
         zipcode: "zipCode",
@@ -294,6 +304,9 @@ function CsvImportDialog() {
         color: "vehicleColor",
         "vehicle color": "vehicleColor",
         notes: "notes",
+        note: "notes",
+        "square customer id": "squareCustomerId",
+        "customer id": "squareCustomerId",
       };
 
       const colIndex: Record<string, number> = {};
@@ -302,9 +315,11 @@ function CsvImportDialog() {
         if (mapped) colIndex[mapped] = i;
       });
 
-      if (!("name" in colIndex)) {
+      // Support Square CSV format with separate first/last name columns
+      const hasFirstLast = "firstName" in colIndex || "lastName" in colIndex;
+      if (!("name" in colIndex) && !hasFirstLast) {
         alert(
-          'CSV must have a "Name" column. Found columns: ' + headers.join(", "),
+          'CSV must have a "Name" column (or "First Name" + "Last Name"). Found columns: ' + headers.join(", "),
         );
         setImporting(false);
         return;
@@ -317,19 +332,40 @@ function CsvImportDialog() {
           (v) => v.replace(/^"|"$/g, "").trim(),
         ) || lines[i].split(",").map((v) => v.trim());
 
-        const name = row[colIndex.name];
+        // Build name from either "name" or "firstName"+"lastName"
+        let name = colIndex.name !== undefined ? row[colIndex.name] : "";
+        if (!name && hasFirstLast) {
+          const first = colIndex.firstName !== undefined ? (row[colIndex.firstName] || "").trim() : "";
+          const last = colIndex.lastName !== undefined ? (row[colIndex.lastName] || "").trim() : "";
+          name = `${first} ${last}`.trim();
+        }
         if (!name) continue;
+
+        // Build full address from parts if separate columns exist
+        let address = colIndex.address !== undefined ? row[colIndex.address] || undefined : undefined;
+        if (!address && (colIndex.city !== undefined || colIndex.state !== undefined)) {
+          const parts = [
+            colIndex.address !== undefined ? row[colIndex.address] : "",
+            colIndex.city !== undefined ? row[colIndex.city] : "",
+            colIndex.state !== undefined ? row[colIndex.state] : "",
+          ].filter(Boolean);
+          if (parts.length > 0) address = parts.join(", ");
+        }
 
         const vehicleTypeRaw = colIndex.vehicleType !== undefined ? row[colIndex.vehicleType]?.toLowerCase() : undefined;
         const vehicleType = vehicleTypeRaw === "sedan" || vehicleTypeRaw === "car" ? "sedan" as const
           : vehicleTypeRaw === "suv" || vehicleTypeRaw === "truck" ? "suv" as const
           : undefined;
 
+        // Determine source (square if squareCustomerId present)
+        const sqId = colIndex.squareCustomerId !== undefined ? row[colIndex.squareCustomerId] || undefined : undefined;
+        const source = sqId ? "square" as const : "csv" as const;
+
         customers.push({
           name,
           phone: colIndex.phone !== undefined ? row[colIndex.phone] || undefined : undefined,
           email: colIndex.email !== undefined ? row[colIndex.email] || undefined : undefined,
-          address: colIndex.address !== undefined ? row[colIndex.address] || undefined : undefined,
+          address,
           zipCode: colIndex.zipCode !== undefined ? row[colIndex.zipCode] || undefined : undefined,
           vehicleType,
           vehicleYear: colIndex.vehicleYear !== undefined ? row[colIndex.vehicleYear] || undefined : undefined,
@@ -337,7 +373,8 @@ function CsvImportDialog() {
           vehicleModel: colIndex.vehicleModel !== undefined ? row[colIndex.vehicleModel] || undefined : undefined,
           vehicleColor: colIndex.vehicleColor !== undefined ? row[colIndex.vehicleColor] || undefined : undefined,
           notes: colIndex.notes !== undefined ? row[colIndex.notes] || undefined : undefined,
-          source: "csv" as const,
+          source,
+          squareCustomerId: sqId,
         });
       }
 
@@ -393,10 +430,12 @@ function CsvImportDialog() {
             />
           </div>
           <div className="text-sm text-muted-foreground space-y-1">
-            <p className="font-medium">Expected columns:</p>
+            <p className="font-medium">Supported formats:</p>
             <p>
-              Name (required), Phone, Email, Address, ZIP Code, Vehicle Type,
-              Year, Make, Model, Color, Notes
+              <strong>Standard:</strong> Name (required), Phone, Email, Address, ZIP Code, Vehicle Type, Year, Make, Model, Color, Notes
+            </p>
+            <p>
+              <strong>Square CSV:</strong> First Name, Last Name, Email Address, Phone Number, Street Address 1, City, State, Zip Code
             </p>
           </div>
           {importing && (

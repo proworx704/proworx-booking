@@ -3,6 +3,7 @@ import { useQuery } from "convex/react";
 import {
   CalendarCheck,
   Gift,
+  Headphones,
   LayoutDashboard,
   LogOut,
   Moon,
@@ -40,6 +41,7 @@ const clientNav = [
   { href: "/rewards/bookings", label: "My Bookings", icon: CalendarCheck },
   { href: "/rewards/redeem", label: "Rewards", icon: Gift },
   { href: "/rewards/promos", label: "Bonus Promos", icon: Rocket },
+  { href: "/rewards/support", label: "Help & Support", icon: Headphones },
   { href: "/rewards/profile", label: "My Profile", icon: User },
 ];
 

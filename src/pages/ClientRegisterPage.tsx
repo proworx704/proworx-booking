@@ -4,14 +4,16 @@ import { useUserRole } from "@/contexts/RoleContext";
 import { SignUp } from "@/components/SignUp";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../../convex/_generated/api";
 
 export function ClientRegisterPage() {
   const { isAuthenticated } = useConvexAuth();
   const { isClient, isAdmin, isEmployee, isLoading, role } = useUserRole();
   const initClientProfile = useMutation(api.userProfiles.initClientProfile);
+  const marketingOptIn = useMutation(api.marketing.optIn);
   const didInit = useRef(false);
+  const [wantsMarketing, setWantsMarketing] = useState(true);
 
   // When a new user signs up through this page, auto-init them as a client
   useEffect(() => {
@@ -19,11 +21,16 @@ export function ClientRegisterPage() {
     // If no role yet or already client → init client profile
     if (role === null || role === "client") {
       didInit.current = true;
-      initClientProfile({}).catch(() => {
+      initClientProfile({}).then(() => {
+        // Auto opt-in to marketing if checked
+        if (wantsMarketing) {
+          marketingOptIn({ source: "portal_registration" }).catch(() => {});
+        }
+      }).catch(() => {
         didInit.current = false;
       });
     }
-  }, [isAuthenticated, isLoading, role, initClientProfile]);
+  }, [isAuthenticated, isLoading, role, initClientProfile, marketingOptIn, wantsMarketing]);
 
   // Redirect authenticated users
   if (isAuthenticated && !isLoading) {
@@ -65,6 +72,19 @@ export function ClientRegisterPage() {
         </div>
 
         <SignUp />
+
+        {/* Marketing Opt-In */}
+        <label className="flex items-start gap-3 cursor-pointer px-1">
+          <input
+            type="checkbox"
+            checked={wantsMarketing}
+            onChange={(e) => setWantsMarketing(e.target.checked)}
+            className="mt-0.5 size-4 rounded border-gray-300 accent-amber-500"
+          />
+          <span className="text-sm text-muted-foreground leading-snug">
+            Send me exclusive deals, promotions, and updates from ProWorx Mobile Detailing. You can unsubscribe anytime.
+          </span>
+        </label>
 
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}

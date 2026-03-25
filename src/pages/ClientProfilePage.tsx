@@ -1,6 +1,8 @@
-import { useQuery } from "convex/react";
-import { Car, Mail, MapPin, Phone, Star, User } from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
+import { Bell, Car, Mail, MapPin, Phone, Star, User } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "../../convex/_generated/api";
 
@@ -137,19 +139,70 @@ export function ClientProfilePage() {
         </Card>
       )}
 
+      {/* Marketing Preferences */}
+      <MarketingPreferences />
+
       <Card>
         <CardContent className="py-6 text-center text-sm text-muted-foreground">
           <p>
             Need to update your info? Contact ProWorx at{" "}
             <a
-              href="mailto:tyler@proworxdetailing.com"
+              href="mailto:detailing@proworxdetailing.com"
               className="text-primary underline"
             >
-              tyler@proworxdetailing.com
+              detailing@proworxdetailing.com
             </a>
           </p>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function MarketingPreferences() {
+  const optIn = useQuery(api.marketing.getMyOptIn);
+  const doOptIn = useMutation(api.marketing.optIn);
+  const doOptOut = useMutation(api.marketing.optOut);
+
+  const isSubscribed = optIn?.isActive ?? false;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Bell className="size-4" />
+          Marketing Preferences
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium">Promotional Emails & Deals</p>
+            <p className="text-xs text-muted-foreground">
+              Receive exclusive offers, seasonal deals, and updates from ProWorx
+            </p>
+          </div>
+          <Button
+            variant={isSubscribed ? "outline" : "default"}
+            size="sm"
+            onClick={async () => {
+              try {
+                if (isSubscribed) {
+                  await doOptOut();
+                  toast.success("Unsubscribed from marketing emails");
+                } else {
+                  await doOptIn({ source: "portal_settings" });
+                  toast.success("Subscribed to marketing emails!");
+                }
+              } catch {
+                toast.error("Failed to update preference");
+              }
+            }}
+          >
+            {isSubscribed ? "Unsubscribe" : "Subscribe"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

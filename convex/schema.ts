@@ -494,6 +494,66 @@ const schema = defineSchema({
     clientPortalEnabled: v.optional(v.boolean()),   // Enable/disable client self-service portal
     showPointsOnBooking: v.optional(v.boolean()),   // Show estimated points on booking confirmation
   }),
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // CLIENT SUPPORT TICKETS
+  // ═══════════════════════════════════════════════════════════════════════
+  supportTickets: defineTable({
+    customerId: v.optional(v.id("customers")),
+    userId: v.optional(v.id("users")),
+    name: v.string(),
+    email: v.string(),
+    phone: v.optional(v.string()),
+    category: v.union(
+      v.literal("booking_issue"),
+      v.literal("payment_issue"),
+      v.literal("loyalty_question"),
+      v.literal("service_feedback"),
+      v.literal("account_help"),
+      v.literal("general"),
+    ),
+    subject: v.string(),
+    message: v.string(),
+    status: v.union(
+      v.literal("open"),
+      v.literal("in_progress"),
+      v.literal("resolved"),
+      v.literal("closed"),
+    ),
+    priority: v.union(
+      v.literal("low"),
+      v.literal("normal"),
+      v.literal("high"),
+    ),
+    adminNotes: v.optional(v.string()),
+    resolvedAt: v.optional(v.number()),
+  })
+    .index("by_customer", ["customerId"])
+    .index("by_status", ["status"])
+    .index("by_email", ["email"]),
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // MARKETING OPT-INS
+  // ═══════════════════════════════════════════════════════════════════════
+  marketingOptIns: defineTable({
+    customerId: v.optional(v.id("customers")),
+    userId: v.optional(v.id("users")),
+    email: v.string(),
+    name: v.string(),
+    phone: v.optional(v.string()),
+    optedInAt: v.number(),        // ms epoch
+    optedOutAt: v.optional(v.number()),  // ms epoch if they unsubscribed
+    isActive: v.boolean(),
+    source: v.union(
+      v.literal("portal_registration"),
+      v.literal("portal_settings"),
+      v.literal("admin_import"),
+      v.literal("booking"),
+    ),
+  })
+    .index("by_email", ["email"])
+    .index("by_customer", ["customerId"])
+    .index("by_active", ["isActive"]),
 });
 
 export default schema;

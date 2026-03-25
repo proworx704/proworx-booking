@@ -262,7 +262,40 @@ function CsvImportDialog() {
         return;
       }
 
-      const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+      // Proper CSV row parser that handles empty fields, quoted fields, and commas inside quotes
+      const parseCSVRow = (line: string): string[] => {
+        const result: string[] = [];
+        let i = 0;
+        while (i <= line.length) {
+          if (i === line.length) { result.push(""); break; }
+          if (line[i] === '"') {
+            // Quoted field
+            let value = "";
+            i++; // skip opening quote
+            while (i < line.length) {
+              if (line[i] === '"') {
+                if (line[i + 1] === '"') { value += '"'; i += 2; }
+                else { i++; break; }
+              } else { value += line[i]; i++; }
+            }
+            result.push(value.trim());
+            if (i < line.length && line[i] === ',') i++; // skip comma
+          } else if (line[i] === ',') {
+            // Empty field
+            result.push("");
+            i++;
+          } else {
+            // Unquoted field
+            const next = line.indexOf(',', i);
+            if (next === -1) { result.push(line.slice(i).trim()); break; }
+            result.push(line.slice(i, next).trim());
+            i = next + 1;
+          }
+        }
+        return result;
+      };
+
+      const headers = parseCSVRow(lines[0]).map((h) => h.toLowerCase());
 
       // Map common header names to our fields (including Square CSV format)
       const fieldMap: Record<string, string> = {
@@ -327,10 +360,7 @@ function CsvImportDialog() {
 
       const customers = [];
       for (let i = 1; i < lines.length; i++) {
-        // Simple CSV parse (handles quoted fields with commas)
-        const row = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)?.map(
-          (v) => v.replace(/^"|"$/g, "").trim(),
-        ) || lines[i].split(",").map((v) => v.trim());
+        const row = parseCSVRow(lines[i]);
 
         // Build name from either "name" or "firstName"+"lastName"
         let name = colIndex.name !== undefined ? row[colIndex.name] : "";

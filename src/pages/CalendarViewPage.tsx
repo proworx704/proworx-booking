@@ -573,21 +573,26 @@ function DayColumn({
         {/* Context menu: New Booking vs New Event */}
         {contextMenu && (
           <>
-            {/* Invisible overlay to dismiss */}
+            {/* Invisible overlay to dismiss — stopPropagation prevents grid re-trigger */}
             <div
-              className="fixed inset-0 z-[60]"
-              onClick={() => setContextMenu(null)}
+              className="fixed inset-0 z-[40]"
+              onClick={(e) => {
+                e.stopPropagation();
+                setContextMenu(null);
+              }}
             />
             <div
-              className="fixed z-[61] bg-background rounded-lg shadow-xl border p-1 min-w-[160px]"
+              className="fixed z-[41] bg-background rounded-lg shadow-xl border p-1 min-w-[160px]"
               style={{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }}
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="px-2 py-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
                 {formatTimeShort(contextMenu.time)}
               </div>
               <button
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-primary/10 transition-colors text-left"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setContextMenu(null);
                   onSlotClick(dateStr, contextMenu.time);
                 }}
@@ -597,7 +602,8 @@ function DayColumn({
               </button>
               <button
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-primary/10 transition-colors text-left"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setContextMenu(null);
                   onCreateEvent(dateStr, contextMenu.time);
                 }}

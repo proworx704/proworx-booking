@@ -580,6 +580,10 @@ function InfoStep({
             value={data.customerPhone}
             onChange={(e) => onChange("customerPhone", e.target.value)}
           />
+          <p className="text-xs text-muted-foreground">
+            By providing your phone number, you consent to receive appointment
+            confirmations and reminders via SMS. Reply STOP to opt out.
+          </p>
         </div>
 
         <div className="space-y-2">

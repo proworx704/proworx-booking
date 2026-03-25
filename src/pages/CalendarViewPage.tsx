@@ -623,7 +623,7 @@ function DayColumn({
 
 function WeekStats({ bookings }: { bookings: Booking[] }) {
   const totalBookings = bookings.length;
-  const totalRevenue = bookings.reduce((s, b) => s + (b.totalPrice || b.price || 0), 0);
+  const totalRevenue = bookings.reduce((s, b) => s + (b.totalPrice ?? b.price ?? 0), 0);
   const completedCount = bookings.filter((b) => b.status === "completed").length;
   const paidCount = bookings.filter((b) => b.paymentStatus === "paid").length;
 

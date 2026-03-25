@@ -916,7 +916,7 @@ export function BookingDetailPage() {
                     <CheckCircle2 className="size-10 text-green-500 mx-auto mb-2" />
                     <p className="font-semibold text-green-700">Paid</p>
                     <p className="text-sm text-muted-foreground">
-                      {formatPrice(booking.paymentAmount || booking.price)} via{" "}
+                      {formatPrice(booking.paymentAmount ?? booking.totalPrice ?? booking.price)} via{" "}
                       {booking.paymentMethod}
                     </p>
                     {booking.paidAt && (
@@ -983,18 +983,24 @@ export function BookingDetailPage() {
                 <div className="space-y-3">
                   <div className="text-center py-2">
                     <p className="text-3xl font-bold">
-                      {formatPrice(booking.price)}
+                      {formatPrice(booking.totalPrice ?? booking.price)}
                     </p>
-                    <p className="text-sm text-muted-foreground">Amount due</p>
+                    <p className="text-sm text-muted-foreground">
+                      {(booking.totalPrice ?? booking.price) === 0
+                        ? "Included in membership"
+                        : "Amount due"}
+                    </p>
                   </div>
-                  <PaymentDialog
-                    bookingId={booking._id}
-                    price={booking.totalPrice || booking.price}
-                    squarePaymentLinkUrl={booking.squarePaymentLinkUrl}
-                    serviceName={booking.serviceName}
-                    customerName={booking.customerName}
-                    confirmationCode={booking.confirmationCode}
-                  />
+                  {(booking.totalPrice ?? booking.price) > 0 && (
+                    <PaymentDialog
+                      bookingId={booking._id}
+                      price={booking.totalPrice ?? booking.price}
+                      squarePaymentLinkUrl={booking.squarePaymentLinkUrl}
+                      serviceName={booking.serviceName}
+                      customerName={booking.customerName}
+                      confirmationCode={booking.confirmationCode}
+                    />
+                  )}
                 </div>
               )}
             </CardContent>

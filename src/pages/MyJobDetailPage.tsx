@@ -391,7 +391,7 @@ export function MyJobDetailPage() {
     } finally { setSaving(false); }
   };
 
-  const totalPrice = booking.totalPrice || booking.price || 0;
+  const totalPrice = booking.totalPrice ?? booking.price ?? 0;
   const displayNotes = notes ?? booking.notes ?? "";
 
   return (

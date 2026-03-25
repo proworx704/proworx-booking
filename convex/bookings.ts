@@ -51,7 +51,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     let serviceName = args.serviceName || "";
-    let price = args.price || 0;
+    let price = args.price ?? 0;
     let totalPrice = args.totalPrice;
     let totalDuration = args.totalDuration;
     let vehicleType = args.vehicleType;
@@ -71,11 +71,13 @@ export const create = mutation({
           (v) => v.label === args.selectedVariant,
         );
         if (variant) {
-          price = price || variant.price;
+          // Only fall back to variant price if no explicit price was provided
+          // (membership bookings send price=0 which must be preserved)
+          if (args.price == null) price = variant.price;
           duration = variant.durationMin;
         }
       } else if (catalogItem.variants.length === 1) {
-        price = price || catalogItem.variants[0].price;
+        if (args.price == null) price = catalogItem.variants[0].price;
         duration = catalogItem.variants[0].durationMin;
       }
 

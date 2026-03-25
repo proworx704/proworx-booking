@@ -3,16 +3,18 @@ import { createContext, useContext, useEffect, useRef, type ReactNode } from "re
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 
-type UserRole = "owner" | "admin" | "employee" | null;
+type UserRole = "owner" | "admin" | "employee" | "client" | null;
 
 interface RoleContextValue {
   role: UserRole;
   isAdmin: boolean;       // owner or admin
   isEmployee: boolean;    // employee only
+  isClient: boolean;      // client portal user
   isLoading: boolean;
   displayName: string;
   staffId: Id<"staff"> | null;
   payrollWorkerId: Id<"payrollWorkers"> | null;
+  customerId: Id<"customers"> | null;
   userId: Id<"users"> | null;
   email: string | null;
 }
@@ -21,10 +23,12 @@ const RoleContext = createContext<RoleContextValue>({
   role: null,
   isAdmin: false,
   isEmployee: false,
+  isClient: false,
   isLoading: true,
   displayName: "",
   staffId: null,
   payrollWorkerId: null,
+  customerId: null,
   userId: null,
   email: null,
 });
@@ -61,10 +65,12 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     role: profile?.role ?? null,
     isAdmin: profile?.role === "owner" || profile?.role === "admin",
     isEmployee: profile?.role === "employee",
+    isClient: profile?.role === "client",
     isLoading: profile === undefined || isInitializing === true,
     displayName: profile?.profile?.displayName || profile?.name || profile?.email || "",
     staffId: (profile?.profile?.staffId as Id<"staff">) ?? null,
     payrollWorkerId: (profile?.profile?.payrollWorkerId as Id<"payrollWorkers">) ?? null,
+    customerId: (profile?.profile?.customerId as Id<"customers">) ?? null,
     userId: profile?.userId ?? null,
     email: profile?.email ?? null,
   };

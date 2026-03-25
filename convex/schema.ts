@@ -376,15 +376,124 @@ const schema = defineSchema({
       v.literal("owner"),    // Full access — Tyler
       v.literal("admin"),    // Full access — managers
       v.literal("employee"), // Employee portal only
+      v.literal("client"),   // Client portal — loyalty, bookings, profile
     ),
     displayName: v.string(),
     staffId: v.optional(v.id("staff")),             // Link to staff table
     payrollWorkerId: v.optional(v.id("payrollWorkers")), // Link to payroll worker
+    customerId: v.optional(v.id("customers")),       // Link to customer (for clients)
   })
     .index("by_user", ["userId"])
     .index("by_role", ["role"])
     .index("by_staff", ["staffId"])
-    .index("by_worker", ["payrollWorkerId"]),
+    .index("by_worker", ["payrollWorkerId"])
+    .index("by_customer", ["customerId"]),
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // LOYALTY PROGRAM MODULE
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // One loyalty account per customer — tracks balances
+  loyaltyAccounts: defineTable({
+    customerId: v.id("customers"),
+    currentPoints: v.number(),     // available balance
+    lifetimeEarned: v.number(),    // total ever earned
+    lifetimeRedeemed: v.number(),  // total ever redeemed
+    lastEarnedAt: v.optional(v.number()),   // ms epoch
+    lastRedeemedAt: v.optional(v.number()), // ms epoch
+  })
+    .index("by_customer", ["customerId"])
+    .index("by_points", ["currentPoints"]),
+
+  // Every point change — full audit trail
+  loyaltyTransactions: defineTable({
+    loyaltyAccountId: v.id("loyaltyAccounts"),
+    customerId: v.id("customers"),
+    type: v.union(
+      v.literal("earn"),            // Earned from a completed booking
+      v.literal("redeem"),          // Redeemed for a reward/discount
+      v.literal("bonus"),           // Amplifier bonus points
+      v.literal("adjust"),          // Manual admin adjustment
+      v.literal("expire"),          // Points expired (future use)
+    ),
+    points: v.number(),             // positive for earn/bonus, negative for redeem
+    description: v.string(),        // Human-readable description
+    bookingId: v.optional(v.id("bookings")),      // Which booking earned these points
+    rewardId: v.optional(v.id("loyaltyRewards")), // Which reward was redeemed
+    amplifierId: v.optional(v.id("loyaltyAmplifiers")), // Which amplifier applied
+    createdBy: v.optional(v.string()), // admin name who made adjustment
+    expired: v.optional(v.boolean()),  // Marked true after expiration processing
+    expiresAt: v.optional(v.number()), // Timestamp when these points expire
+  })
+    .index("by_account", ["loyaltyAccountId"])
+    .index("by_customer", ["customerId"])
+    .index("by_booking", ["bookingId"])
+    .index("by_type", ["type"]),
+
+  // Available rewards customers can redeem
+  loyaltyRewards: defineTable({
+    name: v.string(),              // e.g. "$25 Off Any Service"
+    description: v.string(),
+    pointsCost: v.number(),        // Points needed to redeem
+    rewardType: v.union(
+      v.literal("discount_fixed"),   // Fixed dollar discount
+      v.literal("discount_percent"), // Percentage discount
+      v.literal("free_service"),     // Free service
+      v.literal("custom"),           // Custom reward
+    ),
+    discountAmount: v.optional(v.number()),  // cents, for fixed discounts
+    discountPercent: v.optional(v.number()), // percentage, for percent discounts
+    isActive: v.boolean(),
+    sortOrder: v.number(),
+    totalRedemptions: v.number(),   // Counter
+    icon: v.optional(v.string()),   // Emoji or icon name
+  })
+    .index("by_active", ["isActive"])
+    .index("by_points_cost", ["pointsCost"]),
+
+  // Promotional amplifiers — boost earning rate
+  loyaltyAmplifiers: defineTable({
+    name: v.string(),              // e.g. "2x Tuesday Points"
+    description: v.string(),
+    amplifierType: v.union(
+      v.literal("multiplier"),     // e.g. 2x, 3x points
+      v.literal("bonus"),          // Flat bonus points added
+    ),
+    multiplier: v.optional(v.number()),    // e.g. 2.0 for double points
+    bonusPoints: v.optional(v.number()),   // e.g. 200 for +200 bonus
+    // Conditions — when does this amplifier apply?
+    daysOfWeek: v.optional(v.array(v.number())),  // 0=Sun..6=Sat, null = all days
+    serviceCategories: v.optional(v.array(v.string())), // null = all services
+    minSpendCents: v.optional(v.number()),  // Minimum booking amount to qualify
+    // Schedule
+    startDate: v.string(),         // YYYY-MM-DD
+    endDate: v.string(),           // YYYY-MM-DD
+    isActive: v.boolean(),
+    createdBy: v.optional(v.string()),
+  })
+    .index("by_active", ["isActive"])
+    .index("by_dates", ["startDate", "endDate"]),
+
+  // Program settings (single-row config)
+  loyaltySettings: defineTable({
+    pointsPerDollar: v.number(),              // Default earning rate (e.g. 1 = 1pt/$1)
+    programName: v.string(),                  // Display name for the program
+    isEnabled: v.boolean(),                   // Master on/off switch
+    // Point expiration
+    expirationEnabled: v.optional(v.boolean()),    // Whether points expire at all
+    expirationDays: v.optional(v.number()),        // Days until points expire (e.g. 365)
+    expirationWarningDays: v.optional(v.number()), // Days before expiry to warn client (e.g. 30)
+    // Earning rules
+    minSpendForPoints: v.optional(v.number()),     // Min spend in cents to earn points (0 = always)
+    roundingMode: v.optional(v.string()),          // "floor" | "round" | "ceil" — how to round fractional pts
+    // Redemption rules
+    minPointsToRedeem: v.optional(v.number()),     // Min points before client can redeem anything
+    maxRedemptionPercent: v.optional(v.number()),   // Max % of a booking that can be paid with points (e.g. 100)
+    allowPartialRedemption: v.optional(v.boolean()), // Can clients use fewer pts than reward cost?
+    // Client portal
+    clientPortalEnabled: v.optional(v.boolean()),   // Enable/disable client self-service portal
+    showPointsOnBooking: v.optional(v.boolean()),   // Show estimated points on booking confirmation
+  }),
 });
 
 export default schema;

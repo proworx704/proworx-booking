@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { AdminRoute } from "./components/AdminRoute";
 import { AppLayout } from "./components/AppLayout";
+import { ClientLayout } from "./components/ClientLayout";
+import { ClientRoute } from "./components/ClientRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PublicLayout } from "./components/PublicLayout";
@@ -46,6 +48,20 @@ import { StandaloneReceptionistPage } from "./pages/StandaloneReceptionistPage";
 import PosCallbackPage from "./pages/PosCallbackPage";
 import { MyCalendarPage } from "./pages/MyCalendarPage";
 import { MyJobDetailPage } from "./pages/MyJobDetailPage";
+// Loyalty — Admin
+import { LoyaltyDashboardPage } from "./pages/LoyaltyDashboardPage";
+import { LoyaltyRewardsPage } from "./pages/LoyaltyRewardsPage";
+import { LoyaltyAmplifiersPage } from "./pages/LoyaltyAmplifiersPage";
+import { LoyaltySettingsPage } from "./pages/LoyaltySettingsPage";
+// Loyalty — Client Portal
+import { ClientLoginPage } from "./pages/ClientLoginPage";
+import { ClientRegisterPage } from "./pages/ClientRegisterPage";
+import { ClientDashboardPage } from "./pages/ClientDashboardPage";
+import { ClientPointsPage } from "./pages/ClientPointsPage";
+import { ClientBookingsPage } from "./pages/ClientBookingsPage";
+import { ClientRedeemPage } from "./pages/ClientRedeemPage";
+import { ClientPromosPage } from "./pages/ClientPromosPage";
+import { ClientProfilePage } from "./pages/ClientProfilePage";
 
 function App() {
   return (
@@ -100,9 +116,32 @@ function App() {
                 <Route path="/website" element={<WebsiteEditorPage />} />
                 <Route path="/team" element={<TeamPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                {/* Loyalty Admin */}
+                <Route path="/loyalty" element={<LoyaltyDashboardPage />} />
+                <Route path="/loyalty/rewards" element={<LoyaltyRewardsPage />} />
+                <Route path="/loyalty/amplifiers" element={<LoyaltyAmplifiersPage />} />
+                <Route path="/loyalty/settings" element={<LoyaltySettingsPage />} />
               </Route>
             </Route>
           </Route>
+          {/* Client Rewards Portal */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<ClientLayout />}>
+              <Route element={<ClientRoute />}>
+                <Route path="/rewards" element={<ClientDashboardPage />} />
+                <Route path="/rewards/points" element={<ClientPointsPage />} />
+                <Route path="/rewards/bookings" element={<ClientBookingsPage />} />
+                <Route path="/rewards/redeem" element={<ClientRedeemPage />} />
+                <Route path="/rewards/promos" element={<ClientPromosPage />} />
+                <Route path="/rewards/profile" element={<ClientProfilePage />} />
+              </Route>
+            </Route>
+          </Route>
+
+          {/* Client Login/Register (public) */}
+          <Route path="/rewards/login" element={<ClientLoginPage />} />
+          <Route path="/rewards/register" element={<ClientRegisterPage />} />
+
           {/* Square POS callback — redirects back to dashboard after payment */}
           <Route path="/pos-callback" element={<PosCallbackPage />} />
 

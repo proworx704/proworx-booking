@@ -3,13 +3,14 @@ import { useUserRole } from "@/contexts/RoleContext";
 
 /**
  * Route guard that only allows owner/admin users.
- * Everyone else (employees AND users without a profile) gets
- * redirected to the employee portal.
+ * Clients → rewards portal, employees → employee portal.
  */
 export function AdminRoute() {
-  const { isAdmin, isLoading } = useUserRole();
+  const { isAdmin, isClient, isLoading } = useUserRole();
 
   if (isLoading) return null;
+
+  if (isClient) return <Navigate to="/rewards" replace />;
 
   // Only owner/admin roles can access admin routes.
   // Employees and unassigned users go to the employee dashboard.

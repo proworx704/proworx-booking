@@ -8,6 +8,7 @@ import {
   Clock,
   ClipboardList,
   Contact,
+  Gift,
   Globe,
   Headphones,
   LayoutDashboard,
@@ -15,9 +16,11 @@ import {
   LogOut,
   Moon,
   Receipt,
+  Rocket,
   Settings,
   Snowflake,
   Sparkles,
+  Star,
   Sun,
   UserCog,
   Users,
@@ -71,6 +74,13 @@ const payrollNav = [
   { href: "/payroll/time-entries", label: "Time Entries", icon: ClipboardList },
   { href: "/payroll/payouts", label: "Payouts", icon: Wallet },
   { href: "/payroll/tax-settings", label: "Tax Settings", icon: Receipt },
+];
+
+const loyaltyNav = [
+  { href: "/loyalty", label: "Overview", icon: Star },
+  { href: "/loyalty/rewards", label: "Rewards", icon: Gift },
+  { href: "/loyalty/amplifiers", label: "Amplifiers", icon: Rocket },
+  { href: "/loyalty/settings", label: "Settings", icon: Settings },
 ];
 
 const toolsNav = [
@@ -199,6 +209,12 @@ function AdminSidebarNav() {
         ))}
 
         {/* Collapsible sections */}
+        <CollapsibleNavSection
+          label="Loyalty"
+          icon={Star}
+          items={loyaltyNav}
+          pathname={p}
+        />
         <CollapsibleNavSection
           label="Payroll"
           icon={Wallet}

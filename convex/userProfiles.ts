@@ -316,6 +316,77 @@ export const initMyProfile = mutation({
   },
 });
 
+/**
+ * Initialize a client profile — called from the client rewards portal.
+ * Looks up or creates a customer record, links it to the user, and
+ * creates/ensures a loyalty account exists.
+ */
+export const initClientProfile = mutation({
+  args: {
+    displayName: v.optional(v.string()),
+    phone: v.optional(v.string()),
+  },
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    // Already has a profile? Return it.
+    const existing = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (existing) return existing;
+
+    const user = await ctx.db.get(userId);
+    const email = (user?.email ?? "").toLowerCase();
+    const name = user?.name || email.split("@")[0] || "Client";
+
+    // Try to find an existing customer by email
+    let customer = email
+      ? await ctx.db
+          .query("customers")
+          .withIndex("by_email", (q: any) => q.eq("email", email))
+          .first()
+      : null;
+
+    // If no customer found, create one
+    if (!customer) {
+      const customerId = await ctx.db.insert("customers", {
+        name,
+        email: email || undefined,
+        source: "booking" as const,
+        totalBookings: 0,
+        totalSpent: 0,
+      });
+      customer = await ctx.db.get(customerId);
+    }
+
+    // Ensure loyalty account exists
+    const loyaltyAccount = await ctx.db
+      .query("loyaltyAccounts")
+      .withIndex("by_customer", (q: any) => q.eq("customerId", customer!._id))
+      .first();
+    if (!loyaltyAccount) {
+      await ctx.db.insert("loyaltyAccounts", {
+        customerId: customer!._id,
+        currentPoints: 0,
+        lifetimeEarned: 0,
+        lifetimeRedeemed: 0,
+      });
+    }
+
+    // Create client profile
+    const profileId = await ctx.db.insert("userProfiles", {
+      userId,
+      role: "client",
+      displayName: name,
+      customerId: customer!._id,
+    } as any);
+
+    return { _id: profileId, userId, role: "client", displayName: name, customerId: customer!._id };
+  },
+});
+
 /** Quick helper: set role for a user by email (used for seeding) */
 export const setRoleByEmail = mutation({
   args: {

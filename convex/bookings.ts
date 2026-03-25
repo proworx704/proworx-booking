@@ -318,7 +318,13 @@ export const list = query({
     const applyFilters = (bookings: any[]) => {
       let result = bookings;
       if (status) result = result.filter((b) => b.status === status);
-      if (paymentStatus) result = result.filter((b) => b.paymentStatus === paymentStatus);
+      if (paymentStatus) {
+        result = result.filter((b) => b.paymentStatus === paymentStatus);
+        // Exclude $0 membership maintenance bookings from unpaid filter
+        if (paymentStatus === "unpaid") {
+          result = result.filter((b) => (b.totalPrice ?? b.price) > 0);
+        }
+      }
       if (startDate) result = result.filter((b) => b.date >= startDate);
       if (endDate) result = result.filter((b) => b.date <= endDate);
       if (staffId) result = result.filter((b) => hasStaff(b, staffId));

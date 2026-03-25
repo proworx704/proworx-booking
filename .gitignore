@@ -1,11 +1,12 @@
+node_modules
 node_modules/
 dist/
 dist_old/
 tmp/
 .env
 .env.local
+.env.prod
 .convex/
 *.log
 convex/_generated/
-convex/_generated/
-.env.prod
+*.tsbuildinfo

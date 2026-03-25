@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { requireAdmin, requireAuth } from "./authHelpers";
 import type { Id } from "./_generated/dataModel";
 
@@ -685,5 +685,136 @@ export const initAccount = mutation({
   handler: async (ctx, { customerId }) => {
     await requireAdmin(ctx);
     return await getOrCreateAccount(ctx, customerId);
+  },
+});
+
+// ─── Internal functions (callable from other server functions, no auth) ────────
+
+/** Auto-create loyalty account for a customer (called from booking flow) */
+export const internalInitAccount = internalMutation({
+  args: { customerId: v.id("customers") },
+  handler: async (ctx, { customerId }) => {
+    return await getOrCreateAccount(ctx, customerId);
+  },
+});
+
+/** Auto-award points when booking is completed (called from bookings.updateStatus) */
+export const internalAwardPoints = internalMutation({
+  args: {
+    customerId: v.id("customers"),
+    amount: v.number(),
+    bookingId: v.optional(v.id("bookings")),
+    serviceName: v.optional(v.string()),
+    bookingDay: v.optional(v.string()),
+    serviceCategory: v.optional(v.string()),
+  },
+  handler: async (ctx, { customerId, amount, bookingId, serviceName, bookingDay, serviceCategory }) => {
+    // Get settings
+    const settingsRow = await ctx.db.query("loyaltySettings").first();
+    const settings = {
+      pointsPerDollar: 1,
+      minSpendForPoints: 0,
+      roundingMode: "floor" as string,
+      expirationEnabled: false,
+      expirationDays: 365,
+      ...settingsRow,
+    };
+
+    if (amount < settings.minSpendForPoints) return null;
+
+    let basePoints = amount * settings.pointsPerDollar;
+    if (settings.roundingMode === "floor") basePoints = Math.floor(basePoints);
+    else if (settings.roundingMode === "ceil") basePoints = Math.ceil(basePoints);
+    else basePoints = Math.round(basePoints);
+
+    // Check amplifiers
+    const now = Date.now();
+    const amplifiers = await ctx.db
+      .query("loyaltyAmplifiers")
+      .withIndex("by_active", (q: any) => q.eq("isActive", true))
+      .collect();
+
+    let totalPoints = basePoints;
+    let appliedAmplifier: string | undefined;
+
+    // bookingDay comes as string name; convert to number for schema match
+    const dayNameToNum: Record<string, number> = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
+    const bookingDayNum = bookingDay ? dayNameToNum[bookingDay] : undefined;
+
+    for (const amp of amplifiers) {
+      if (amp.startDate && new Date(amp.startDate).getTime() > now) continue;
+      if (amp.endDate && new Date(amp.endDate).getTime() < now) continue;
+
+      let matches = true;
+      if (amp.daysOfWeek?.length && bookingDayNum !== undefined) {
+        matches = amp.daysOfWeek.includes(bookingDayNum);
+      }
+      if (matches && amp.serviceCategories?.length && serviceCategory) {
+        matches = amp.serviceCategories.includes(serviceCategory);
+      }
+      if (matches && amp.minSpendCents) {
+        matches = amount >= amp.minSpendCents;
+      }
+
+      if (matches) {
+        if (amp.amplifierType === "multiplier") {
+          totalPoints = Math.floor(basePoints * (amp.multiplier ?? 1));
+        } else {
+          totalPoints = basePoints + (amp.bonusPoints || 0);
+        }
+        appliedAmplifier = amp.name;
+        break;
+      }
+    }
+
+    const account = await getOrCreateAccount(ctx, customerId);
+    const expiresAt = settings.expirationEnabled
+      ? now + settings.expirationDays * 86400000
+      : undefined;
+
+    await ctx.db.insert("loyaltyTransactions", {
+      loyaltyAccountId: account._id,
+      customerId,
+      type: appliedAmplifier ? "bonus" : "earn",
+      points: totalPoints,
+      description: appliedAmplifier
+        ? `Earned ${totalPoints} pts (${appliedAmplifier}) for ${serviceName || "service"}`
+        : `Earned ${totalPoints} pts for ${serviceName || "service"}`,
+      bookingId,
+      expiresAt,
+    });
+
+    await ctx.db.patch(account._id, {
+      currentPoints: account.currentPoints + totalPoints,
+      lifetimeEarned: account.lifetimeEarned + totalPoints,
+    });
+
+    return { pointsAwarded: totalPoints, amplifier: appliedAmplifier };
+  },
+});
+
+/** Bulk-init loyalty accounts for all existing customers */
+export const bulkInitAccounts = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    const customers = await ctx.db.query("customers").collect();
+    let created = 0;
+    for (const c of customers) {
+      const existing = await ctx.db
+        .query("loyaltyAccounts")
+        .withIndex("by_customer", (q: any) => q.eq("customerId", c._id))
+        .first();
+      if (!existing) {
+        await ctx.db.insert("loyaltyAccounts", {
+          customerId: c._id,
+          currentPoints: 0,
+          lifetimeEarned: 0,
+          lifetimeRedeemed: 0,
+        });
+        created++;
+      }
+    }
+    return { total: customers.length, created };
   },
 });

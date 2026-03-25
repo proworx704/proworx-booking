@@ -237,6 +237,13 @@ export const create = mutation({
 
     const bookingId = await ctx.db.insert("bookings", bookingData);
 
+    // ── Auto-create loyalty account for customer ──
+    if (customerId) {
+      await ctx.scheduler.runAfter(0, internal.loyalty.internalInitAccount, {
+        customerId: customerId as any,
+      });
+    }
+
     // ── Schedule confirmation email + SMS (async, non-blocking) ──
     await ctx.scheduler.runAfter(0, internal.notifications.sendConfirmation, {
       bookingId,
@@ -416,6 +423,7 @@ export const updateStatus = mutation({
     await ctx.db.patch(id, { status });
 
     // When booking is completed, schedule feedback request (2 hour delay)
+    // and auto-award loyalty points
     if (status === "completed") {
       const booking = await ctx.db.get(id);
       if (booking && !booking.followUpSent) {
@@ -424,6 +432,20 @@ export const updateStatus = mutation({
           internal.notifications.sendFeedbackRequest,
           { bookingId: id },
         );
+      }
+      // Auto-award loyalty points
+      if (booking && booking.customerId) {
+        const amount = booking.totalPrice ?? booking.price ?? 0;
+        if (amount > 0) {
+          const dayOfWeek = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][new Date(booking.date).getDay()];
+          await ctx.scheduler.runAfter(0, internal.loyalty.internalAwardPoints, {
+            customerId: booking.customerId as any,
+            amount,
+            bookingId: id,
+            serviceName: booking.serviceName,
+            bookingDay: dayOfWeek,
+          });
+        }
       }
     }
   },

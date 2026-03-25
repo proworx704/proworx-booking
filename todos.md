@@ -1,38 +1,32 @@
-# Phase 2: Staff & Service Control
+# Dashboard Enhancements for Tyler
 
-## Backend (Convex)
+## Part 1: Clickable Stat Cards (Quick Win)
+- [x] Update `bookings.list` query to support `paymentStatus` and date range filters
+- [x] Update `BookingsPage.tsx` to read URL search params + add payment status filter
+- [x] Make dashboard stat cards clickable links to filtered bookings views
+- [x] Add hover effects / cursor pointer to stat cards
 
-### Schema changes
-- [x] Add `staff` table (name, phone, email, role, isActive, color for calendar)
-- [x] Add `staffServices` table (staffId, serviceId) — many-to-many linking
-- [x] Add `staffAvailability` table (staffId, dayOfWeek, startTime, endTime, isAvailable)
-- [x] Add `serviceFreeze` table (serviceId, date, reason) — per-service blocked dates
-- [x] Add `staffId` field to bookings (optional, for staff assignment)
-- [x] Update bookings schema
+## Part 2: Reports & Analytics Section
+- [x] Create `convex/analytics.ts` backend with aggregation queries
+  - Revenue by period (daily/weekly/monthly)
+  - Booking counts by status, service, staff
+  - Customer insights (new vs returning, top customers)
+  - Service performance (most popular, highest revenue)
+  - Staff productivity (bookings per staff, revenue per staff)
+- [x] Create `src/pages/ReportsPage.tsx` with full analytics dashboard
+  - Date range picker
+  - KPI summary cards
+  - Revenue trend chart (line/bar)
+  - Bookings by service (pie/bar chart)
+  - Staff performance table
+  - Customer insights
+- [x] Add route to App.tsx
+- [x] Add "Reports" to sidebar navigation
+- [x] Wire up filters (date range, service, staff, status)
 
-### Backend functions
-- [x] `convex/staff.ts` — CRUD for staff members, seed Tyler as owner
-- [x] `convex/staffServices.ts` — Assign/unassign services to staff
-- [x] `convex/staffAvailability.ts` — Per-staff schedule management
-- [x] `convex/serviceFreeze.ts` — Per-service date blocking
-- [x] Update `convex/availability.ts` — getAvailableSlots should consider staff availability + service freezes
-- [x] Update `convex/bookings.ts` — Support staff assignment
-
-## Frontend
-
-### New admin pages
-- [x] `StaffPage.tsx` — List staff, add/edit/delete, assign services
-- [x] `StaffDetailPage.tsx` — Staff details, availability, assigned services
-- [x] `ServiceFreezePage.tsx` — Per-service date blocking UI (or add to existing AvailabilityPage)
-
-### Updates to existing pages
-- [x] Update `BookingDetailPage.tsx` — Show/assign staff to booking
-- [x] Update `BookingsPage.tsx` — Show assigned staff
-- [x] Update sidebar/navigation — Add Staff link
-- [x] Update booking flow — Factor in service freeze dates
-
-## Build & Deploy
-- [x] `bun run sync:build`
-- [x] Screenshots
-- [x] Deploy preview
-- [x] Notify Tyler
+## Part 3: Build & Deploy
+- [ ] `bun run sync:build`
+- [ ] Take screenshots
+- [ ] Deploy preview
+- [ ] Notify Tyler with screenshots
+- [ ] Wait for approval → deploy production

@@ -220,64 +220,72 @@ export function DashboardPage() {
         </p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards — clickable, link to filtered bookings */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                <Calendar className="size-5 text-blue-600" />
+        <Link to="/bookings?view=today">
+          <Card className="hover:bg-blue-50/50 hover:border-blue-200 transition-colors cursor-pointer group">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                  <Calendar className="size-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats?.todayCount ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">Today</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats?.todayCount ?? "—"}</p>
-                <p className="text-xs text-muted-foreground">Today</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/bookings?view=upcoming">
+          <Card className="hover:bg-purple-50/50 hover:border-purple-200 transition-colors cursor-pointer group">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-lg bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                  <CalendarCheck className="size-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {stats?.upcomingCount ?? "—"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Upcoming</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                <CalendarCheck className="size-5 text-purple-600" />
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/bookings?view=unpaid">
+          <Card className="hover:bg-orange-50/50 hover:border-orange-200 transition-colors cursor-pointer group">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-lg bg-orange-100 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                  <AlertCircle className="size-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats?.unpaidCount ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">Unpaid</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {stats?.upcomingCount ?? "—"}
-                </p>
-                <p className="text-xs text-muted-foreground">Upcoming</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/reports">
+          <Card className="hover:bg-green-50/50 hover:border-green-200 transition-colors cursor-pointer group">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-lg bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                  <DollarSign className="size-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {stats ? formatPrice(stats.totalRevenue) : "—"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Revenue</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                <AlertCircle className="size-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats?.unpaidCount ?? "—"}</p>
-                <p className="text-xs text-muted-foreground">Unpaid</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-lg bg-green-100 flex items-center justify-center">
-                <DollarSign className="size-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {stats ? formatPrice(stats.totalRevenue) : "—"}
-                </p>
-                <p className="text-xs text-muted-foreground">Revenue</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

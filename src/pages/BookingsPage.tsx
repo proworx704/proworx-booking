@@ -4,9 +4,10 @@ import {
   ChevronRight,
   Filter,
   Search,
+  X,
 } from "lucide-react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -62,17 +63,69 @@ type StatusFilter =
   | "completed"
   | "cancelled";
 
-export function BookingsPage() {
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [dateFilter, setDateFilter] = useState("");
-  const [search, setSearch] = useState("");
+type PaymentFilter = "all" | "unpaid" | "paid" | "refunded";
 
-  const bookings = useQuery(api.bookings.list, {
-    status: statusFilter === "all" ? undefined : statusFilter,
-    date: dateFilter || undefined,
+// View presets from dashboard cards
+type ViewPreset = "today" | "upcoming" | "unpaid" | null;
+
+function getToday() {
+  return new Date().toISOString().split("T")[0];
+}
+
+const PRESET_LABELS: Record<string, string> = {
+  today: "Today's Bookings",
+  upcoming: "Upcoming Bookings",
+  unpaid: "Unpaid Bookings",
+};
+
+export function BookingsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read initial state from URL params
+  const viewPreset = (searchParams.get("view") as ViewPreset) || null;
+
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
+    const s = searchParams.get("status");
+    if (s && ["pending", "confirmed", "in_progress", "completed", "cancelled"].includes(s)) {
+      return s as StatusFilter;
+    }
+    return "all";
   });
 
-  const filteredBookings = bookings?.filter((b) => {
+  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>(() => {
+    if (viewPreset === "unpaid") return "unpaid";
+    const p = searchParams.get("paymentStatus");
+    if (p && ["unpaid", "paid", "refunded"].includes(p)) return p as PaymentFilter;
+    return "all";
+  });
+
+  const [dateFilter, setDateFilter] = useState(() => {
+    if (viewPreset === "today") return getToday();
+    return searchParams.get("date") || "";
+  });
+
+  const [search, setSearch] = useState("");
+
+  // Compute query args based on view preset
+  const isUpcoming = viewPreset === "upcoming";
+  const today = getToday();
+
+  const queryArgs = {
+    status: statusFilter === "all" ? undefined : statusFilter,
+    paymentStatus: paymentFilter === "all" ? undefined : (paymentFilter as "unpaid" | "paid" | "refunded"),
+    date: !isUpcoming && dateFilter ? dateFilter : undefined,
+    startDate: isUpcoming ? today : undefined,
+    endDate: undefined,
+  };
+
+  const bookings = useQuery(api.bookings.list, queryArgs);
+
+  // For "upcoming" view, filter out today in-memory (show only future)
+  const rangeFiltered = isUpcoming
+    ? bookings?.filter((b) => b.date > today)?.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+    : bookings;
+
+  const filteredBookings = rangeFiltered?.filter((b) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -83,16 +136,47 @@ export function BookingsPage() {
     );
   });
 
+  // Derive title
+  const title = viewPreset ? PRESET_LABELS[viewPreset] : "All Bookings";
+
+  // Clear all filters
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setPaymentFilter("all");
+    setDateFilter("");
+    setSearch("");
+    setSearchParams({});
+  };
+
+  const hasActiveFilters = viewPreset || statusFilter !== "all" || paymentFilter !== "all" || dateFilter;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">All Bookings</h1>
+          <h1 className="text-2xl font-bold">{title}</h1>
           <p className="text-muted-foreground">
-            {filteredBookings?.length ?? 0} total bookings
+            {filteredBookings?.length ?? 0} booking{filteredBookings?.length !== 1 ? "s" : ""}
           </p>
         </div>
+        {hasActiveFilters && (
+          <Button variant="outline" size="sm" onClick={clearFilters}>
+            <X className="size-4 mr-1" />
+            Clear Filters
+          </Button>
+        )}
       </div>
+
+      {/* Active filter banner */}
+      {viewPreset && (
+        <div className="flex items-center gap-2 text-sm">
+          <Badge variant="secondary" className="gap-1">
+            {viewPreset === "today" && "📅 Showing today's bookings"}
+            {viewPreset === "upcoming" && "📆 Showing future bookings"}
+            {viewPreset === "unpaid" && "💰 Showing unpaid bookings"}
+          </Badge>
+        </div>
+      )}
 
       {/* Filters */}
       <Card>
@@ -124,24 +208,41 @@ export function BookingsPage() {
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex items-center gap-2">
-              <Calendar className="size-4 text-muted-foreground" />
-              <Input
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="w-[160px]"
-              />
-              {dateFilter && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDateFilter("")}
-                >
-                  Clear
-                </Button>
-              )}
-            </div>
+            <Select
+              value={paymentFilter}
+              onValueChange={(v) => setPaymentFilter(v as PaymentFilter)}
+            >
+              <SelectTrigger className="w-[160px]">
+                <Filter className="size-4 mr-2" />
+                <SelectValue placeholder="Payment" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Payment</SelectItem>
+                <SelectItem value="unpaid">Unpaid</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="refunded">Refunded</SelectItem>
+              </SelectContent>
+            </Select>
+            {!isUpcoming && (
+              <div className="flex items-center gap-2">
+                <Calendar className="size-4 text-muted-foreground" />
+                <Input
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="w-[160px]"
+                />
+                {dateFilter && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDateFilter("")}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -173,13 +274,15 @@ export function BookingsPage() {
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {b.serviceName} ·{" "}
-                        <span className="capitalize">{b.vehicleType}</span> ·{" "}
                         {formatDateShort(b.date)} at {formatTime(b.time)}
+                        {b.staffNames && b.staffNames.length > 0 && (
+                          <> · {b.staffNames.join(", ")}</>
+                        )}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-sm">
-                        {formatPrice(b.price)}
+                        {formatPrice(b.totalPrice || b.price)}
                       </span>
                       <Badge
                         variant="outline"

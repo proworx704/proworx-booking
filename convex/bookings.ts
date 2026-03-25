@@ -294,10 +294,19 @@ export const list = query({
         v.literal("cancelled"),
       ),
     ),
+    paymentStatus: v.optional(
+      v.union(
+        v.literal("unpaid"),
+        v.literal("paid"),
+        v.literal("refunded"),
+      ),
+    ),
     date: v.optional(v.string()),
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
     staffId: v.optional(v.id("staff")),
   },
-  handler: async (ctx, { status, date, staffId }) => {
+  handler: async (ctx, { status, paymentStatus, date, startDate, endDate, staffId }) => {
     await requireAdmin(ctx);
     // Helper: check if a booking is assigned to a specific staff (multi-staff aware)
     const hasStaff = (b: any, sid: string) => {
@@ -305,55 +314,34 @@ export const list = query({
       return b.staffId?.toString() === sid.toString();
     };
 
-    if (staffId && date) {
-      // Use index for primary staff match, then also check multi-staff
-      const indexResults = await ctx.db
-        .query("bookings")
-        .withIndex("by_staff_date", (q) =>
-          q.eq("staffId", staffId).eq("date", date),
-        )
-        .collect();
-      // Also get all bookings for this date to catch secondary staff assignments
-      const dateResults = await ctx.db
-        .query("bookings")
-        .withIndex("by_date", (q) => q.eq("date", date))
-        .collect();
-      const secondaryMatches = dateResults.filter(
-        (b) => !indexResults.some((ir) => ir._id === b._id) && hasStaff(b, staffId),
-      );
-      const results = [...indexResults, ...secondaryMatches];
-      if (status) return results.filter((b) => b.status === status);
-      return results.sort((a, b) => a.time.localeCompare(b.time));
-    }
+    // Helper: apply in-memory filters for paymentStatus, date range, staff
+    const applyFilters = (bookings: any[]) => {
+      let result = bookings;
+      if (status) result = result.filter((b) => b.status === status);
+      if (paymentStatus) result = result.filter((b) => b.paymentStatus === paymentStatus);
+      if (startDate) result = result.filter((b) => b.date >= startDate);
+      if (endDate) result = result.filter((b) => b.date <= endDate);
+      if (staffId) result = result.filter((b) => hasStaff(b, staffId));
+      return result;
+    };
+
+    let results: any[];
 
     if (date) {
-      const results = await ctx.db
+      results = await ctx.db
         .query("bookings")
         .withIndex("by_date", (q) => q.eq("date", date))
         .collect();
-      const filtered = status
-        ? results.filter((b) => b.status === status)
-        : results;
-      if (staffId) return filtered.filter((b) => hasStaff(b, staffId));
-      return filtered.sort((a, b) => a.time.localeCompare(b.time));
-    }
-
-    if (status) {
-      const results = await ctx.db
+    } else if (status && !paymentStatus && !startDate && !endDate) {
+      results = await ctx.db
         .query("bookings")
         .withIndex("by_status", (q) => q.eq("status", status))
         .collect();
-      if (staffId) return results.filter((b) => hasStaff(b, staffId));
-      return results.sort(
-        (a, b) =>
-          a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
-      );
+    } else {
+      results = await ctx.db.query("bookings").collect();
     }
 
-    const results = await ctx.db.query("bookings").collect();
-    const filtered = staffId
-      ? results.filter((b) => hasStaff(b, staffId))
-      : results;
+    const filtered = applyFilters(results);
     return filtered.sort(
       (a, b) =>
         b.date.localeCompare(a.date) || a.time.localeCompare(b.time),

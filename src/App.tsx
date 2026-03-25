@@ -49,6 +49,7 @@ import PosCallbackPage from "./pages/PosCallbackPage";
 import { MyCalendarPage } from "./pages/MyCalendarPage";
 import { MyJobDetailPage } from "./pages/MyJobDetailPage";
 // Loyalty — Admin
+import { ReportsPage } from "./pages/ReportsPage";
 import { LoyaltyDashboardPage } from "./pages/LoyaltyDashboardPage";
 import { LoyaltyRewardsPage } from "./pages/LoyaltyRewardsPage";
 import { LoyaltyAmplifiersPage } from "./pages/LoyaltyAmplifiersPage";
@@ -115,6 +116,7 @@ function App() {
                 <Route path="/payroll/tax-settings" element={<PayrollTaxSettingsPage />} />
                 <Route path="/website" element={<WebsiteEditorPage />} />
                 <Route path="/team" element={<TeamPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 {/* Loyalty Admin */}
                 <Route path="/loyalty" element={<LoyaltyDashboardPage />} />

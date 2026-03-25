@@ -9,6 +9,7 @@
  */
 
 import type * as ViktorSpacesEmail from "../ViktorSpacesEmail.js";
+import type * as aiAssistant from "../aiAssistant.js";
 import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
 import type * as authHelpers from "../authHelpers.js";
@@ -54,6 +55,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ViktorSpacesEmail: typeof ViktorSpacesEmail;
+  aiAssistant: typeof aiAssistant;
   analytics: typeof analytics;
   auth: typeof auth;
   authHelpers: typeof authHelpers;

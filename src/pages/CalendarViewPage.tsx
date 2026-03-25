@@ -494,11 +494,11 @@ function DayColumn({
           >
             {dayInfo.dayNum}
           </div>
-          {dayBookings.length > 0 && (
-            <div className="text-[9px] text-muted-foreground mt-0.5">
-              {dayBookings.length} appt{dayBookings.length > 1 ? "s" : ""}
-            </div>
-          )}
+          <div className={`text-[9px] text-muted-foreground mt-0.5 ${dayBookings.length === 0 ? "invisible" : ""}`}>
+            {dayBookings.length > 0
+              ? `${dayBookings.length} appt${dayBookings.length > 1 ? "s" : ""}`
+              : "\u00A0"}
+          </div>
         </div>
         {/* All-day event banners */}
         {dayAllDayEvents.map((event) => {

@@ -264,11 +264,11 @@ function DayColumn({
         <div className={`text-sm sm:text-base font-bold ${isTodayCol ? "bg-blue-600 text-white rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center mx-auto" : ""}`}>
           {dayInfo.dayNum}
         </div>
-        {dayBookings.length > 0 && (
-          <div className="text-[9px] text-muted-foreground mt-0.5">
-            {dayBookings.length} job{dayBookings.length > 1 ? "s" : ""}
-          </div>
-        )}
+        <div className={`text-[9px] text-muted-foreground mt-0.5 ${dayBookings.length === 0 ? "invisible" : ""}`}>
+          {dayBookings.length > 0
+            ? `${dayBookings.length} job${dayBookings.length > 1 ? "s" : ""}`
+            : "\u00A0"}
+        </div>
       </div>
       <div className={`relative border-r ${isTodayCol ? "bg-blue-50/30 dark:bg-blue-950/10" : ""}`} style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
         {Array.from({ length: TOTAL_HOURS }, (_, i) => (

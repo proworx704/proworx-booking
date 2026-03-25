@@ -1,32 +1,23 @@
-# Dashboard Enhancements for Tyler
+# Dashboard Analytics & Reports - Todo
 
-## Part 1: Clickable Stat Cards (Quick Win)
-- [x] Update `bookings.list` query to support `paymentStatus` and date range filters
-- [x] Update `BookingsPage.tsx` to read URL search params + add payment status filter
-- [x] Make dashboard stat cards clickable links to filtered bookings views
-- [x] Add hover effects / cursor pointer to stat cards
+## Clickable Dashboard Stat Cards
+- [x] Update `convex/bookings.ts` - add `paymentStatus`, `startDate`, `endDate` filters
+- [x] Update `src/pages/DashboardPage.tsx` - make stat cards clickable `<Link>` components
+- [x] Update `src/pages/BookingsPage.tsx` - support URL search params (`view=today|upcoming|unpaid`)
+- [x] Add payment status filter dropdown to BookingsPage
+- [x] Add active filter banner + clear filters button
 
-## Part 2: Reports & Analytics Section
-- [x] Create `convex/analytics.ts` backend with aggregation queries
-  - Revenue by period (daily/weekly/monthly)
-  - Booking counts by status, service, staff
-  - Customer insights (new vs returning, top customers)
-  - Service performance (most popular, highest revenue)
-  - Staff productivity (bookings per staff, revenue per staff)
-- [x] Create `src/pages/ReportsPage.tsx` with full analytics dashboard
-  - Date range picker
-  - KPI summary cards
-  - Revenue trend chart (line/bar)
-  - Bookings by service (pie/bar chart)
-  - Staff performance table
-  - Customer insights
-- [x] Add route to App.tsx
-- [x] Add "Reports" to sidebar navigation
-- [x] Wire up filters (date range, service, staff, status)
+## Reports & Analytics Page
+- [x] Create `convex/analytics.ts` with queries (overview, revenueOverTime, servicePerformance, staffProductivity, customerInsights, statusBreakdown)
+- [x] Create `src/pages/ReportsPage.tsx` with full analytics UI
+- [x] Add `/reports` route to `App.tsx`
+- [x] Add "Reports" to sidebar with BarChart3 icon
 
-## Part 3: Build & Deploy
-- [ ] `bun run sync:build`
-- [ ] Take screenshots
-- [ ] Deploy preview
-- [ ] Notify Tyler with screenshots
-- [ ] Wait for approval → deploy production
+## Deploy
+- [x] Build passes (`bun run sync:build`)
+- [x] Screenshots taken for dashboard, reports, unpaid filter
+- [x] Push to GitHub
+- [x] Deploy to preview: https://preview-proworx-booking-8ee2b7c6.viktor.space
+- [x] Notify Tyler with preview + screenshots
+- [ ] Await Tyler's approval
+- [ ] Deploy to production

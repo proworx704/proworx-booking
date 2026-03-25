@@ -619,7 +619,8 @@ export const stats = query({
       (b) =>
         b.paymentStatus === "unpaid" &&
         b.status !== "cancelled" &&
-        b.date <= today,
+        b.date <= today &&
+        (b.totalPrice ?? b.price) > 0, // Exclude $0 membership maintenance bookings
     );
     const totalRevenue = allBookings
       .filter((b) => b.paymentStatus === "paid")

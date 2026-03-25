@@ -127,15 +127,38 @@ const feedbackCategories = [
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
+// Preview / demo mode mock data
+const PREVIEW_BOOKING = {
+  customerName: "Jane Smith",
+  serviceName: "Full Interior & Exterior Detail",
+  satisfaction: undefined as string | undefined,
+};
+
+function isPreviewCode(code: string) {
+  return code.toUpperCase() === "PREVIEW" || code.toUpperCase() === "DEMO";
+}
+
 export function FeedbackPage() {
   const [params] = useSearchParams();
   const code = params.get("code") || "";
-  const booking = useQuery(
+  const isPreview = isPreviewCode(code) || params.get("preview") === "true";
+
+  const liveBooking = useQuery(
     api.bookings.getByConfirmation,
-    code ? { code } : "skip",
+    code && !isPreview ? { code } : "skip",
   );
-  const submitFeedback = useMutation(api.bookings.submitFeedback);
-  const trackReviewClick = useMutation(api.bookings.trackReviewClick);
+  const booking = isPreview ? PREVIEW_BOOKING : liveBooking;
+
+  const submitFeedbackMut = useMutation(api.bookings.submitFeedback);
+  const trackReviewClickMut = useMutation(api.bookings.trackReviewClick);
+
+  // In preview mode, mutations are no-ops
+  const submitFeedback = isPreview
+    ? async (_args: any) => { /* preview no-op */ }
+    : submitFeedbackMut;
+  const trackReviewClick = isPreview
+    ? async (_args: any) => { /* preview no-op */ }
+    : trackReviewClickMut;
 
   const [step, setStep] = useState<"rate" | "happy" | "unhappy" | "thankyou">("rate");
   const [rating, setRating] = useState(0);
@@ -143,6 +166,13 @@ export function FeedbackPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // Preview banner shown on all steps in preview mode
+  const PreviewBanner = isPreview ? (
+    <div className="bg-amber-100 border border-amber-300 text-amber-800 rounded-lg p-3 mb-4 text-center text-sm font-medium">
+      👁️ Preview Mode — This is how customers will see the feedback page
+    </div>
+  ) : null;
 
   // Check if already submitted
   useEffect(() => {
@@ -210,7 +240,7 @@ export function FeedbackPage() {
 
   // ─── Loading/Error States ────────────────────────────────────────────────
 
-  if (!code) {
+  if (!code && !isPreview) {
     return (
       <div className="container max-w-lg py-16 text-center">
         <MessageSquare className="size-12 text-muted-foreground mx-auto mb-4" />
@@ -256,6 +286,7 @@ export function FeedbackPage() {
   if (step === "happy") {
     return (
       <div className="container max-w-lg py-12">
+        {PreviewBanner}
         {showConfetti && <Confetti />}
         <div className="text-center space-y-6">
           <div className="relative inline-block">
@@ -320,6 +351,7 @@ export function FeedbackPage() {
 
     return (
       <div className="container max-w-lg py-12">
+        {PreviewBanner}
         <Card>
           <CardHeader className="text-center">
             <div className="text-4xl mb-2">{ratingInfo.emoji}</div>
@@ -424,6 +456,7 @@ export function FeedbackPage() {
   if (step === "thankyou") {
     return (
       <div className="container max-w-lg py-16 text-center">
+        {PreviewBanner}
         <CheckCircle2 className="size-14 text-blue-500 mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-2">Thank You for Your Feedback</h1>
         <p className="text-muted-foreground mb-6">
@@ -454,6 +487,7 @@ export function FeedbackPage() {
 
   return (
     <div className="container max-w-lg py-12">
+      {PreviewBanner}
       <Card className="overflow-hidden">
         {/* Header with gradient */}
         <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6 text-center">

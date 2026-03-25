@@ -1,6 +1,7 @@
 import { useQuery } from "convex/react";
 import {
   CalendarDays,
+  CalendarPlus,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -13,6 +14,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { CalendarEventDialog, type CalendarEvent } from "@/components/CalendarEventDialog";
 import { QuickBookDialog } from "@/components/QuickBookDialog";
 import { api } from "../../convex/_generated/api";
 
@@ -98,6 +100,14 @@ const STATUS_COLORS: Record<string, { bg: string; border: string; text: string }
   completed: { bg: "bg-green-50", border: "border-green-500", text: "text-green-900" },
 };
 
+// Event type colors
+const EVENT_TYPE_STYLES: Record<string, { bg: string; border: string; text: string; bannerBg: string }> = {
+  personal: { bg: "bg-indigo-50", border: "border-indigo-400", text: "text-indigo-900", bannerBg: "bg-indigo-100" },
+  vacation: { bg: "bg-amber-50", border: "border-amber-400", text: "text-amber-900", bannerBg: "bg-amber-100" },
+  block: { bg: "bg-red-50", border: "border-red-400", text: "text-red-900", bannerBg: "bg-red-100" },
+  other: { bg: "bg-violet-50", border: "border-violet-400", text: "text-violet-900", bannerBg: "bg-violet-100" },
+};
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const HOUR_START = 7; // 7 AM
@@ -132,6 +142,52 @@ type ScheduleBlock = {
   blockAfter: string;
   reason?: string;
 };
+
+// ─── Timed Calendar Event Block ───────────────────────────────────────────────
+
+function TimedEventBlock({
+  event,
+  onClick,
+}: {
+  event: CalendarEvent;
+  onClick: (e: CalendarEvent) => void;
+}) {
+  if (!event.startTime || !event.endTime) return null;
+
+  const startMin = timeToMinutes(event.startTime);
+  const endMin = timeToMinutes(event.endTime);
+  const topOffset = ((startMin - HOUR_START * 60) / 60) * HOUR_HEIGHT;
+  const height = Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT - 2, 28);
+
+  const styles = EVENT_TYPE_STYLES[event.eventType] || EVENT_TYPE_STYLES.other;
+
+  return (
+    <div
+      className={`absolute left-0.5 right-0.5 rounded-md border-l-[3px] ${styles.bg} ${styles.border} ${styles.text} overflow-hidden cursor-pointer hover:shadow-md transition-shadow z-[11]`}
+      style={{ top: `${topOffset}px`, height: `${height}px` }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick(event);
+      }}
+    >
+      <div className="px-1.5 py-0.5 h-full flex flex-col">
+        <div className="font-semibold text-[11px] sm:text-xs truncate leading-tight">
+          {event.title}
+        </div>
+        {height > 36 && (
+          <div className="text-[10px] sm:text-[11px] opacity-80 truncate leading-tight">
+            {formatTimeShort(event.startTime)} – {formatTimeShort(event.endTime)}
+          </div>
+        )}
+        {height > 52 && event.notes && (
+          <div className="text-[9px] sm:text-[10px] opacity-70 truncate leading-tight">
+            {event.notes}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── Booking Event Block Component ────────────────────────────────────────────
 
@@ -325,17 +381,23 @@ function DayColumn({
   bookings,
   blocks,
   blockedDates,
+  calendarEvents,
   isCompact,
   onBookingClick,
   onSlotClick,
+  onEventClick,
+  onCreateEvent,
 }: {
   date: Date;
   bookings: Booking[];
   blocks: ScheduleBlock[];
   blockedDates: string[];
+  calendarEvents: CalendarEvent[];
   isCompact: boolean;
   onBookingClick: (b: Booking) => void;
   onSlotClick: (date: string, time: string) => void;
+  onEventClick: (e: CalendarEvent) => void;
+  onCreateEvent: (date: string, time: string) => void;
 }) {
   const dateStr = formatDateStr(date);
   const dayInfo = formatDayHeader(date);
@@ -344,17 +406,21 @@ function DayColumn({
   const isBlockedDate = blockedDates.includes(dateStr);
   const isTodayCol = isToday(dateStr);
 
-  // ─── Click-to-book handler on the grid ────────────────────
-  const handleGridClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (isBlockedDate) return;
-      // Don't trigger if clicking on a booking block
-      const target = e.target as HTMLElement;
-      if (target.closest("a")) return;
+  // Filter calendar events for this day
+  const dayAllDayEvents = calendarEvents.filter(
+    (e) => e.allDay && e.startDate <= dateStr && e.endDate >= dateStr,
+  );
+  const dayTimedEvents = calendarEvents.filter(
+    (e) => !e.allDay && e.startDate <= dateStr && e.endDate >= dateStr && e.startTime && e.endTime,
+  );
 
+  // ─── Context menu for "New Booking" vs "New Event" ───────
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; time: string } | null>(null);
+
+  const getTimeFromMouseEvent = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>): string => {
       const rect = e.currentTarget.getBoundingClientRect();
       const y = e.clientY - rect.top;
-      // Snap to 30-minute intervals
       const rawMinutes = (y / HOUR_HEIGHT) * 60 + HOUR_START * 60;
       const snappedMinutes = Math.round(rawMinutes / 30) * 30;
       const clampedMinutes = Math.max(
@@ -363,10 +429,23 @@ function DayColumn({
       );
       const h = Math.floor(clampedMinutes / 60);
       const m = clampedMinutes % 60;
-      const timeStr = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-      onSlotClick(dateStr, timeStr);
+      return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
     },
-    [dateStr, isBlockedDate, onSlotClick],
+    [],
+  );
+
+  // ─── Click-to-book handler on the grid ────────────────────
+  const handleGridClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (isBlockedDate) return;
+      setContextMenu(null);
+      const target = e.target as HTMLElement;
+      if (target.closest("a")) return;
+      const timeStr = getTimeFromMouseEvent(e);
+      // Show mini-menu: "New Booking" or "New Event"
+      setContextMenu({ x: e.clientX, y: e.clientY, time: timeStr });
+    },
+    [isBlockedDate, getTimeFromMouseEvent],
   );
 
   // ─── Hover state for "+" indicator ─────────────────────────
@@ -398,27 +477,43 @@ function DayColumn({
     <div className="flex-1 min-w-0">
       {/* Day header */}
       <div
-        className={`sticky top-0 z-30 text-center py-2 border-b bg-background ${
+        className={`sticky top-0 z-30 text-center border-b bg-background ${
           isTodayCol ? "bg-blue-50 dark:bg-blue-950/30" : ""
         }`}
       >
-        <div className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase">
-          {dayInfo.dayName}
-        </div>
-        <div
-          className={`text-sm sm:text-base font-bold ${
-            isTodayCol
-              ? "bg-blue-600 text-white rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center mx-auto"
-              : ""
-          }`}
-        >
-          {dayInfo.dayNum}
-        </div>
-        {dayBookings.length > 0 && (
-          <div className="text-[9px] text-muted-foreground mt-0.5">
-            {dayBookings.length} appt{dayBookings.length > 1 ? "s" : ""}
+        <div className="py-2">
+          <div className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase">
+            {dayInfo.dayName}
           </div>
-        )}
+          <div
+            className={`text-sm sm:text-base font-bold ${
+              isTodayCol
+                ? "bg-blue-600 text-white rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center mx-auto"
+                : ""
+            }`}
+          >
+            {dayInfo.dayNum}
+          </div>
+          {dayBookings.length > 0 && (
+            <div className="text-[9px] text-muted-foreground mt-0.5">
+              {dayBookings.length} appt{dayBookings.length > 1 ? "s" : ""}
+            </div>
+          )}
+        </div>
+        {/* All-day event banners */}
+        {dayAllDayEvents.map((event) => {
+          const styles = EVENT_TYPE_STYLES[event.eventType] || EVENT_TYPE_STYLES.other;
+          return (
+            <div
+              key={event._id}
+              className={`${styles.bannerBg} ${styles.text} text-[10px] sm:text-xs font-medium px-1.5 py-0.5 mx-0.5 mb-0.5 rounded cursor-pointer hover:opacity-80 transition-opacity truncate`}
+              onClick={() => onEventClick(event)}
+              title={event.title + (event.notes ? ` — ${event.notes}` : "")}
+            >
+              {event.title}
+            </div>
+          );
+        })}
       </div>
 
       {/* Time grid */}
@@ -467,8 +562,52 @@ function DayColumn({
           </div>
         ))}
 
+        {/* Timed calendar events */}
+        {dayTimedEvents.map((event) => (
+          <TimedEventBlock key={event._id} event={event} onClick={onEventClick} />
+        ))}
+
         {/* Now line — only on today's column */}
         {isTodayCol && <NowLine />}
+
+        {/* Context menu: New Booking vs New Event */}
+        {contextMenu && (
+          <>
+            {/* Invisible overlay to dismiss */}
+            <div
+              className="fixed inset-0 z-[60]"
+              onClick={() => setContextMenu(null)}
+            />
+            <div
+              className="fixed z-[61] bg-background rounded-lg shadow-xl border p-1 min-w-[160px]"
+              style={{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }}
+            >
+              <div className="px-2 py-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+                {formatTimeShort(contextMenu.time)}
+              </div>
+              <button
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-primary/10 transition-colors text-left"
+                onClick={() => {
+                  setContextMenu(null);
+                  onSlotClick(dateStr, contextMenu.time);
+                }}
+              >
+                <Plus className="size-4 text-blue-600" />
+                New Booking
+              </button>
+              <button
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-primary/10 transition-colors text-left"
+                onClick={() => {
+                  setContextMenu(null);
+                  onCreateEvent(dateStr, contextMenu.time);
+                }}
+              >
+                <CalendarPlus className="size-4 text-indigo-600" />
+                New Event
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -513,6 +652,12 @@ export function CalendarViewPage() {
   const [quickBookDate, setQuickBookDate] = useState("");
   const [quickBookTime, setQuickBookTime] = useState("");
 
+  // ─── Calendar event dialog state ────────────────────────
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const [eventDialogDate, setEventDialogDate] = useState("");
+  const [eventDialogTime, setEventDialogTime] = useState("");
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+
   const handleSlotClick = useCallback((date: string, time: string) => {
     setQuickBookDate(date);
     setQuickBookTime(time);
@@ -528,10 +673,20 @@ export function CalendarViewPage() {
   const startDate = formatDateStr(monday);
   const endDate = formatDateStr(sunday);
 
-  // Fetch bookings and blocks for this week
+  // Fetch bookings, blocks, and calendar events for this week
   const bookings = useQuery(api.bookings.listByDateRange, { startDate, endDate });
   const scheduleBlocks = useQuery(api.recurringBlocks.getBlocksForRange, { startDate, endDate });
   const blockedDatesRaw = useQuery(api.availability.getBlockedDatesInRange, { startDate, endDate });
+  const calendarEventsRaw = useQuery(api.calendarEvents.listByDateRange, { startDate, endDate });
+  const calendarEvents = (calendarEventsRaw || []) as CalendarEvent[];
+
+  // Event click handler (opens edit dialog)
+  const handleEventClick = useCallback((event: CalendarEvent) => {
+    setEditingEvent(event);
+    setEventDialogDate("");
+    setEventDialogTime("");
+    setEventDialogOpen(true);
+  }, []);
 
   const blockedDates = useMemo(
     () => (blockedDatesRaw || []).map((d: { date: string }) => d.date),
@@ -587,6 +742,20 @@ export function CalendarViewPage() {
             <span className="hidden sm:inline">New Booking</span>
             <span className="sm:hidden">Book</span>
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setEditingEvent(null);
+              setEventDialogDate(formatDateStr(new Date()));
+              setEventDialogTime("");
+              setEventDialogOpen(true);
+            }}
+          >
+            <CalendarPlus className="size-4 mr-1.5" />
+            <span className="hidden sm:inline">New Event</span>
+            <span className="sm:hidden">Event</span>
+          </Button>
           <Button variant="outline" size="sm" onClick={goToday} className={weekOffset === 0 ? "invisible" : ""}>
             Today
           </Button>
@@ -631,9 +800,17 @@ export function CalendarViewPage() {
               bookings={bookings || []}
               blocks={scheduleBlocks || []}
               blockedDates={blockedDates}
+              calendarEvents={calendarEvents}
               isCompact={isCompact}
               onBookingClick={setSelectedBooking}
               onSlotClick={handleSlotClick}
+              onEventClick={handleEventClick}
+              onCreateEvent={(date, time) => {
+                setEditingEvent(null);
+                setEventDialogDate(date);
+                setEventDialogTime(time);
+                setEventDialogOpen(true);
+              }}
             />
           ))}
         </div>
@@ -661,6 +838,19 @@ export function CalendarViewPage() {
           <div className="w-3 h-3 rounded bg-rose-100 border-t-2 border-rose-300" />
           Blocked
         </div>
+        <span className="text-muted-foreground/50 mx-1">|</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded bg-indigo-100 border-l-[3px] border-indigo-400" />
+          Personal
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded bg-amber-100 border-l-[3px] border-amber-400" />
+          Vacation
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded bg-red-100 border-l-[3px] border-red-400" />
+          Block
+        </div>
       </div>
 
       {/* Booking popover */}
@@ -677,6 +867,18 @@ export function CalendarViewPage() {
         onClose={() => setQuickBookOpen(false)}
         initialDate={quickBookDate}
         initialTime={quickBookTime}
+      />
+
+      {/* Calendar event dialog */}
+      <CalendarEventDialog
+        open={eventDialogOpen}
+        onClose={() => {
+          setEventDialogOpen(false);
+          setEditingEvent(null);
+        }}
+        initialDate={eventDialogDate}
+        initialTime={eventDialogTime}
+        editEvent={editingEvent}
       />
     </div>
   );

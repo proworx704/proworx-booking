@@ -340,6 +340,33 @@ const schema = defineSchema({
   }).index("by_slug", ["slug"]),
 
   // ═══════════════════════════════════════════════════════════════════════
+  // CALENDAR EVENTS — Personal events, day blocks, vacation, etc.
+  // ═══════════════════════════════════════════════════════════════════════
+
+  calendarEvents: defineTable({
+    title: v.string(),
+    eventType: v.union(
+      v.literal("personal"),
+      v.literal("vacation"),
+      v.literal("block"),
+      v.literal("other"),
+    ),
+    // Date range — supports single-day and multi-day events
+    startDate: v.string(), // YYYY-MM-DD
+    endDate: v.string(),   // YYYY-MM-DD (same as startDate for single-day)
+    // Time — only used when allDay is false
+    startTime: v.optional(v.string()), // HH:mm (24hr)
+    endTime: v.optional(v.string()),   // HH:mm (24hr)
+    allDay: v.boolean(),
+    blockTime: v.boolean(), // If true, prevents bookings during this time
+    notes: v.optional(v.string()),
+    color: v.optional(v.string()), // Custom color for the event
+    createdBy: v.optional(v.id("users")),
+  })
+    .index("by_startDate", ["startDate"])
+    .index("by_endDate", ["endDate"]),
+
+  // ═══════════════════════════════════════════════════════════════════════
   // USER PROFILES — Role-based access control
   // ═══════════════════════════════════════════════════════════════════════
 

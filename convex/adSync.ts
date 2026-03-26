@@ -602,39 +602,3 @@ export const getConnectionStatus = query({
     };
   },
 });
-
-
-
-// Temporary seed mutation
-export const seedMetrics = mutation({
-  args: {
-    metrics: v.array(v.object({
-      platform: v.union(v.literal("google_ads"), v.literal("meta_ads")),
-      campaignId: v.string(),
-      campaignName: v.string(),
-      campaignStatus: v.string(),
-      date: v.string(),
-      impressions: v.number(),
-      clicks: v.number(),
-      cost: v.number(),
-      conversions: v.number(),
-      ctr: v.number(),
-      avgCpc: v.number(),
-      costPerConversion: v.number(),
-    })),
-  },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-    for (const m of args.metrics) {
-      const existing = await ctx.db.query("adCampaignMetrics")
-        .withIndex("by_campaign_date", (q) => q.eq("campaignId", m.campaignId).eq("date", m.date))
-        .first();
-      if (existing) {
-        await ctx.db.patch(existing._id, { ...m, lastSyncedAt: now });
-      } else {
-        await ctx.db.insert("adCampaignMetrics", { ...m, lastSyncedAt: now });
-      }
-    }
-    return args.metrics.length;
-  },
-});

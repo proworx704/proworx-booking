@@ -602,3 +602,39 @@ export const getConnectionStatus = query({
     };
   },
 });
+
+// Public mutation for external data sync (used by automated sync pipeline)
+export const upsertMetrics = mutation({
+  args: {
+    metrics: v.array(v.object({
+      platform: PLATFORM_VALIDATOR,
+      campaignId: v.string(),
+      campaignName: v.string(),
+      campaignStatus: v.string(),
+      date: v.string(),
+      impressions: v.number(),
+      clicks: v.number(),
+      cost: v.number(),
+      conversions: v.number(),
+      ctr: v.number(),
+      avgCpc: v.number(),
+      costPerConversion: v.number(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    let upserted = 0;
+    for (const m of args.metrics) {
+      const existing = await ctx.db.query("adCampaignMetrics")
+        .withIndex("by_campaign_date", (q) => q.eq("campaignId", m.campaignId).eq("date", m.date))
+        .first();
+      if (existing) {
+        await ctx.db.patch(existing._id, { ...m, lastSyncedAt: now });
+      } else {
+        await ctx.db.insert("adCampaignMetrics", { ...m, lastSyncedAt: now });
+      }
+      upserted++;
+    }
+    return upserted;
+  },
+});

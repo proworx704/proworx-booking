@@ -213,3 +213,24 @@ export const seed = mutation({
     return "Seeded 6 services";
   },
 });
+
+// Temp: Seed Express Detail if missing (no auth for CLI use)
+export const seedExpressDetail = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("services").collect();
+    if (all.some((s) => s.name === "Express Detail")) {
+      return "Express Detail already exists";
+    }
+    await ctx.db.insert("services", {
+      name: "Express Detail",
+      description: "Quick exterior wash + interior vacuum, wipe-down, and windows. Perfect for regular maintenance.",
+      sedanPrice: 15000,
+      suvPrice: 20000,
+      duration: 90,
+      isActive: true,
+      sortOrder: 1,
+    });
+    return "Added Express Detail";
+  },
+});

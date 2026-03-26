@@ -4,4 +4,4 @@ export const BUSINESS_PHONE = "(980) 272-1903";
 export const BUSINESS_EMAIL = "detailing@proworxdetailing.com";
 export const BUSINESS_ADDRESS = "Charlotte, NC & Surrounding Areas";
 export const REVIEW_URL = "https://g.page/r/proworxdetailing/review"; // Google review link
-export const APP_URL = window?.location?.origin || "https://proworx-booking-8ee2b7c6.viktor.space";
+export const APP_URL = window?.location?.origin || "https://book.proworxdetailing.com";

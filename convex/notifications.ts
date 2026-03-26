@@ -524,7 +524,7 @@ export const checkAndSendReminders = internalAction({
 // REVIEW GATE — Automatic feedback request after service completion
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const APP_URL = process.env.VITE_APP_URL || "https://proworx-booking-8ee2b7c6.viktor.space";
+const APP_URL = process.env.VITE_APP_URL || "https://book.proworxdetailing.com";
 
 function feedbackRequestEmailBody(b: {
   customerName: string;

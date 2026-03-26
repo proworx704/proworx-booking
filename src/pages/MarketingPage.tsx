@@ -1,17 +1,21 @@
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import {
+  Activity,
   ArrowRight,
   BarChart3,
   DollarSign,
   ExternalLink,
   Eye,
   Megaphone,
+  MousePointerClick,
   Percent,
   Plus,
+  RefreshCw,
   Target,
   TrendingUp,
   Users,
   X,
+  Zap,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
@@ -28,6 +32,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -125,6 +135,30 @@ export function MarketingPage() {
   const campaigns = useQuery(api.marketing.campaignBreakdown, { startDate, endDate });
   const adSpend = useQuery(api.marketing.listAdSpend, {});
 
+  // Live ad performance data (synced from Google Ads & Meta)
+  const livePerformance = useQuery(api.adSync.liveCampaignPerformance, { startDate, endDate });
+  const dailyTrend = useQuery(api.adSync.dailyAdTrend, { startDate, endDate });
+  const connectionStatus = useQuery(api.adSync.getConnectionStatus, {});
+
+  const [syncing, setSyncing] = useState(false);
+  const syncAllAction = useAction(api.adSync.syncAll);
+
+  async function handleSync() {
+    setSyncing(true);
+    try {
+      const result = await syncAllAction({ startDate, endDate });
+      if (result.success) {
+        toast.success("Ad data synced successfully!");
+      } else {
+        toast.error(result.error || "Sync failed");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   const [showSpendForm, setShowSpendForm] = useState(false);
   const [spendChannel, setSpendChannel] = useState<string>("google_ads");
   const [spendMonth, setSpendMonth] = useState(getCurrentMonth());
@@ -181,7 +215,7 @@ export function MarketingPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[160px]">
               <SelectValue />
@@ -194,12 +228,52 @@ export function MarketingPage() {
               <SelectItem value="all_time">All Time</SelectItem>
             </SelectContent>
           </Select>
+          {(connectionStatus?.googleAds.configured || connectionStatus?.metaAds.configured) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSync}
+              disabled={syncing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing..." : "Sync Ads"}
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => setShowSpendForm(!showSpendForm)}>
             <Plus className="h-4 w-4 mr-1" />
             Log Ad Spend
           </Button>
         </div>
       </div>
+
+      {/* ─── Connection Status ─────────────────────────────────── */}
+      {connectionStatus && (!connectionStatus.googleAds.configured || !connectionStatus.metaAds.configured) && (
+        <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900">
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-start gap-3">
+              <Activity className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-amber-800 dark:text-amber-200">Ad Platform Connections</p>
+                <div className="flex flex-wrap gap-3 mt-1.5">
+                  <span className={`flex items-center gap-1.5 ${connectionStatus.googleAds.configured ? "text-green-700" : "text-muted-foreground"}`}>
+                    <span className={`w-2 h-2 rounded-full ${connectionStatus.googleAds.configured ? "bg-green-500" : "bg-gray-300"}`} />
+                    Google Ads {connectionStatus.googleAds.configured ? "Connected" : "Not connected"}
+                  </span>
+                  <span className={`flex items-center gap-1.5 ${connectionStatus.metaAds.configured ? "text-green-700" : "text-muted-foreground"}`}>
+                    <span className={`w-2 h-2 rounded-full ${connectionStatus.metaAds.configured ? "bg-green-500" : "bg-gray-300"}`} />
+                    Meta Ads {connectionStatus.metaAds.configured ? "Connected" : "Not connected"}
+                  </span>
+                </div>
+                {(!connectionStatus.googleAds.configured || !connectionStatus.metaAds.configured) && (
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Go to <strong>Settings → Ad Integrations</strong> to connect your ad accounts for live data.
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ─── Ad Spend Form ───────────────────────────────────── */}
       {showSpendForm && (
@@ -304,6 +378,160 @@ export function MarketingPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ─── Live Ad Performance (Google Ads & Meta) ──────────── */}
+      {livePerformance && (livePerformance.campaigns.length > 0 || livePerformance.totals.totalSpend > 0) && (
+        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-primary" />
+                  Live Ad Performance
+                </CardTitle>
+                <CardDescription>
+                  Real-time data from Google Ads &amp; Meta Ads APIs
+                  {livePerformance.lastSync && (
+                    <span className="ml-2 text-xs">
+                      · Synced {new Date(livePerformance.lastSync).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                    </span>
+                  )}
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Totals row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-background rounded-lg p-3 border">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" /> Total Ad Spend
+                </p>
+                <p className="text-xl font-bold">{fmt(livePerformance.totals.totalSpend)}</p>
+                <p className="text-xs text-muted-foreground">{livePerformance.daysOfData} days</p>
+              </div>
+              <div className="bg-background rounded-lg p-3 border">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <MousePointerClick className="h-3 w-3" /> Clicks
+                </p>
+                <p className="text-xl font-bold">{livePerformance.totals.totalClicks.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">
+                  {livePerformance.totals.totalImpressions.toLocaleString()} impressions
+                </p>
+              </div>
+              <div className="bg-background rounded-lg p-3 border">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Target className="h-3 w-3" /> Leads/Conversions
+                </p>
+                <p className="text-xl font-bold">{livePerformance.totals.totalConversions}</p>
+                <p className="text-xs text-muted-foreground">
+                  {livePerformance.totals.totalClicks > 0
+                    ? `${((livePerformance.totals.totalConversions / livePerformance.totals.totalClicks) * 100).toFixed(1)}% conv. rate`
+                    : "—"}
+                </p>
+              </div>
+              <div className="bg-background rounded-lg p-3 border">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" /> Cost per Lead
+                </p>
+                <p className="text-xl font-bold">
+                  {livePerformance.totals.totalConversions > 0
+                    ? fmtPrecise(Math.round(livePerformance.totals.totalSpend / livePerformance.totals.totalConversions))
+                    : "—"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {livePerformance.totals.totalClicks > 0
+                    ? `${fmtPrecise(Math.round(livePerformance.totals.totalSpend / livePerformance.totals.totalClicks))} avg CPC`
+                    : "—"}
+                </p>
+              </div>
+            </div>
+
+            {/* Campaign breakdown table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="pb-2 font-medium">Campaign</th>
+                    <th className="pb-2 font-medium text-center">Status</th>
+                    <th className="pb-2 font-medium text-right">Spend</th>
+                    <th className="pb-2 font-medium text-right">Clicks</th>
+                    <th className="pb-2 font-medium text-right">Impressions</th>
+                    <th className="pb-2 font-medium text-center">CTR</th>
+                    <th className="pb-2 font-medium text-right">Leads</th>
+                    <th className="pb-2 font-medium text-right">Cost/Lead</th>
+                    <th className="pb-2 font-medium text-right">Avg CPC</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {livePerformance.campaigns.map((c) => (
+                    <tr key={c.campaignId} className="border-b last:border-0">
+                      <td className="py-2.5">
+                        <div>
+                          <span className="font-medium text-sm">
+                            {c.campaignName.replace(/Campaign:SystemGenerated:\w+/, "Campaign (LSA)")}
+                          </span>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {c.platform === "google_ads" ? "Google Ads" : "Meta Ads"}
+                            {c.days > 0 && ` · ${c.days} days`}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="py-2.5 text-center">
+                        <Badge
+                          variant={c.campaignStatus === "ENABLED" ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {c.campaignStatus === "ENABLED" ? "Active" : c.campaignStatus.toLowerCase()}
+                        </Badge>
+                      </td>
+                      <td className="py-2.5 text-right font-medium">{fmt(c.cost)}</td>
+                      <td className="py-2.5 text-right">{c.clicks.toLocaleString()}</td>
+                      <td className="py-2.5 text-right text-muted-foreground">{c.impressions.toLocaleString()}</td>
+                      <td className="py-2.5 text-center">
+                        <Badge variant="outline" className="text-xs">
+                          {(c.ctr * 100).toFixed(1)}%
+                        </Badge>
+                      </td>
+                      <td className="py-2.5 text-right font-medium">{c.conversions}</td>
+                      <td className="py-2.5 text-right">
+                        {c.costPerConversion > 0 ? fmtPrecise(c.costPerConversion) : "—"}
+                      </td>
+                      <td className="py-2.5 text-right text-muted-foreground">
+                        {c.avgCpc > 0 ? fmtPrecise(c.avgCpc) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Daily spend mini chart */}
+            {dailyTrend && dailyTrend.length > 1 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-2 font-medium">Daily Ad Spend</p>
+                <div className="flex items-end gap-[2px] h-16">
+                  {(() => {
+                    const maxSpend = Math.max(...dailyTrend.map((d) => d.spend), 1);
+                    return dailyTrend.map((d) => (
+                      <div
+                        key={d.date}
+                        className="flex-1 bg-primary/70 hover:bg-primary rounded-t transition-colors cursor-default group relative"
+                        style={{ height: `${Math.max((d.spend / maxSpend) * 100, 2)}%` }}
+                        title={`${d.date}: ${fmtPrecise(d.spend)} · ${d.clicks} clicks · ${d.conversions} leads`}
+                      />
+                    ));
+                  })()}
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>{dailyTrend[0]?.date.slice(5)}</span>
+                  <span>{dailyTrend[dailyTrend.length - 1]?.date.slice(5)}</span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* ─── ROI by Channel ──────────────────────────────────── */}
       {roi && roi.length > 0 && (

@@ -289,6 +289,28 @@ const schema = defineSchema({
     .index("by_channel_month", ["channel", "month"]),
 
   // ═══════════════════════════════════════════════════════════════════════
+  // LIVE AD CAMPAIGN METRICS — Synced from Google Ads & Meta Ads APIs
+  // ═══════════════════════════════════════════════════════════════════════
+  adCampaignMetrics: defineTable({
+    platform: v.union(v.literal("google_ads"), v.literal("meta_ads")),
+    campaignId: v.string(),
+    campaignName: v.string(),
+    campaignStatus: v.string(),       // ENABLED, PAUSED, etc.
+    date: v.string(),                 // YYYY-MM-DD
+    impressions: v.number(),
+    clicks: v.number(),
+    cost: v.number(),                 // cents
+    conversions: v.number(),
+    ctr: v.number(),                  // decimal (0.078 = 7.8%)
+    avgCpc: v.number(),               // cents
+    costPerConversion: v.number(),    // cents
+    lastSyncedAt: v.number(),         // ms epoch
+  })
+    .index("by_platform", ["platform"])
+    .index("by_platform_date", ["platform", "date"])
+    .index("by_campaign_date", ["campaignId", "date"]),
+
+  // ═══════════════════════════════════════════════════════════════════════
   // PAYROLL MODULE (ported from ProWorx Time Tracker)
   // ═══════════════════════════════════════════════════════════════════════
 

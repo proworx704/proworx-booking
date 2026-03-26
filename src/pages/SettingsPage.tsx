@@ -1,6 +1,6 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
-import { Bot, ChevronRight, Eye, EyeOff, Loader2, Moon, Palette, Sun, User } from "lucide-react";
+import { Bot, ChevronRight, Eye, EyeOff, Loader2, Megaphone, Moon, Palette, Sun, User } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -204,6 +204,9 @@ export function SettingsPage() {
       {/* AI Assistant API Key — owner/admin only */}
       <GeminiApiKeyCard />
 
+      {/* Ad Integrations — owner/admin only */}
+      <AdIntegrationsCard />
+
       <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
         <DialogContent>
           <DialogHeader>
@@ -338,6 +341,126 @@ export function SettingsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// ── Ad Integrations Card (owner/admin only) ─────────────────────────────────
+
+const AD_SETTINGS_FIELDS = [
+  {
+    section: "Google Ads",
+    fields: [
+      { key: "google_ads_client_id", label: "Client ID", placeholder: "xxxxxxxxx.apps.googleusercontent.com", help: "From Google Cloud Console → Credentials" },
+      { key: "google_ads_client_secret", label: "Client Secret", placeholder: "GOCSPX-xxxx", help: "" },
+      { key: "google_ads_refresh_token", label: "Refresh Token", placeholder: "1//xxxxxxx", help: "OAuth2 refresh token" },
+      { key: "google_ads_developer_token", label: "Developer Token", placeholder: "xxxxxxxxxxxxxxxx", help: "From Google Ads API Center" },
+      { key: "google_ads_customer_id", label: "Customer ID", placeholder: "1234567890", help: "Your Google Ads account number (no dashes)" },
+    ],
+  },
+  {
+    section: "Meta Ads (Facebook & Instagram)",
+    fields: [
+      { key: "meta_ads_access_token", label: "Access Token", placeholder: "EAAxxxxxxx...", help: "Long-lived user access token from Meta Business" },
+      { key: "meta_ads_account_id", label: "Ad Account ID", placeholder: "act_123456789", help: "From Meta Business Settings → Ad Accounts" },
+    ],
+  },
+] as const;
+
+function AdIntegrationsCard() {
+  const { isAdmin } = useUserRole();
+  const setSetting = useMutation(api.systemSettings.set);
+  const connectionStatus = useQuery(api.adSync.getConnectionStatus, {});
+  const [fields, setFields] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  if (!isAdmin) return null;
+
+  const handleSave = async (key: string) => {
+    const val = fields[key]?.trim();
+    if (!val) return;
+    setSaving(key);
+    try {
+      await setSetting({ key, value: val });
+      toast.success("Saved");
+      setFields((prev) => ({ ...prev, [key]: "" }));
+    } catch {
+      toast.error("Failed to save");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Megaphone className="size-4 text-muted-foreground" />
+          Ad Integrations
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-xs text-muted-foreground">
+          Connect your ad platforms to automatically sync campaign performance data into the Marketing dashboard.
+        </p>
+
+        {/* Status indicators */}
+        <div className="flex gap-4">
+          <div className="flex items-center gap-2 text-sm">
+            <span className={`w-2.5 h-2.5 rounded-full ${connectionStatus?.googleAds.configured ? "bg-green-500" : "bg-gray-300"}`} />
+            Google Ads {connectionStatus?.googleAds.configured ? "✓" : "—"}
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className={`w-2.5 h-2.5 rounded-full ${connectionStatus?.metaAds.configured ? "bg-green-500" : "bg-gray-300"}`} />
+            Meta Ads {connectionStatus?.metaAds.configured ? "✓" : "—"}
+          </div>
+        </div>
+
+        <Button variant="outline" size="sm" onClick={() => setExpanded(!expanded)}>
+          {expanded ? "Hide" : "Configure"} Credentials
+        </Button>
+
+        {expanded && (
+          <div className="space-y-6 pt-2">
+            {AD_SETTINGS_FIELDS.map((section) => (
+              <div key={section.section}>
+                <h4 className="text-sm font-medium mb-3">{section.section}</h4>
+                <div className="space-y-3">
+                  {section.fields.map((field) => (
+                    <div key={field.key} className="space-y-1">
+                      <Label className="text-xs">{field.label}</Label>
+                      {field.help && (
+                        <p className="text-xs text-muted-foreground">{field.help}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <Input
+                          type="password"
+                          placeholder={field.placeholder}
+                          value={fields[field.key] || ""}
+                          onChange={(e) =>
+                            setFields((prev) => ({ ...prev, [field.key]: e.target.value }))
+                          }
+                          className="flex-1 font-mono text-xs"
+                        />
+                        <Button
+                          onClick={() => handleSave(field.key)}
+                          disabled={!fields[field.key]?.trim() || saving === field.key}
+                          size="sm"
+                          variant="outline"
+                        >
+                          {saving === field.key && <Loader2 className="size-3 animate-spin mr-1" />}
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

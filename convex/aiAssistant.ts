@@ -14,26 +14,43 @@ declare const process: { env: Record<string, string | undefined> };
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
-const GEMINI_MODEL = "gemini-2.0-flash";
+// Model priority list — falls back through these if one hits quota limits
+const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Gemini API Helper (OpenAI-compatible endpoint)
+// Gemini API Helper (OpenAI-compatible endpoint with auto-fallback)
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function callGemini(body: Record<string, unknown>): Promise<any> {
-  const response = await fetch(`${GEMINI_BASE_URL}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${GEMINI_API_KEY}`,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
+  const models = body.model ? [body.model as string, ...GEMINI_MODELS.filter(m => m !== body.model)] : GEMINI_MODELS;
+  let lastError = "";
+
+  for (const model of models) {
+    const response = await fetch(`${GEMINI_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${GEMINI_API_KEY}`,
+      },
+      body: JSON.stringify({ ...body, model }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    }
+
     const text = await response.text();
-    throw new Error(`Gemini API ${response.status}: ${text}`);
+    lastError = `${model}: ${response.status} - ${text.slice(0, 200)}`;
+    console.log(`Gemini model ${model} failed (${response.status}), trying next...`);
+
+    // Only retry on quota/rate limit errors (429)
+    if (response.status !== 429) {
+      throw new Error(`Gemini API error: ${lastError}`);
+    }
   }
-  return response.json();
+
+  throw new Error(`All Gemini models exhausted. Last error: ${lastError}`);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -695,7 +712,7 @@ export const chat = action({
     const MAX_TOOL_ROUNDS = 5;
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       const result = await callGemini({
-        model: GEMINI_MODEL,
+        model: GEMINI_MODELS[0],
         messages: llmMessages,
         tools: LLM_TOOLS,
         tool_choice: "auto",

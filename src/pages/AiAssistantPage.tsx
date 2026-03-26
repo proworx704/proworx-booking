@@ -329,14 +329,18 @@ export function AiAssistantPage() {
           },
         ]);
       } catch (err: any) {
+        const msg = err?.message || "";
+        const friendlyMsg = msg.includes("quota") || msg.includes("429") || msg.includes("exhausted")
+          ? "⚠️ The AI is temporarily rate-limited by Google's free tier. Please wait a minute and try again."
+          : msg.includes("Server Error") || msg.includes("CONVEX")
+          ? "⚠️ Something went wrong processing your request. Please try again in a moment."
+          : msg || "Sorry, something went wrong. Please try again.";
         setMessages((prev) => [
           ...prev,
           {
             id: `e-${Date.now()}`,
             role: "assistant",
-            content:
-              err?.message ||
-              "Sorry, something went wrong. Please try again.",
+            content: friendlyMsg,
             timestamp: new Date(),
           },
         ]);

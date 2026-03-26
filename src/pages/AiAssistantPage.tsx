@@ -234,41 +234,43 @@ function WelcomeScreen({
   onSelect: (q: string) => void;
 }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6">
-      <div className="max-w-2xl w-full space-y-8">
-        {/* Hero */}
-        <div className="text-center space-y-3">
-          <div className="size-16 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mx-auto shadow-lg">
-            <Sparkles className="size-8 text-white" />
+    <div className="flex-1 overflow-y-auto">
+      <div className="flex flex-col items-center justify-center min-h-full p-6 pb-4">
+        <div className="max-w-2xl w-full space-y-6">
+          {/* Hero */}
+          <div className="text-center space-y-3">
+            <div className="size-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mx-auto shadow-lg">
+              <Sparkles className="size-7 text-white" />
+            </div>
+            <h2 className="text-xl font-bold">ProWorx AI Assistant</h2>
+            <p className="text-muted-foreground text-sm max-w-md mx-auto">
+              Ask me anything about your bookings, revenue, customers, or
+              schedule. I have real-time access to your business data.
+            </p>
           </div>
-          <h2 className="text-2xl font-bold">ProWorx AI Assistant</h2>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            Ask me anything about your bookings, revenue, customers, or
-            schedule. I have real-time access to your business data.
-          </p>
-        </div>
 
-        {/* Suggestion chips */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s.q}
-              type="button"
-              onClick={() => onSelect(s.q)}
-              className="flex items-center gap-3 text-left p-3 rounded-xl border bg-card hover:bg-accent/50 transition-colors group"
-            >
-              <span className="text-lg">{s.label.split(" ")[0]}</span>
-              <div className="flex-1 min-w-0">
-                <span className="text-sm font-medium">
-                  {s.label.split(" ").slice(1).join(" ")}
-                </span>
-                <p className="text-xs text-muted-foreground truncate">
-                  {s.q}
-                </p>
-              </div>
-              <ChevronRight className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
-          ))}
+          {/* Suggestion chips */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {SUGGESTIONS.map((s) => (
+              <button
+                key={s.q}
+                type="button"
+                onClick={() => onSelect(s.q)}
+                className="flex items-center gap-3 text-left p-3 rounded-xl border bg-card hover:bg-accent/50 transition-colors group"
+              >
+                <span className="text-lg">{s.label.split(" ")[0]}</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium">
+                    {s.label.split(" ").slice(1).join(" ")}
+                  </span>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {s.q}
+                  </p>
+                </div>
+                <ChevronRight className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -43,6 +43,7 @@ import type * as squarePayments from "../squarePayments.js";
 import type * as staff from "../staff.js";
 import type * as staffAvailability from "../staffAvailability.js";
 import type * as support from "../support.js";
+import type * as systemSettings from "../systemSettings.js";
 import type * as tempSquareSync from "../tempSquareSync.js";
 import type * as testAuth from "../testAuth.js";
 import type * as updateMemberships from "../updateMemberships.js";
@@ -92,6 +93,7 @@ declare const fullApi: ApiFromModules<{
   staff: typeof staff;
   staffAvailability: typeof staffAvailability;
   support: typeof support;
+  systemSettings: typeof systemSettings;
   tempSquareSync: typeof tempSquareSync;
   testAuth: typeof testAuth;
   updateMemberships: typeof updateMemberships;

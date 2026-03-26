@@ -168,6 +168,60 @@ export const gatherBusinessData = internalQuery({
       notes: b.notes || "",
     });
 
+    // ── Top Customers by Revenue ──
+    const customerRevMap = new Map<string, { name: string; email: string; phone: string; revenue: number; bookings: number; lastDate: string }>();
+    for (const b of allBookings) {
+      if (b.status === "cancelled" || !b.customerName) continue;
+      const key = (b.customerEmail || b.customerName).toLowerCase();
+      const existing = customerRevMap.get(key);
+      const amt = b.paymentStatus === "paid" ? (b.paymentAmount || b.totalPrice || b.price || 0) : 0;
+      const totalAmt = b.totalPrice || b.price || 0;
+      if (existing) {
+        existing.revenue += amt;
+        existing.bookings += 1;
+        if (b.date > existing.lastDate) existing.lastDate = b.date;
+      } else {
+        customerRevMap.set(key, {
+          name: b.customerName,
+          email: b.customerEmail || "",
+          phone: b.customerPhone || "",
+          revenue: amt,
+          bookings: 1,
+          lastDate: b.date,
+        });
+      }
+    }
+    const topCustomers = [...customerRevMap.values()]
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 15);
+
+    // ── Service Popularity ──
+    const serviceMap = new Map<string, { count: number; revenue: number }>();
+    for (const b of allBookings) {
+      if (b.status === "cancelled" || !b.serviceName) continue;
+      const existing = serviceMap.get(b.serviceName);
+      const amt = b.totalPrice || b.price || 0;
+      if (existing) {
+        existing.count += 1;
+        existing.revenue += amt;
+      } else {
+        serviceMap.set(b.serviceName, { count: 1, revenue: amt });
+      }
+    }
+    const servicePopularity = [...serviceMap.entries()]
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.count - a.count);
+
+    // ── Revenue by Day of Week ──
+    const dayRevenue: Record<string, { count: number; revenue: number }> = {};
+    for (const b of nonCancelled(allBookings)) {
+      const d = new Date(b.date + "T12:00:00");
+      const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
+      if (!dayRevenue[dayName]) dayRevenue[dayName] = { count: 0, revenue: 0 };
+      dayRevenue[dayName].count += 1;
+      dayRevenue[dayName].revenue += (b.totalPrice || b.price || 0);
+    }
+
     return {
       today,
       dayOfWeek,
@@ -185,6 +239,9 @@ export const gatherBusinessData = internalQuery({
         totalUnpaid: unpaidBookings.reduce((s, b) => s + (b.totalPrice || b.price || 0), 0),
         totalUnpaidCount: unpaidBookings.length,
       },
+      topCustomers,
+      servicePopularity,
+      dayRevenue,
       customers: {
         total: allCustomers.length,
         inactiveCount: inactiveCustomers.length,
@@ -573,24 +630,47 @@ function buildSystemPrompt(d: any): string {
     ? ` (${d.revenue.thisMonth >= d.revenue.lastMonth ? "+" : ""}${Math.round(((d.revenue.thisMonth - d.revenue.lastMonth) / d.revenue.lastMonth) * 100)}% vs last month)`
     : "";
 
+  // ── Pre-format new analytics sections ──
+  const topCustSec = d.topCustomers.length === 0
+    ? "No customer revenue data yet."
+    : d.topCustomers.map((c: any, i: number) =>
+        `${i + 1}. ${c.name} | ${fmtPrice(c.revenue)} revenue | ${c.bookings} bookings | Last: ${c.lastDate} | ${c.email} | ${c.phone}`
+      ).join("\n");
+
+  const serviceSec = d.servicePopularity.length === 0
+    ? "No service data yet."
+    : d.servicePopularity.map((s: any, i: number) =>
+        `${i + 1}. ${s.name} — ${s.count} bookings | ${fmtPrice(s.revenue)} total revenue`
+      ).join("\n");
+
+  const dayRevSec = Object.entries(d.dayRevenue || {})
+    .sort((a: any, b: any) => b[1].count - a[1].count)
+    .map(([day, data]: [string, any]) =>
+      `• ${day}: ${data.count} bookings | ${fmtPrice(data.revenue)} revenue`
+    ).join("\n") || "No data.";
+
   return `You are the ProWorx AI Assistant — an intelligent business helper for ProWorx Mobile Detailing, a premium mobile auto detailing service in Charlotte, NC.
 
-You have LIVE access to the business database. You can both ANSWER QUESTIONS and MAKE EDITS using the available tools.
+You have LIVE access to the business database below. The data sections contain ALL your business information — use them to answer ANY question about revenue, customers, bookings, rankings, etc.
+
+IMPORTANT: You already have comprehensive data below. For questions like "who are my top customers" or "what are my most popular services", USE THE DATA SECTIONS BELOW to answer. You do NOT need a special tool to answer read-only questions — the data is right here.
+
+The TOOLS are ONLY for making edits (updating bookings, payments, schedules, staff, customers). For answering questions, just read the data below.
 
 GUIDELINES:
 • Be concise and direct. Use bullet points and tables when helpful.
-• All prices in the data are in CENTS — always divide by 100 when displaying.
+• All prices in the data are in CENTS — always divide by 100 when displaying (e.g. 15000 = $150.00).
 • When comparing periods, show both values and the percentage change.
 • If the data doesn't contain what's needed, say so clearly.
 • Offer actionable insights and follow-up suggestions when relevant.
 • Professional yet friendly tone — you're a trusted business partner.
 
-EDITING RULES:
+EDITING RULES (tools are ONLY for edits):
 • You have tools to update bookings, payments, scheduling, staff assignments, and customer records.
 • Always use the confirmationCode (like PW-XXXXXX) to identify bookings.
 • When making edits, confirm what you changed in your response.
 • If a request is ambiguous (e.g. multiple matching bookings), ask for clarification.
-• Use tools from the data context — match customer names, dates, etc. to find the right confirmation code.
+• Use data from the context below — match customer names, dates, etc. to find the right confirmation code.
 
 ${section("CURRENT DATE", `${d.today} (${d.dayOfWeek})\nBusiness Hours: Mon–Fri 9:30 AM – 6:00 PM | Sat 9:30 AM – 3:00 PM | Sun Closed`)}
 
@@ -607,6 +687,12 @@ All-Time Revenue: ${fmtPrice(d.allTime.totalRevenue)} from ${d.allTime.totalBook
 ${section("UNPAID BOOKINGS", unpaidSec)}
 
 ${section("CUSTOMERS", `Total: ${d.customers.total}\nInactive 90+ days: ${d.customers.inactiveCount}\n${inactiveSec}`)}
+
+${section("TOP CUSTOMERS BY REVENUE (All-Time)", topCustSec)}
+
+${section("SERVICE POPULARITY", serviceSec)}
+
+${section("BUSIEST DAYS OF WEEK", dayRevSec)}
 
 ${section("STAFF", staffSec)}
 

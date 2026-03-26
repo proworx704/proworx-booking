@@ -165,43 +165,96 @@ export function StaffDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {allServices.map((service) => {
-                const isAssigned = assignedServiceIds.has(service._id);
-                return (
-                  <div
-                    key={service._id}
-                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
-                      isAssigned
-                        ? "bg-primary/5 border-primary/20"
-                        : "hover:bg-muted/50"
-                    }`}
-                    onClick={() => handleToggleService(service._id)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`size-8 rounded-full flex items-center justify-center ${
-                          isAssigned
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {isAssigned ? <Check className="size-4" /> : <X className="size-4" />}
+              {/* Core Services */}
+              {allServices
+                .filter((s) => !s.name.startsWith("Maintenance"))
+                .map((service) => {
+                  const isAssigned = assignedServiceIds.has(service._id);
+                  return (
+                    <div
+                      key={service._id}
+                      className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                        isAssigned
+                          ? "bg-primary/5 border-primary/20"
+                          : "hover:bg-muted/50"
+                      }`}
+                      onClick={() => handleToggleService(service._id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`size-8 rounded-full flex items-center justify-center ${
+                            isAssigned
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {isAssigned ? <Check className="size-4" /> : <X className="size-4" />}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{service.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {Math.floor(service.duration / 60)}h{service.duration % 60 > 0 ? ` ${service.duration % 60}m` : ""} · ${(service.sedanPrice / 100).toFixed(0)}-${(service.suvPrice / 100).toFixed(0)}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">{service.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {Math.floor(service.duration / 60)}h{service.duration % 60 > 0 ? ` ${service.duration % 60}m` : ""} · ${(service.sedanPrice / 100).toFixed(0)}-${(service.suvPrice / 100).toFixed(0)}
-                        </p>
-                      </div>
+                      <Switch
+                        checked={isAssigned}
+                        onCheckedChange={() => handleToggleService(service._id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
                     </div>
-                    <Switch
-                      checked={isAssigned}
-                      onCheckedChange={() => handleToggleService(service._id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
+                  );
+                })}
+
+              {/* Maintenance Services Section */}
+              {allServices.some((s) => s.name.startsWith("Maintenance")) && (
+                <>
+                  <div className="pt-2 pb-1">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Maintenance Plans
+                    </p>
                   </div>
-                );
-              })}
+                  {allServices
+                    .filter((s) => s.name.startsWith("Maintenance"))
+                    .map((service) => {
+                      const isAssigned = assignedServiceIds.has(service._id);
+                      return (
+                        <div
+                          key={service._id}
+                          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                            isAssigned
+                              ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800"
+                              : "hover:bg-muted/50"
+                          }`}
+                          onClick={() => handleToggleService(service._id)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`size-8 rounded-full flex items-center justify-center ${
+                                isAssigned
+                                  ? "bg-emerald-600 text-white"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {isAssigned ? <Check className="size-4" /> : <X className="size-4" />}
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">{service.name.replace("Maintenance - ", "")}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {service.duration >= 60 ? `${Math.floor(service.duration / 60)}h` : ""}{service.duration % 60 > 0 ? ` ${service.duration % 60}m` : ""} · ${(service.sedanPrice / 100).toFixed(0)}/mo
+                              </p>
+                            </div>
+                          </div>
+                          <Switch
+                            checked={isAssigned}
+                            onCheckedChange={() => handleToggleService(service._id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      );
+                    })}
+                </>
+              )}
             </div>
           </CardContent>
         </Card>

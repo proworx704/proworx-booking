@@ -80,6 +80,60 @@ export const remove = mutation({
   },
 });
 
+// Add maintenance membership services (run once to extend the services list)
+// No auth needed — called from CLI seed script
+export const seedMaintenanceServices = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Check if maintenance services already exist
+    const all = await ctx.db.query("services").collect();
+    if (all.some((s) => s.name.includes("Maintenance"))) {
+      return "Maintenance services already exist";
+    }
+
+    const maxSort = Math.max(...all.map((s) => s.sortOrder), 0);
+
+    const maintenanceServices = [
+      {
+        name: "Maintenance - Exterior Only",
+        description:
+          "Monthly exterior maintenance wash included with membership. Quick exterior hand wash, dry, and tire dressing to keep your vehicle looking its best between full details.",
+        sedanPrice: 5900,
+        suvPrice: 7900,
+        duration: 45,
+        isActive: true,
+        sortOrder: maxSort + 1,
+      },
+      {
+        name: "Maintenance - Interior Only",
+        description:
+          "Monthly interior maintenance clean included with membership. Interior vacuum, wipe-down, glass cleaning, and light freshening to maintain that fresh detail feel.",
+        sedanPrice: 9900,
+        suvPrice: 12900,
+        duration: 90,
+        isActive: true,
+        sortOrder: maxSort + 2,
+      },
+      {
+        name: "Maintenance - Full Inside & Out",
+        description:
+          "Premium monthly full maintenance detail included with membership. Complete interior deep clean plus exterior wash, sealant refresh, and engine bay maintenance.",
+        sedanPrice: 15900,
+        suvPrice: 19900,
+        duration: 150,
+        isActive: true,
+        sortOrder: maxSort + 3,
+      },
+    ];
+
+    for (const service of maintenanceServices) {
+      await ctx.db.insert("services", service);
+    }
+
+    return `Added ${maintenanceServices.length} maintenance services`;
+  },
+});
+
 // Seed default ProWorx services
 export const seed = mutation({
   args: {},

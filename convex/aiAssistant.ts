@@ -12,7 +12,7 @@ import { requireActionAuth } from "./authHelpers";
 
 declare const process: { env: Record<string, string | undefined> };
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "AIzaSyARiVeXTH-XVssSeiHJFHpQz5l_k3KgQOE";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
 // Model priority list — falls back through these if one hits quota limits
 const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];

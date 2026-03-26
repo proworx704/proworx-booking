@@ -1,8 +1,10 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
-import { ChevronRight, Loader2, Moon, Palette, Sun, User } from "lucide-react";
+import { Bot, ChevronRight, Eye, EyeOff, Loader2, Moon, Palette, Sun, User } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { useUserRole } from "@/contexts/RoleContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -199,6 +201,9 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* AI Assistant API Key — owner/admin only */}
+      <GeminiApiKeyCard />
+
       <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
         <DialogContent>
           <DialogHeader>
@@ -333,5 +338,94 @@ export function SettingsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// ── Gemini API Key Card (owner/admin only) ─────────────────────────────────
+
+function GeminiApiKeyCard() {
+  const { isAdmin } = useUserRole();
+  const currentKey = useQuery(api.systemSettings.get, { key: "gemini_api_key" });
+  const setSetting = useMutation(api.systemSettings.set);
+  const [keyInput, setKeyInput] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  if (!isAdmin) return null;
+
+  const maskedKey = currentKey
+    ? currentKey.slice(0, 10) + "•".repeat(Math.max(0, currentKey.length - 14)) + currentKey.slice(-4)
+    : null;
+
+  const handleSave = async () => {
+    const trimmed = keyInput.trim();
+    if (!trimmed) return;
+    setSaving(true);
+    try {
+      await setSetting({ key: "gemini_api_key", value: trimmed });
+      toast.success("API key saved");
+      setKeyInput("");
+      setShowKey(false);
+    } catch {
+      toast.error("Failed to save API key");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Bot className="size-4 text-muted-foreground" />
+          AI Assistant
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-1">
+          <Label className="text-sm font-medium">Gemini API Key</Label>
+          <p className="text-xs text-muted-foreground">
+            Powers the AI Assistant. Get a free key from{" "}
+            <a
+              href="https://aistudio.google.com/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline underline-offset-2"
+            >
+              Google AI Studio
+            </a>
+          </p>
+        </div>
+
+        {currentKey && (
+          <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2">
+            <code className="flex-1 text-sm font-mono text-muted-foreground">
+              {showKey ? currentKey : maskedKey}
+            </code>
+            <button
+              type="button"
+              onClick={() => setShowKey(!showKey)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Input
+            type="password"
+            placeholder={currentKey ? "Enter new key to replace…" : "Paste your Gemini API key…"}
+            value={keyInput}
+            onChange={(e) => setKeyInput(e.target.value)}
+            className="flex-1 font-mono text-sm"
+          />
+          <Button onClick={handleSave} disabled={!keyInput.trim() || saving} size="sm">
+            {saving && <Loader2 className="size-4 animate-spin mr-1" />}
+            {currentKey ? "Update" : "Save"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

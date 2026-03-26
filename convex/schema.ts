@@ -554,6 +554,13 @@ const schema = defineSchema({
     .index("by_email", ["email"])
     .index("by_customer", ["customerId"])
     .index("by_active", ["isActive"]),
+
+  // ─── System settings (secure key-value store for API keys etc.) ──────────
+  systemSettings: defineTable({
+    key: v.string(),       // e.g. "gemini_api_key"
+    value: v.string(),     // the setting value
+    updatedAt: v.number(), // ms epoch
+  }).index("by_key", ["key"]),
 });
 
 export default schema;

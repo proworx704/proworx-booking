@@ -10,18 +10,16 @@ import { action, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireActionAuth } from "./authHelpers";
 
-declare const process: { env: Record<string, string | undefined> };
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "AIzaSyARiVeXTH-XVssSeiHJFHpQz5l_k3KgQOE";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
 // Model priority list — falls back through these if one hits quota limits
 const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Gemini API Helper (OpenAI-compatible endpoint with auto-fallback)
+// API key is fetched from the systemSettings table at runtime (never hardcoded)
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function callGemini(body: Record<string, unknown>): Promise<any> {
+async function callGemini(apiKey: string, body: Record<string, unknown>): Promise<any> {
   const models = body.model ? [body.model as string, ...GEMINI_MODELS.filter(m => m !== body.model)] : GEMINI_MODELS;
   let lastError = "";
 
@@ -30,7 +28,7 @@ async function callGemini(body: Record<string, unknown>): Promise<any> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${GEMINI_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({ ...body, model }),
     });
@@ -698,6 +696,16 @@ export const chat = action({
   handler: async (ctx, { messages }) => {
     await requireActionAuth(ctx);
 
+    // 0. Fetch Gemini API key from secure database storage
+    const geminiKey = await ctx.runQuery(internal.systemSettings.getInternal, {
+      key: "gemini_api_key",
+    });
+    if (!geminiKey) {
+      throw new Error(
+        "Gemini API key not configured. Go to Manage → Settings to add your API key.",
+      );
+    }
+
     // 1. Gather live business data
     const data = await ctx.runQuery(internal.aiAssistant.gatherBusinessData);
     const systemPrompt = buildSystemPrompt(data);
@@ -711,7 +719,7 @@ export const chat = action({
     // 3. Function-calling loop (max 5 iterations to prevent runaway)
     const MAX_TOOL_ROUNDS = 5;
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const result = await callGemini({
+      const result = await callGemini(geminiKey, {
         model: GEMINI_MODELS[0],
         messages: llmMessages,
         tools: LLM_TOOLS,

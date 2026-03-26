@@ -330,7 +330,11 @@ export function AiAssistantPage() {
         ]);
       } catch (err: any) {
         const msg = err?.message || "";
-        const friendlyMsg = msg.includes("quota") || msg.includes("429") || msg.includes("exhausted")
+        const friendlyMsg = msg.includes("not configured") || msg.includes("API key")
+          ? "⚠️ Gemini API key not configured. Go to **Settings** to add your key."
+          : msg.includes("leaked")
+          ? "⚠️ Your API key was flagged as exposed. Please generate a new key at [Google AI Studio](https://aistudio.google.com/apikey) and update it in **Settings**."
+          : msg.includes("quota") || msg.includes("429") || msg.includes("exhausted")
           ? "⚠️ The AI is temporarily rate-limited by Google's free tier. Please wait a minute and try again."
           : msg.includes("Server Error") || msg.includes("CONVEX")
           ? "⚠️ Something went wrong processing your request. Please try again in a moment."

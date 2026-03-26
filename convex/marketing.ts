@@ -1,166 +1,316 @@
-/**
- * Marketing Opt-ins — manage email marketing preferences
- */
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { query, mutation } from "./_generated/server";
 
-// ── Client: Check opt-in status ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// MARKETING ATTRIBUTION & AD SPEND TRACKING
+// ═══════════════════════════════════════════════════════════════════════
 
-export const getMyOptIn = query({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return null;
+const LEAD_SOURCE_LABELS: Record<string, string> = {
+  google_ads: "Google Ads",
+  google_local: "Google Local Services",
+  facebook_ads: "Facebook Ads",
+  instagram_ads: "Instagram Ads",
+  google_organic: "Google Organic",
+  yelp: "Yelp",
+  referral: "Referral",
+  direct: "Direct",
+  other: "Other",
+};
 
-    const user = await ctx.db.get(userId);
-    if (!user?.email) return null;
+const CHANNEL_VALIDATOR = v.union(
+  v.literal("google_ads"),
+  v.literal("google_local"),
+  v.literal("facebook_ads"),
+  v.literal("instagram_ads"),
+  v.literal("yelp"),
+  v.literal("other"),
+);
 
-    return await ctx.db
-      .query("marketingOptIns")
-      .withIndex("by_email", (q) => q.eq("email", user.email!.toLowerCase()))
-      .first();
+// ─── Attribution Overview ────────────────────────────────────────────────────
+// Returns bookings grouped by lead source with counts, revenue, close ratios
+export const attributionOverview = query({
+  args: {
+    startDate: v.optional(v.string()), // YYYY-MM-DD
+    endDate: v.optional(v.string()),   // YYYY-MM-DD
+  },
+  handler: async (ctx, args) => {
+    let bookings = await ctx.db.query("bookings").collect();
+
+    // Filter by date range
+    if (args.startDate) {
+      bookings = bookings.filter((b) => b.date >= args.startDate!);
+    }
+    if (args.endDate) {
+      bookings = bookings.filter((b) => b.date <= args.endDate!);
+    }
+
+    // Group by lead source
+    const sourceMap: Record<string, {
+      source: string;
+      label: string;
+      totalBookings: number;
+      completedBookings: number;
+      cancelledBookings: number;
+      totalRevenue: number;
+      paidRevenue: number;
+      avgBookingValue: number;
+    }> = {};
+
+    for (const b of bookings) {
+      const src = b.leadSource || "direct";
+      if (!sourceMap[src]) {
+        sourceMap[src] = {
+          source: src,
+          label: LEAD_SOURCE_LABELS[src] || src,
+          totalBookings: 0,
+          completedBookings: 0,
+          cancelledBookings: 0,
+          totalRevenue: 0,
+          paidRevenue: 0,
+          avgBookingValue: 0,
+        };
+      }
+      const entry = sourceMap[src];
+      entry.totalBookings++;
+      if (b.status === "completed") entry.completedBookings++;
+      if (b.status === "cancelled") entry.cancelledBookings++;
+      const rev = b.totalPrice || b.price || 0;
+      entry.totalRevenue += rev;
+      if (b.paymentStatus === "paid") entry.paidRevenue += rev;
+    }
+
+    // Calculate averages
+    for (const entry of Object.values(sourceMap)) {
+      entry.avgBookingValue = entry.totalBookings > 0
+        ? Math.round(entry.totalRevenue / entry.totalBookings)
+        : 0;
+    }
+
+    // Sort by total bookings descending
+    const sources = Object.values(sourceMap).sort(
+      (a, b) => b.totalBookings - a.totalBookings,
+    );
+
+    // Totals
+    const totalBookings = bookings.length;
+    const totalRevenue = bookings.reduce((s, b) => s + (b.totalPrice || b.price || 0), 0);
+    const paidBookings = bookings.filter((b) => b.status !== "cancelled").length;
+
+    return { sources, totalBookings, totalRevenue, paidBookings };
   },
 });
 
-// ── Client: Opt in to marketing ──────────────────────────────────────────
-
-export const optIn = mutation({
+// ─── Attribution by Campaign ─────────────────────────────────────────────────
+export const campaignBreakdown = query({
   args: {
-    source: v.optional(
-      v.union(
-        v.literal("portal_registration"),
-        v.literal("portal_settings"),
-        v.literal("admin_import"),
-        v.literal("booking"),
-      ),
-    ),
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
   },
-  handler: async (ctx, { source }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+  handler: async (ctx, args) => {
+    let bookings = await ctx.db.query("bookings").collect();
 
-    const user = await ctx.db.get(userId);
-    if (!user?.email) throw new Error("No email found");
+    if (args.startDate) bookings = bookings.filter((b) => b.date >= args.startDate!);
+    if (args.endDate) bookings = bookings.filter((b) => b.date <= args.endDate!);
 
-    const email = user.email.toLowerCase();
+    // Only bookings with UTM data
+    const utmBookings = bookings.filter((b) => b.utmCampaign || b.utmSource);
 
-    // Check existing
+    const campaigns: Record<string, {
+      campaign: string;
+      source: string;
+      medium: string;
+      bookings: number;
+      revenue: number;
+      completed: number;
+    }> = {};
+
+    for (const b of utmBookings) {
+      const key = `${b.utmSource || "unknown"}|${b.utmCampaign || "none"}`;
+      if (!campaigns[key]) {
+        campaigns[key] = {
+          campaign: b.utmCampaign || "(no campaign)",
+          source: b.utmSource || "unknown",
+          medium: b.utmMedium || "",
+          bookings: 0,
+          revenue: 0,
+          completed: 0,
+        };
+      }
+      campaigns[key].bookings++;
+      campaigns[key].revenue += b.totalPrice || b.price || 0;
+      if (b.status === "completed") campaigns[key].completed++;
+    }
+
+    return Object.values(campaigns).sort((a, b) => b.bookings - a.bookings);
+  },
+});
+
+// ─── Recent Attributed Bookings ──────────────────────────────────────────────
+export const recentAttributedBookings = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 20;
+    const bookings = await ctx.db
+      .query("bookings")
+      .order("desc")
+      .collect();
+
+    // Only bookings with a lead source (not direct/unknown)
+    const attributed = bookings
+      .filter((b) => b.leadSource && b.leadSource !== "direct")
+      .slice(0, limit)
+      .map((b) => ({
+        _id: b._id,
+        customerName: b.customerName,
+        serviceName: b.serviceName,
+        date: b.date,
+        price: b.totalPrice || b.price,
+        status: b.status,
+        paymentStatus: b.paymentStatus,
+        leadSource: b.leadSource,
+        leadSourceLabel: LEAD_SOURCE_LABELS[b.leadSource || ""] || b.leadSource,
+        utmCampaign: b.utmCampaign,
+        utmSource: b.utmSource,
+      }));
+
+    return attributed;
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// AD SPEND CRUD
+// ═══════════════════════════════════════════════════════════════════════
+
+// List all ad spend entries
+export const listAdSpend = query({
+  args: {
+    month: v.optional(v.string()),
+    channel: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    let entries = await ctx.db.query("adSpend").collect();
+    if (args.month) entries = entries.filter((e) => e.month === args.month);
+    if (args.channel) entries = entries.filter((e) => e.channel === args.channel);
+    return entries.sort((a, b) => b.month.localeCompare(a.month) || a.channel.localeCompare(b.channel));
+  },
+});
+
+// Upsert ad spend for a channel + month
+export const upsertAdSpend = mutation({
+  args: {
+    channel: CHANNEL_VALIDATOR,
+    month: v.string(), // "2026-03"
+    spend: v.number(), // cents
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Check if entry exists
     const existing = await ctx.db
-      .query("marketingOptIns")
-      .withIndex("by_email", (q) => q.eq("email", email))
+      .query("adSpend")
+      .withIndex("by_channel_month", (q) =>
+        q.eq("channel", args.channel).eq("month", args.month),
+      )
       .first();
 
     if (existing) {
-      // Re-activate if previously opted out
-      if (!existing.isActive) {
-        await ctx.db.patch(existing._id, {
-          isActive: true,
-          optedOutAt: undefined,
-          optedInAt: Date.now(),
-        });
-      }
-      return existing._id;
-    }
-
-    // Get profile info
-    const profile = await ctx.db
-      .query("userProfiles")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
-
-    let customerPhone: string | undefined;
-    if (profile?.customerId) {
-      const customer = await ctx.db.get(profile.customerId);
-      customerPhone = customer?.phone;
-    }
-
-    return await ctx.db.insert("marketingOptIns", {
-      userId,
-      customerId: profile?.customerId || undefined,
-      email,
-      name: user.name || profile?.displayName || "Client",
-      phone: customerPhone,
-      optedInAt: Date.now(),
-      isActive: true,
-      source: source ?? "portal_settings",
-    });
-  },
-});
-
-// ── Client: Opt out of marketing ─────────────────────────────────────────
-
-export const optOut = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-
-    const user = await ctx.db.get(userId);
-    if (!user?.email) return;
-
-    const existing = await ctx.db
-      .query("marketingOptIns")
-      .withIndex("by_email", (q) => q.eq("email", user.email!.toLowerCase()))
-      .first();
-
-    if (existing && existing.isActive) {
       await ctx.db.patch(existing._id, {
-        isActive: false,
-        optedOutAt: Date.now(),
+        spend: args.spend,
+        notes: args.notes,
+        updatedAt: Date.now(),
+      });
+      return existing._id;
+    } else {
+      return await ctx.db.insert("adSpend", {
+        channel: args.channel,
+        month: args.month,
+        spend: args.spend,
+        notes: args.notes,
+        updatedAt: Date.now(),
       });
     }
   },
 });
 
-// ── Admin: List all opted-in contacts ────────────────────────────────────
-
-export const listOptedIn = query({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
-
-    const profile = await ctx.db
-      .query("userProfiles")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
-
-    if (!profile || (profile.role !== "owner" && profile.role !== "admin")) return [];
-
-    return await ctx.db
-      .query("marketingOptIns")
-      .withIndex("by_active", (q) => q.eq("isActive", true))
-      .collect();
+export const deleteAdSpend = mutation({
+  args: { id: v.id("adSpend") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
   },
 });
 
-// ── Admin: Get marketing stats ───────────────────────────────────────────
+// ─── ROI Calculation ─────────────────────────────────────────────────────────
+// Combines ad spend with attribution data
+export const roiByChannel = query({
+  args: {
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    let bookings = await ctx.db.query("bookings").collect();
+    const allSpend = await ctx.db.query("adSpend").collect();
 
-export const getStats = query({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return null;
+    if (args.startDate) bookings = bookings.filter((b) => b.date >= args.startDate!);
+    if (args.endDate) bookings = bookings.filter((b) => b.date <= args.endDate!);
 
-    const profile = await ctx.db
-      .query("userProfiles")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    // Get months in the date range for spend filtering
+    const months = new Set<string>();
+    for (const b of bookings) {
+      months.add(b.date.substring(0, 7)); // YYYY-MM
+    }
 
-    if (!profile || (profile.role !== "owner" && profile.role !== "admin")) return null;
+    const channels = ["google_ads", "google_local", "facebook_ads", "instagram_ads", "yelp", "other"] as const;
 
-    const all = await ctx.db.query("marketingOptIns").collect();
-    const active = all.filter((m) => m.isActive);
-    const optedOut = all.filter((m) => !m.isActive);
+    const roi = channels.map((channel) => {
+      const channelBookings = bookings.filter((b) => b.leadSource === channel);
+      const channelSpend = allSpend
+        .filter((s) => s.channel === channel && months.has(s.month))
+        .reduce((sum, s) => sum + s.spend, 0);
 
-    return {
-      totalSubscribers: active.length,
-      totalOptedOut: optedOut.length,
-      recentSubscribers: active
-        .sort((a, b) => b.optedInAt - a.optedInAt)
-        .slice(0, 10)
-        .map((m) => ({ name: m.name, email: m.email, optedInAt: m.optedInAt })),
-    };
+      const revenue = channelBookings.reduce(
+        (s, b) => s + (b.totalPrice || b.price || 0), 0,
+      );
+      const completed = channelBookings.filter((b) => b.status === "completed").length;
+      const total = channelBookings.length;
+      const closeRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+      const costPerBooking = total > 0 ? Math.round(channelSpend / total) : 0;
+      const roiPercent = channelSpend > 0
+        ? Math.round(((revenue - channelSpend) / channelSpend) * 100)
+        : 0;
+
+      return {
+        channel,
+        label: LEAD_SOURCE_LABELS[channel] || channel,
+        totalBookings: total,
+        completedBookings: completed,
+        closeRate,
+        revenue,
+        spend: channelSpend,
+        costPerBooking,
+        roiPercent,
+      };
+    });
+
+    return roi.filter((r) => r.totalBookings > 0 || r.spend > 0);
+  },
+});
+
+// ─── Set lead source on existing booking (for manual attribution) ────────────
+export const setBookingLeadSource = mutation({
+  args: {
+    bookingId: v.id("bookings"),
+    leadSource: v.union(
+      v.literal("google_ads"),
+      v.literal("google_local"),
+      v.literal("facebook_ads"),
+      v.literal("instagram_ads"),
+      v.literal("google_organic"),
+      v.literal("yelp"),
+      v.literal("referral"),
+      v.literal("direct"),
+      v.literal("other"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.bookingId, { leadSource: args.leadSource });
   },
 });

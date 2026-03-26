@@ -236,6 +236,26 @@ const schema = defineSchema({
     reminder2hSent: v.optional(v.boolean()),
     feedbackEmailSent: v.optional(v.boolean()),
     feedbackSmsSent: v.optional(v.boolean()),
+
+    // ─── Marketing Attribution / Lead Source Tracking ──
+    leadSource: v.optional(v.union(
+      v.literal("google_ads"),
+      v.literal("google_local"),
+      v.literal("facebook_ads"),
+      v.literal("instagram_ads"),
+      v.literal("google_organic"),
+      v.literal("yelp"),
+      v.literal("referral"),
+      v.literal("direct"),
+      v.literal("other"),
+    )),
+    utmSource: v.optional(v.string()),     // e.g. "google", "facebook", "instagram"
+    utmMedium: v.optional(v.string()),     // e.g. "cpc", "social", "organic"
+    utmCampaign: v.optional(v.string()),   // e.g. "spring_sale_2026"
+    utmContent: v.optional(v.string()),    // e.g. "banner_ad_1"
+    utmTerm: v.optional(v.string()),       // e.g. "car detailing charlotte"
+    referrerUrl: v.optional(v.string()),   // raw document.referrer
+    landingPage: v.optional(v.string()),   // e.g. "/book?service=ceramic-coating"
   })
     .index("by_date", ["date"])
     .index("by_status", ["status"])
@@ -244,7 +264,29 @@ const schema = defineSchema({
     .index("by_staff", ["staffId"])
     .index("by_staff_date", ["staffId", "date"])
     .index("by_zip_date", ["zipCode", "date"])
-    .index("by_square_booking_id", ["squareBookingId"]),
+    .index("by_square_booking_id", ["squareBookingId"])
+    .index("by_lead_source", ["leadSource"]),
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // AD SPEND TRACKING — Monthly spend per channel for ROI calculation
+  // ═══════════════════════════════════════════════════════════════════════
+  adSpend: defineTable({
+    channel: v.union(
+      v.literal("google_ads"),
+      v.literal("google_local"),
+      v.literal("facebook_ads"),
+      v.literal("instagram_ads"),
+      v.literal("yelp"),
+      v.literal("other"),
+    ),
+    month: v.string(),      // "2026-03" format
+    spend: v.number(),      // cents
+    notes: v.optional(v.string()),
+    updatedAt: v.number(),  // ms epoch
+  })
+    .index("by_channel", ["channel"])
+    .index("by_month", ["month"])
+    .index("by_channel_month", ["channel", "month"]),
 
   // ═══════════════════════════════════════════════════════════════════════
   // PAYROLL MODULE (ported from ProWorx Time Tracker)

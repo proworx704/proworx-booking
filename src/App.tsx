@@ -51,6 +51,7 @@ import { MyJobDetailPage } from "./pages/MyJobDetailPage";
 // Loyalty — Admin
 import { ReportsPage } from "./pages/ReportsPage";
 import { AiAssistantPage } from "./pages/AiAssistantPage";
+import { MarketingPage } from "./pages/MarketingPage";
 import { ClientSupportPage } from "./pages/ClientSupportPage";
 import { LoyaltyDashboardPage } from "./pages/LoyaltyDashboardPage";
 import { LoyaltyRewardsPage } from "./pages/LoyaltyRewardsPage";
@@ -119,6 +120,7 @@ function App() {
                 <Route path="/website" element={<WebsiteEditorPage />} />
                 <Route path="/team" element={<TeamPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/marketing" element={<MarketingPage />} />
                 <Route path="/ai-assistant" element={<AiAssistantPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 {/* Loyalty Admin */}

@@ -222,6 +222,27 @@ export const gatherBusinessData = internalQuery({
       dayRevenue[dayName].revenue += (b.totalPrice || b.price || 0);
     }
 
+    // ── Marketing Attribution ──
+    const leadSourceCounts: Record<string, { bookings: number; revenue: number; completed: number }> = {};
+    for (const b of allBookings) {
+      if (b.status === "cancelled") continue;
+      const src = (b as any).leadSource || "untagged";
+      if (!leadSourceCounts[src]) leadSourceCounts[src] = { bookings: 0, revenue: 0, completed: 0 };
+      leadSourceCounts[src].bookings += 1;
+      leadSourceCounts[src].revenue += (b.totalPrice || b.price || 0);
+      if (b.status === "completed") leadSourceCounts[src].completed += 1;
+    }
+
+    const thisMonthLeadSources: Record<string, number> = {};
+    for (const b of thisMonthBookings) {
+      if (b.status === "cancelled") continue;
+      const src = (b as any).leadSource || "untagged";
+      thisMonthLeadSources[src] = (thisMonthLeadSources[src] || 0) + 1;
+    }
+
+    // Ad spend data
+    const adSpendEntries = await ctx.db.query("adSpend").collect();
+
     return {
       today,
       dayOfWeek,
@@ -269,6 +290,37 @@ export const gatherBusinessData = internalQuery({
         totalRevenue: paidSum(allBookings),
         totalCustomers: allCustomers.length,
       },
+      // ── Marketing Attribution ──
+      marketing: (() => {
+        const leadSourceMap = new Map<string, { total: number; completed: number; revenue: number }>();
+        for (const b of allBookings) {
+          if (b.status === "cancelled") continue;
+          const src = (b as any).leadSource || "untagged";
+          const existing = leadSourceMap.get(src) || { total: 0, completed: 0, revenue: 0 };
+          existing.total += 1;
+          if (b.status === "completed") existing.completed += 1;
+          existing.revenue += (b.totalPrice || b.price || 0);
+          leadSourceMap.set(src, existing);
+        }
+        const bySource = [...leadSourceMap.entries()]
+          .map(([source, data]) => ({
+            source,
+            bookings: data.total,
+            completed: data.completed,
+            closeRate: data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0,
+            revenue: data.revenue,
+          }))
+          .sort((a, b) => b.bookings - a.bookings);
+
+        const adAttributed = allBookings.filter(
+          (b) => b.status !== "cancelled" && (b as any).leadSource && !["direct", "untagged"].includes((b as any).leadSource)
+        );
+        return {
+          bySource,
+          adAttributedBookings: adAttributed.length,
+          adAttributedRevenue: adAttributed.reduce((s, b) => s + (b.totalPrice || b.price || 0), 0),
+        };
+      })(),
     };
   },
 });
@@ -649,6 +701,21 @@ function buildSystemPrompt(d: any): string {
       `• ${day}: ${data.count} bookings | ${fmtPrice(data.revenue)} revenue`
     ).join("\n") || "No data.";
 
+  // ── Marketing Attribution ──
+  const marketingSec = (() => {
+    if (!d.marketing) return "No marketing attribution data yet.";
+    const m = d.marketing;
+    const lines: string[] = [];
+    if (m.bySource && m.bySource.length > 0) {
+      lines.push("Lead Sources (All-Time):");
+      for (const s of m.bySource) {
+        lines.push(`• ${s.source}: ${s.bookings} bookings | ${s.completed} completed | ${s.closeRate}% close rate | ${fmtPrice(s.revenue)} revenue`);
+      }
+    }
+    lines.push(`\nAd-Attributed Bookings: ${m.adAttributedBookings} | Revenue: ${fmtPrice(m.adAttributedRevenue)}`);
+    return lines.join("\n");
+  })();
+
   return `You are the ProWorx AI Assistant — an intelligent business helper for ProWorx Mobile Detailing, a premium mobile auto detailing service in Charlotte, NC.
 
 You have LIVE access to the business database below. The data sections contain ALL your business information — use them to answer ANY question about revenue, customers, bookings, rankings, etc.
@@ -698,7 +765,16 @@ ${section("STAFF", staffSec)}
 
 ${section("RECENT BOOKINGS (Last 30 Days)", recentSec)}
 
-${section(`LOYALTY PROGRAM — ${d.loyalty.programName}`, `Status: ${d.loyalty.isEnabled ? "Active" : "Inactive"}\nMembers: ${d.loyalty.totalMembers}\nPoints Outstanding: ${d.loyalty.totalPointsOutstanding.toLocaleString()}\nEarning Rate: ${d.loyalty.pointsPerDollar} pt/$1`)}`;
+${section(`LOYALTY PROGRAM — ${d.loyalty.programName}`, `Status: ${d.loyalty.isEnabled ? "Active" : "Inactive"}\nMembers: ${d.loyalty.totalMembers}\nPoints Outstanding: ${d.loyalty.totalPointsOutstanding.toLocaleString()}\nEarning Rate: ${d.loyalty.pointsPerDollar} pt/$1`)}
+
+${section("MARKETING ATTRIBUTION", (() => {
+  const m = d.marketing;
+  if (!m) return "No marketing data available.";
+  const srcLines = m.bySource.map((s: any) =>
+    `• ${s.source}: ${s.bookings} bookings | ${s.completed} completed | ${s.closeRate}% close rate | ${fmtPrice(s.revenue)} revenue`
+  ).join("\n") || "No attributed bookings yet.";
+  return `Ad-Attributed Bookings: ${m.adAttributedBookings}\nAd-Attributed Revenue: ${fmtPrice(m.adAttributedRevenue)}\n\nBookings by Lead Source:\n${srcLines}`;
+})())}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -48,6 +48,25 @@ export const create = mutation({
     date: v.string(),
     time: v.string(),
     notes: v.optional(v.string()),
+    // Marketing attribution
+    leadSource: v.optional(v.union(
+      v.literal("google_ads"),
+      v.literal("google_local"),
+      v.literal("facebook_ads"),
+      v.literal("instagram_ads"),
+      v.literal("google_organic"),
+      v.literal("yelp"),
+      v.literal("referral"),
+      v.literal("direct"),
+      v.literal("other"),
+    )),
+    utmSource: v.optional(v.string()),
+    utmMedium: v.optional(v.string()),
+    utmCampaign: v.optional(v.string()),
+    utmContent: v.optional(v.string()),
+    utmTerm: v.optional(v.string()),
+    referrerUrl: v.optional(v.string()),
+    landingPage: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     let serviceName = args.serviceName || "";
@@ -234,6 +253,16 @@ export const create = mutation({
     if (args.addons && args.addons.length > 0) bookingData.addons = args.addons;
     if (totalPrice !== undefined) bookingData.totalPrice = totalPrice;
     if (totalDuration !== undefined) bookingData.totalDuration = totalDuration;
+
+    // Add marketing attribution fields if present
+    if (args.leadSource) bookingData.leadSource = args.leadSource;
+    if (args.utmSource) bookingData.utmSource = args.utmSource;
+    if (args.utmMedium) bookingData.utmMedium = args.utmMedium;
+    if (args.utmCampaign) bookingData.utmCampaign = args.utmCampaign;
+    if (args.utmContent) bookingData.utmContent = args.utmContent;
+    if (args.utmTerm) bookingData.utmTerm = args.utmTerm;
+    if (args.referrerUrl) bookingData.referrerUrl = args.referrerUrl;
+    if (args.landingPage) bookingData.landingPage = args.landingPage;
 
     const bookingId = await ctx.db.insert("bookings", bookingData);
 

@@ -1110,6 +1110,44 @@ export function BookingPage() {
   const catalog = useQuery(api.catalog.listActive, {});
   const createBooking = useMutation(api.bookings.create);
 
+  // ─── Capture UTM params & referrer on landing (persist in sessionStorage) ──
+  useEffect(() => {
+    // Only capture once per session
+    if (sessionStorage.getItem("pwx_utm_captured")) return;
+
+    const utmSource = searchParams.get("utm_source") || undefined;
+    const utmMedium = searchParams.get("utm_medium") || undefined;
+    const utmCampaign = searchParams.get("utm_campaign") || undefined;
+    const utmContent = searchParams.get("utm_content") || undefined;
+    const utmTerm = searchParams.get("utm_term") || undefined;
+    const referrerUrl = document.referrer || undefined;
+    const landingPage = window.location.pathname + window.location.search;
+
+    // Auto-detect lead source from UTM params or referrer
+    let leadSource: string | undefined;
+    const src = (utmSource || "").toLowerCase();
+    const med = (utmMedium || "").toLowerCase();
+    if (src === "google" && (med === "cpc" || med === "paid")) leadSource = "google_ads";
+    else if (src === "google" && med === "local") leadSource = "google_local";
+    else if ((src === "facebook" || src === "fb") && (med === "cpc" || med === "paid" || med === "social")) leadSource = "facebook_ads";
+    else if (src === "instagram" && (med === "cpc" || med === "paid" || med === "social")) leadSource = "instagram_ads";
+    else if (src === "google" && med === "organic") leadSource = "google_organic";
+    else if (src === "yelp") leadSource = "yelp";
+    else if (src && med === "referral") leadSource = "referral";
+    else if (!utmSource && referrerUrl) {
+      if (referrerUrl.includes("google.com")) leadSource = "google_organic";
+      else if (referrerUrl.includes("facebook.com") || referrerUrl.includes("fb.com")) leadSource = "facebook_ads";
+      else if (referrerUrl.includes("instagram.com")) leadSource = "instagram_ads";
+      else if (referrerUrl.includes("yelp.com")) leadSource = "yelp";
+      else leadSource = "referral";
+    }
+    else if (utmSource) leadSource = "other";
+
+    const utmData = { utmSource, utmMedium, utmCampaign, utmContent, utmTerm, referrerUrl, landingPage, leadSource };
+    sessionStorage.setItem("pwx_utm", JSON.stringify(utmData));
+    sessionStorage.setItem("pwx_utm_captured", "1");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ─── URL params for filtering ─────────────────────────────
   const categoryFilter = searchParams.get("category");
   const isMembership = categoryFilter === "membership";
@@ -1186,6 +1224,13 @@ export function BookingPage() {
           data.baseDuration +
           data.addons.reduce((s, a) => s + a.durationMin, 0);
 
+        // ─── Retrieve UTM / attribution data from sessionStorage ──
+        let utmAttribution: Record<string, string | undefined> = {};
+        try {
+          const raw = sessionStorage.getItem("pwx_utm") || sessionStorage.getItem("proworx_utm");
+          if (raw) utmAttribution = JSON.parse(raw);
+        } catch { /* ignore */ }
+
         const result = await createBooking({
           customerName: data.customerName,
           customerPhone: data.customerPhone,
@@ -1211,6 +1256,15 @@ export function BookingPage() {
           date: data.date,
           time: data.time,
           notes: data.notes || undefined,
+          // Marketing attribution
+          leadSource: (utmAttribution.leadSource as any) || undefined,
+          utmSource: utmAttribution.utmSource || undefined,
+          utmMedium: utmAttribution.utmMedium || undefined,
+          utmCampaign: utmAttribution.utmCampaign || undefined,
+          utmContent: utmAttribution.utmContent || undefined,
+          utmTerm: utmAttribution.utmTerm || undefined,
+          referrerUrl: utmAttribution.referrerUrl || undefined,
+          landingPage: utmAttribution.landingPage || undefined,
         });
         setConfirmationCode(result.confirmationCode);
       } catch (e) {

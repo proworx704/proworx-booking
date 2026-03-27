@@ -31,6 +31,7 @@ import type * as payrollTaxSettings from "../payrollTaxSettings.js";
 import type * as payrollTimeEntries from "../payrollTimeEntries.js";
 import type * as payrollWorkers from "../payrollWorkers.js";
 import type * as recurringBlocks from "../recurringBlocks.js";
+import type * as repriceServices from "../repriceServices.js";
 import type * as seedCameronSchedule from "../seedCameronSchedule.js";
 import type * as seedSquareBookings from "../seedSquareBookings.js";
 import type * as seedTestUser from "../seedTestUser.js";
@@ -82,6 +83,7 @@ declare const fullApi: ApiFromModules<{
   payrollTimeEntries: typeof payrollTimeEntries;
   payrollWorkers: typeof payrollWorkers;
   recurringBlocks: typeof recurringBlocks;
+  repriceServices: typeof repriceServices;
   seedCameronSchedule: typeof seedCameronSchedule;
   seedSquareBookings: typeof seedSquareBookings;
   seedTestUser: typeof seedTestUser;

@@ -8,25 +8,25 @@ const HOURLY_RATE_CENTS = 7500; // $75.00
 
 function newPriceCents(durationMin: number): number {
   const baseCents = HOURLY_RATE_CENTS * (durationMin / 60);
-  // price - (price * 0.029 + 30) = base
-  // price * 0.971 = base + 30
+  // price that nets $75/hr after Square takes fees:
+  // price * (1 - 0.029) = base + 0.30
   // price = (base + 30) / 0.971
   const exactCents = (baseCents + SQUARE_FLAT_CENTS) / (1 - SQUARE_PERCENT);
   // Round up to nearest dollar (100 cents)
   return Math.ceil(exactCents / 100) * 100;
 }
 
-// Categories to reprice (labor-based services only)
+// Tyler said "Option B" = labor-only primary services
+// Then "Paint correction can also stay the same"
+// So ONLY: core detailing + boat detailing
 const REPRICE_CATEGORIES = new Set([
-  "core",
-  "interiorAddon",
-  "exteriorAddon",
-  "boatDetailing",
-  "boatAddon",
+  "core",          // Standard Inside & Out, Interior Only, Exterior Only
+  "boatDetailing", // Boat wash, interior/exterior/full detail, oxidation removal
 ]);
 
-// Skip these categories (product-heavy or subscription)
-// ceramicCoating, ceramicAddon, membership, paintCorrection
+// Everything else stays the same:
+// paintCorrection, ceramicCoating, ceramicAddon, boatCeramic,
+// interiorAddon, exteriorAddon, boatAddon, membership
 
 export const run = mutation({
   args: { dryRun: v.optional(v.boolean()) },
@@ -40,14 +40,22 @@ export const run = mutation({
       durationMin: number;
     }> = [];
 
-    // 1. Update legacy services table (skip Ceramic Coating and Paint Correction)
+    // 1. Update legacy services table
+    // Only reprice primary detailing services
+    const REPRICE_LEGACY = new Set([
+      "Express Detail",
+      "Full Detail",
+      "Interior Only",
+      "Exterior Only",
+      "Maintenance - Exterior Only",
+      "Maintenance - Interior Only",
+      "Maintenance - Full Inside & Out",
+    ]);
+
     const legacyServices = await ctx.db.query("services").collect();
     for (const svc of legacyServices) {
-      if (
-        svc.name.toLowerCase().includes("ceramic") ||
-        svc.name.toLowerCase().includes("paint correction")
-      ) {
-        continue;
+      if (!REPRICE_LEGACY.has(svc.name)) {
+        continue; // skip Paint Correction, Ceramic Coating, anything else
       }
 
       const np = newPriceCents(svc.duration);
@@ -77,11 +85,11 @@ export const run = mutation({
       }
     }
 
-    // 2. Update serviceCatalog (only labor-based categories)
+    // 2. Update serviceCatalog — only core + boatDetailing
     const catalogItems = await ctx.db.query("serviceCatalog").collect();
     for (const item of catalogItems) {
       if (!REPRICE_CATEGORIES.has(item.category)) {
-        continue; // skip ceramics, memberships, paint correction
+        continue;
       }
 
       const newVariants = item.variants.map(

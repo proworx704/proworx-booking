@@ -1,10 +1,24 @@
 import { mutation } from "../_generated/server";
 
-const RATE = 90; // $/hr
+// Square online fee: 2.9% + $0.30
+const SQUARE_PERCENT = 0.029;
+const SQUARE_FLAT_CENTS = 30;
+const HOURLY_RATE_CENTS = 9000; // $90.00
+
+/**
+ * Calculate price that nets $90/hr after Square takes fees.
+ * price * (1 - 0.029) - 0.30 = base
+ * price = (base + 30) / 0.971
+ * Rounded up to nearest dollar.
+ */
+function priceWithFees(durationMin: number): number {
+  const baseCents = HOURLY_RATE_CENTS * (durationMin / 60);
+  const exactCents = (baseCents + SQUARE_FLAT_CENTS) / (1 - SQUARE_PERCENT);
+  return Math.ceil(exactCents / 100) * 100;
+}
 
 const LABOR_CATEGORIES = ["core", "boatDetailing"];
 
-// Correct slugs from the database
 const LABOR_ADDON_SLUGS = [
   "pet-hair-removal",
   "hot-water-extraction",
@@ -32,8 +46,7 @@ export const run = mutation({
 
       const newVariants = item.variants.map(
         (v: { label: string; price: number; durationMin: number }) => {
-          const hrs = v.durationMin / 60;
-          const newPrice = Math.round(hrs * RATE * 100);
+          const newPrice = priceWithFees(v.durationMin);
           return { ...v, price: newPrice };
         },
       );
@@ -48,7 +61,8 @@ export const run = mutation({
       }
     }
 
-    // Update touch-up paint description
+    // Touch-up paint: keep $75 deposit, $75 min labor — NOT subject to fee adjustment
+    // (deposit collected separately, labor billed at actual time)
     const touchUp = all.find(
       (i: { slug: string }) => i.slug === "touch-up-paint",
     );
@@ -67,6 +81,6 @@ export const run = mutation({
       });
     }
 
-    return `Updated ${updated} additional services to $${RATE}/hr`;
+    return `Updated ${updated} services to $90/hr + Square fees (2.9% + $0.30)`;
   },
 });

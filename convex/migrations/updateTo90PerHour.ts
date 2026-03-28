@@ -2,25 +2,20 @@ import { mutation } from "../_generated/server";
 
 const RATE = 90; // $/hr
 
-// Categories to update to strict $90/hr
-const LABOR_CATEGORIES = [
-  "core",           // all 9 core packages
-  "boatDetailing",  // all boat detailing services
-];
+const LABOR_CATEGORIES = ["core", "boatDetailing"];
 
-// Individual labor add-ons to update (by slug)
+// Correct slugs from the database
 const LABOR_ADDON_SLUGS = [
   "pet-hair-removal",
-  "hot-water-extraction-shampoo",
+  "hot-water-extraction",
   "engine-bay",
-  "headlight-restoration-uv-sealant",
-  "wheel-polishing-protection",
-  "leather-deep-clean-condition",
-  "plastic-vinyl-uv-protection",
-  "steam-cleaning-vents-plastics-crevices",
-  "trailer-detail",
-  "metal-brightwork-polish",
-  // touch-up-paint excluded: $75 deposit + $75 min labor, $90/hr over 1hr
+  "headlight-restoration",
+  "wheel-polishing",
+  "leather-clean",
+  "uv-protection",
+  "steam-cleaning",
+  "boat-trailer-detail",
+  "boat-metal-polish",
 ];
 
 export const run = mutation({
@@ -38,7 +33,7 @@ export const run = mutation({
       const newVariants = item.variants.map(
         (v: { label: string; price: number; durationMin: number }) => {
           const hrs = v.durationMin / 60;
-          const newPrice = Math.round(hrs * RATE * 100); // cents
+          const newPrice = Math.round(hrs * RATE * 100);
           return { ...v, price: newPrice };
         },
       );
@@ -53,7 +48,7 @@ export const run = mutation({
       }
     }
 
-    // Update touch-up paint description to reflect pricing model
+    // Update touch-up paint description
     const touchUp = all.find(
       (i: { slug: string }) => i.slug === "touch-up-paint",
     );
@@ -64,7 +59,7 @@ export const run = mutation({
         variants: [
           {
             label: "Deposit + Minimum Labor",
-            price: 7500, // $75 deposit shown at booking
+            price: 7500,
             durationMin: 60,
           },
         ],
@@ -72,6 +67,6 @@ export const run = mutation({
       });
     }
 
-    return `Updated ${updated} services to $${RATE}/hr`;
+    return `Updated ${updated} additional services to $${RATE}/hr`;
   },
 });

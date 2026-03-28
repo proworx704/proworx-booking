@@ -129,6 +129,12 @@ export function EditBookingDialog({ booking }: EditBookingDialogProps) {
   // Add-on picker state
   const [showAddonPicker, setShowAddonPicker] = useState(false);
 
+  // Custom line item state
+  const [showCustomItem, setShowCustomItem] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customPrice, setCustomPrice] = useState("");
+  const [customDuration, setCustomDuration] = useState("30");
+
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
@@ -192,6 +198,23 @@ export function EditBookingDialog({ booking }: EditBookingDialogProps) {
 
   const handleRemoveAddon = (index: number) => {
     setAddons((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddCustomItem = () => {
+    const priceCents = Math.round(Number.parseFloat(customPrice || "0") * 100);
+    if (!customName.trim() || priceCents <= 0) return;
+    setAddons((prev) => [
+      ...prev,
+      {
+        name: customName.trim(),
+        price: priceCents,
+        durationMin: Number.parseInt(customDuration || "30", 10),
+      },
+    ]);
+    setCustomName("");
+    setCustomPrice("");
+    setCustomDuration("30");
+    setShowCustomItem(false);
   };
 
   // Totals
@@ -464,16 +487,82 @@ export function EditBookingDialog({ booking }: EditBookingDialogProps) {
                 </div>
               )}
 
-              {/* Add-on Picker */}
-              {!showAddonPicker ? (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setShowAddonPicker(true)}
-                >
-                  <Plus className="size-4 mr-1.5" />
-                  Add Service / Add-On
-                </Button>
+              {/* Custom Line Item Form */}
+              {showCustomItem && (
+                <div className="space-y-3 border-2 border-dashed border-primary/30 rounded-lg p-3 bg-primary/5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold">Custom Line Item</Label>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      onClick={() => setShowCustomItem(false)}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Item name (e.g. Extra labor, Rush fee...)"
+                      value={customName}
+                      onChange={(e) => setCustomName(e.target.value)}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Price ($)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={customPrice}
+                          onChange={(e) => setCustomPrice(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Duration (min)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="30"
+                          value={customDuration}
+                          onChange={(e) => setCustomDuration(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      className="w-full"
+                      size="sm"
+                      onClick={handleAddCustomItem}
+                      disabled={!customName.trim() || !customPrice || Number.parseFloat(customPrice) <= 0}
+                    >
+                      <Plus className="size-4 mr-1.5" />
+                      Add Custom Item
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Add-on Picker / Custom Item Buttons */}
+              {!showAddonPicker && !showCustomItem ? (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setShowAddonPicker(true)}
+                  >
+                    <Plus className="size-4 mr-1.5" />
+                    Add Service / Add-On
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setShowCustomItem(true)}
+                  >
+                    <Pencil className="size-4 mr-1.5" />
+                    Custom Item
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-3 border rounded-lg p-3">
                   <div className="flex items-center justify-between">

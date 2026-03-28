@@ -5,7 +5,10 @@ import {
   Clock,
   Loader2,
   MapPin,
+  Pencil,
+  Plus,
   Search,
+  Trash2,
   User,
   X,
 } from "lucide-react";
@@ -45,6 +48,35 @@ type StaffMember = {
   name: string;
   role: string;
   isActive: boolean;
+};
+
+interface AddonEntry {
+  catalogItemId?: Id<"serviceCatalog">;
+  name: string;
+  variantLabel?: string;
+  price: number;
+  durationMin: number;
+}
+
+const addonCategories = [
+  "interiorAddon",
+  "exteriorAddon",
+  "ceramicAddon",
+  "boatAddon",
+  "paintCorrection",
+];
+
+const categoryLabels: Record<string, string> = {
+  interiorAddon: "Interior Add-Ons",
+  exteriorAddon: "Exterior Add-Ons",
+  ceramicAddon: "Ceramic Add-Ons",
+  boatAddon: "Boat Add-Ons",
+  paintCorrection: "Paint Correction",
+  core: "Core Services",
+  ceramicCoating: "Ceramic Coating",
+  boatDetailing: "Boat Detailing",
+  boatCeramic: "Boat Ceramic",
+  membership: "Memberships",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -120,6 +152,14 @@ export function QuickBookDialog({
   // Staff
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
 
+  // Add-ons
+  const [addons, setAddons] = useState<AddonEntry[]>([]);
+  const [showAddonPicker, setShowAddonPicker] = useState(false);
+  const [showCustomItem, setShowCustomItem] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customPrice, setCustomPrice] = useState("");
+  const [customDuration, setCustomDuration] = useState("30");
+
   // Notes
   const [notes, setNotes] = useState("");
 
@@ -141,6 +181,12 @@ export function QuickBookDialog({
       setDate(initialDate);
       setTime(initialTime);
       setSelectedStaff(null);
+      setAddons([]);
+      setShowAddonPicker(false);
+      setShowCustomItem(false);
+      setCustomName("");
+      setCustomPrice("");
+      setCustomDuration("30");
       setNotes("");
       setSubmitting(false);
     }
@@ -194,6 +240,62 @@ export function QuickBookDialog({
   const effectiveTime = time && time.includes(":") ? time : initialTime && initialTime.includes(":") ? initialTime : "09:00";
   const [timeH, timeM] = effectiveTime.split(":").map(Number);
 
+  // ─── Add-on helpers ─────────────────────────────────────
+  const addonCatalogItems = useMemo(() => {
+    if (!catalog) return [];
+    return catalog.filter((c) => addonCategories.includes(c.category));
+  }, [catalog]);
+
+  const groupedAddonCatalog = useMemo(() => {
+    const groups: Record<string, CatalogItem[]> = {};
+    for (const item of addonCatalogItems) {
+      if (!groups[item.category]) groups[item.category] = [];
+      groups[item.category].push(item);
+    }
+    return groups;
+  }, [addonCatalogItems]);
+
+  const addonTotal = addons.reduce((s, a) => s + a.price, 0);
+  const totalPrice = (variantInfo?.price || 0) + addonTotal;
+  const totalDuration = (variantInfo?.durationMin || 0) + addons.reduce((s, a) => s + a.durationMin, 0);
+
+  const handleAddAddon = (item: CatalogItem, variantIdx: number) => {
+    const variant = item.variants[variantIdx];
+    if (!variant) return;
+    setAddons((prev) => [
+      ...prev,
+      {
+        catalogItemId: item._id,
+        name: item.name,
+        variantLabel: variant.label,
+        price: variant.price,
+        durationMin: variant.durationMin,
+      },
+    ]);
+    setShowAddonPicker(false);
+  };
+
+  const handleRemoveAddon = (index: number) => {
+    setAddons((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddCustomItem = () => {
+    const priceCents = Math.round(Number.parseFloat(customPrice || "0") * 100);
+    if (!customName.trim() || priceCents <= 0) return;
+    setAddons((prev) => [
+      ...prev,
+      {
+        name: customName.trim(),
+        price: priceCents,
+        durationMin: Number.parseInt(customDuration || "30", 10),
+      },
+    ]);
+    setCustomName("");
+    setCustomPrice("");
+    setCustomDuration("30");
+    setShowCustomItem(false);
+  };
+
   // ─── Submit ─────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
     if (!selectedService || !variantInfo) return;
@@ -221,7 +323,9 @@ export function QuickBookDialog({
         serviceName: selectedService.name,
         selectedVariant: selectedVariant || undefined,
         price: variantInfo.price,
-        totalDuration: variantInfo.durationMin,
+        totalPrice: totalPrice,
+        totalDuration: totalDuration,
+        ...(addons.length > 0 ? { addons } : {}),
         date,
         time,
         staffId: selectedStaff?._id,
@@ -256,6 +360,9 @@ export function QuickBookDialog({
     time,
     selectedStaff,
     notes,
+    addons,
+    totalPrice,
+    totalDuration,
     createBooking,
     onClose,
     navigate,
@@ -650,6 +757,173 @@ export function QuickBookDialog({
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* ─── Add-ons & Extras ─────────────────────── */}
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Add-Ons & Extras
+                </Label>
+
+                {/* Current add-ons */}
+                {addons.length > 0 && (
+                  <div className="space-y-1">
+                    {addons.map((addon, i) => (
+                      <div
+                        key={`${addon.name}-${i}`}
+                        className="flex items-center justify-between px-2.5 py-1.5 bg-muted/50 rounded-md border text-sm"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <span className="font-medium">{addon.name}</span>
+                          {addon.variantLabel && addon.variantLabel !== "Standard" && (
+                            <span className="text-xs text-muted-foreground ml-1">
+                              ({addon.variantLabel})
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 ml-2">
+                          <span className="font-semibold text-primary text-xs">
+                            +{formatPrice(addon.price)}
+                          </span>
+                          <button
+                            onClick={() => handleRemoveAddon(i)}
+                            className="p-0.5 rounded hover:bg-destructive/10 text-destructive/60 hover:text-destructive transition-colors"
+                          >
+                            <Trash2 className="size-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Custom Item Inline Form */}
+                {showCustomItem && (
+                  <div className="space-y-2 border-2 border-dashed border-primary/30 rounded-lg p-2.5 bg-primary/5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold">Custom Line Item</span>
+                      <button onClick={() => setShowCustomItem(false)} className="p-0.5 rounded hover:bg-muted">
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                    <Input
+                      placeholder="Item name..."
+                      value={customName}
+                      onChange={(e) => setCustomName(e.target.value)}
+                      className="h-8 text-sm"
+                      autoFocus
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">Price ($)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={customPrice}
+                          onChange={(e) => setCustomPrice(e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">Duration (min)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="30"
+                          value={customDuration}
+                          onChange={(e) => setCustomDuration(e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full h-7 text-xs"
+                      onClick={handleAddCustomItem}
+                      disabled={!customName.trim() || !customPrice || Number.parseFloat(customPrice) <= 0}
+                    >
+                      <Plus className="size-3 mr-1" /> Add
+                    </Button>
+                  </div>
+                )}
+
+                {/* Catalog Add-on Picker */}
+                {showAddonPicker && (
+                  <div className="border rounded-lg p-2.5 space-y-2 max-h-48 overflow-y-auto">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold">Pick an add-on</span>
+                      <button onClick={() => setShowAddonPicker(false)} className="p-0.5 rounded hover:bg-muted">
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                    {Object.entries(groupedAddonCatalog).map(([cat, items]) => (
+                      <div key={cat}>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                          {categoryLabels[cat] || cat}
+                        </p>
+                        {items.map((item) => (
+                          <div key={item._id} className="mb-1">
+                            {item.variants.length === 1 ? (
+                              <button
+                                type="button"
+                                onClick={() => handleAddAddon(item, 0)}
+                                className="w-full flex items-center justify-between px-2 py-1.5 rounded border hover:bg-primary/5 hover:border-primary/30 transition-colors text-left text-xs"
+                              >
+                                <span className="font-medium">{item.name}</span>
+                                <span className="font-semibold text-primary">+{formatPrice(item.variants[0].price)}</span>
+                              </button>
+                            ) : (
+                              <div className="border rounded p-2">
+                                <p className="text-xs font-medium mb-1">{item.name}</p>
+                                <div className="grid grid-cols-2 gap-1">
+                                  {item.variants.map((v, vi) => (
+                                    <button
+                                      key={v.label}
+                                      type="button"
+                                      onClick={() => handleAddAddon(item, vi)}
+                                      className="text-left p-1.5 rounded border text-[11px] hover:bg-primary/5 hover:border-primary/30 transition-colors"
+                                    >
+                                      <p className="text-muted-foreground">{v.label}</p>
+                                      <p className="font-semibold text-primary">+{formatPrice(v.price)}</p>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Buttons to open pickers */}
+                {!showAddonPicker && !showCustomItem && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowAddonPicker(true)}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md border border-dashed text-xs text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+                    >
+                      <Plus className="size-3" /> Add-On
+                    </button>
+                    <button
+                      onClick={() => setShowCustomItem(true)}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md border border-dashed text-xs text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+                    >
+                      <Pencil className="size-3" /> Custom Item
+                    </button>
+                  </div>
+                )}
+
+                {/* Total with add-ons */}
+                {addons.length > 0 && (
+                  <div className="flex items-center justify-between px-2.5 py-1.5 bg-primary/5 rounded-md border border-primary/20">
+                    <span className="text-xs font-medium">Total</span>
+                    <span className="font-bold text-primary">{formatPrice(totalPrice)}</span>
+                  </div>
+                )}
               </div>
 
               {/* Notes */}

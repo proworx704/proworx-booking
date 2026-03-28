@@ -25,7 +25,7 @@ import type * as employeePortal from "../employeePortal.js";
 import type * as http from "../http.js";
 import type * as loyalty from "../loyalty.js";
 import type * as marketing from "../marketing.js";
-import type * as migrateAddTiers from "../migrateAddTiers.js";
+import type * as migrations_addTouchUpPaint from "../migrations/addTouchUpPaint.js";
 import type * as notifications from "../notifications.js";
 import type * as payrollPayouts from "../payrollPayouts.js";
 import type * as payrollTaxSettings from "../payrollTaxSettings.js";
@@ -78,7 +78,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   loyalty: typeof loyalty;
   marketing: typeof marketing;
-  migrateAddTiers: typeof migrateAddTiers;
+  "migrations/addTouchUpPaint": typeof migrations_addTouchUpPaint;
   notifications: typeof notifications;
   payrollPayouts: typeof payrollPayouts;
   payrollTaxSettings: typeof payrollTaxSettings;

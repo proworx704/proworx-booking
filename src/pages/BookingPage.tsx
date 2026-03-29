@@ -1267,6 +1267,21 @@ export function BookingPage() {
           landingPage: utmAttribution.landingPage || undefined,
         });
         setConfirmationCode(result.confirmationCode);
+
+        // ─── Fire GA4 conversion event ──────────────────────────────
+        if (typeof window !== "undefined" && typeof (window as any).gtag === "function") {
+          const totalValue = data.basePrice + data.addons.reduce((s, a) => s + a.price, 0);
+          (window as any).gtag("event", "booking_confirmed", {
+            event_category: "conversion",
+            event_label: data.serviceName,
+            value: totalValue / 100, // cents → dollars
+            currency: "USD",
+            service_name: data.serviceName,
+            service_category: data.serviceCategory || "",
+            confirmation_code: result.confirmationCode,
+            lead_source: utmAttribution.leadSource || "direct",
+          });
+        }
       } catch (e) {
         console.error("Booking failed:", e);
         alert("Something went wrong. Please try again.");

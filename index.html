@@ -10,6 +10,17 @@
     <meta name="theme-color" content="#1e3a5f" />
     <meta name="description" content="ProWorx Mobile Detailing — Booking & Business Management" />
     <title>ProWorx Mobile Detailing</title>
+
+    <!-- Google Analytics (GA4) — shared with main site for cross-domain tracking -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RCPNZC30P2"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-RCPNZC30P2', {
+        linker: { domains: ['www.proworxdetailing.com', 'proworxdetailing.com'] }
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

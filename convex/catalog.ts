@@ -3,7 +3,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { requireAdmin } from "./authHelpers";
 
 // ─── Temporary admin helper (remove after use) ───────────────────────────────
-export const _adminUpdatePrice = internalMutation({
+export const _adminUpdatePrice = mutation({
   args: { id: v.id("serviceCatalog"), variants: v.array(v.object({ label: v.string(), price: v.number(), durationMin: v.number() })) },
   handler: async (ctx, { id, variants }) => { await ctx.db.patch(id, { variants }); },
 });

@@ -39,7 +39,7 @@ export const tempSyncSquareBookings = mutation({
       try {
         const existing = await ctx.db.get(link.convexId as any);
         if (!existing) { skippedLinks++; continue; }
-        if (existing.squareBookingId === link.squareBookingId) { skippedLinks++; continue; }
+        if ((existing as any).squareBookingId === link.squareBookingId) { skippedLinks++; continue; }
         await ctx.db.patch(link.convexId as any, { squareBookingId: link.squareBookingId });
         linked++;
       } catch (e) {

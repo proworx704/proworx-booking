@@ -3,27 +3,6 @@ import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireAdmin } from "./authHelpers";
 
-// TEMP: Verification query — remove after sync verification
-export const tempVerifySync = query({
-  args: {},
-  handler: async (ctx) => {
-    const all = await ctx.db.query("bookings").collect();
-    const withSq = all.filter((b) => b.squareBookingId);
-    const withoutSq = all.filter((b) => !b.squareBookingId);
-    return {
-      total: all.length,
-      withSquareId: withSq.length,
-      withoutSquareId: withoutSq.length,
-      linked: withSq.map((b) => ({
-        date: b.date,
-        time: b.time,
-        customer: b.customerName,
-        status: b.status,
-        sqId: b.squareBookingId,
-      })),
-    };
-  },
-});
 
 function generateConfirmationCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";

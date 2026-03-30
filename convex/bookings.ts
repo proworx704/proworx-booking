@@ -3,47 +3,6 @@ import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireAdmin } from "./authHelpers";
 
-// TEMP: Update prices + delete test bookings — remove after use
-export const tempUpdatePricesAndCleanup = mutation({
-  args: {
-    priceUpdates: v.array(v.object({
-      squareBookingId: v.string(),
-      price: v.number(),
-      totalPrice: v.number(),
-    })),
-    deleteCustomerNames: v.array(v.string()),
-  },
-  handler: async (ctx, args) => {
-    let pricesUpdated = 0;
-    let deleted = 0;
-    let skipped = 0;
-
-    // Update prices on bookings by squareBookingId
-    for (const upd of args.priceUpdates) {
-      const booking = await ctx.db
-        .query("bookings")
-        .withIndex("by_square_booking_id", (q) => q.eq("squareBookingId", upd.squareBookingId))
-        .first();
-      if (!booking) { skipped++; continue; }
-      await ctx.db.patch(booking._id, { price: upd.price, totalPrice: upd.totalPrice });
-      pricesUpdated++;
-    }
-
-    // Delete test bookings by customer name
-    for (const name of args.deleteCustomerNames) {
-      const bookings = await ctx.db
-        .query("bookings")
-        .collect();
-      const matches = bookings.filter((b) => b.customerName === name);
-      for (const b of matches) {
-        await ctx.db.delete(b._id);
-        deleted++;
-      }
-    }
-
-    return { pricesUpdated, deleted, skipped };
-  },
-});
 
 
 function generateConfirmationCode(): string {

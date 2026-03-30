@@ -3,6 +3,14 @@ import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireAdmin } from "./authHelpers";
 
+// TEMP: List all bookings for audit — remove after use
+export const tempListAllBookings = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("bookings").collect();
+  },
+});
+
 
 
 function generateConfirmationCode(): string {

@@ -273,7 +273,7 @@ function ServiceStep({
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground line-clamp-2">
+                        <p className={`text-sm text-muted-foreground ${isExpanded ? "" : "line-clamp-2"}`}>
                           {item.description}
                         </p>
                       </div>

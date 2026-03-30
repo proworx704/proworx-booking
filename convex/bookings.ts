@@ -3,6 +3,32 @@ import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireAdmin } from "./authHelpers";
 
+// TEMP: Public query for syncing Square bookings — remove after sync
+export const tempListAllBookings = query({
+  args: {},
+  handler: async (ctx) => {
+    const bookings = await ctx.db.query("bookings").collect();
+    return bookings.map((b) => ({
+      _id: b._id,
+      customerName: b.customerName,
+      customerPhone: b.customerPhone,
+      customerEmail: b.customerEmail,
+      serviceName: b.serviceName,
+      date: b.date,
+      time: b.time,
+      status: b.status,
+      squareBookingId: b.squareBookingId,
+      serviceAddress: b.serviceAddress,
+      zipCode: b.zipCode,
+      totalDuration: b.totalDuration,
+      price: b.price,
+      totalPrice: b.totalPrice,
+      notes: b.notes,
+      confirmationCode: b.confirmationCode,
+    }));
+  },
+});
+
 function generateConfirmationCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "PW-";

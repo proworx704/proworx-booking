@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { requireAdmin } from "./authHelpers";
 
 // ─── Public queries ───────────────────────────────────────────────────────────
@@ -174,7 +174,7 @@ export const seed = mutation({
       {
         name: "Standard Inside & Out",
         slug: "standard-inside-out",
-        description: "A full-vehicle refresh combining interior and exterior services into one streamlined appointment.",
+        description: "A full-vehicle refresh — interior and exterior in one appointment. Includes: full vacuum, carpet & upholstery shampoo, dashboard & console wipe-down, interior glass, door jambs, hand wash, wheel & tire cleaning, exterior glass, light spray wax, and tire shine.",
         category: "core",
         variants: [
           { label: "Coupe/Sedan", price: 18000, durationMin: 150 },
@@ -188,7 +188,7 @@ export const seed = mutation({
       {
         name: "Standard Interior Only",
         slug: "standard-interior-only",
-        description: "Complete interior detail — vacuum, shampoo, wipe-down, glass, and light stain treatment.",
+        description: "Complete interior detail. Includes: thorough vacuum of all surfaces, carpet & upholstery shampoo, dashboard & console wipe-down, cup holders & crevices, interior glass cleaning, door panels & jambs, and light stain treatment.",
         category: "core",
         variants: [
           { label: "Coupe/Sedan", price: 12700, durationMin: 105 },
@@ -202,7 +202,7 @@ export const seed = mutation({
       {
         name: "Standard Exterior Only",
         slug: "standard-exterior-only",
-        description: "Professional exterior refresh — hand wash, wheels, glass, and light spray wax.",
+        description: "Professional exterior refresh. Includes: full hand wash, wheel & tire cleaning, tire shine, exterior glass cleaning, door jambs, and a light spray wax for protection and shine.",
         category: "core",
         variants: [
           { label: "Coupe/Sedan", price: 10300, durationMin: 75 },
@@ -467,7 +467,7 @@ export const seed = mutation({
         slug: "convertible-top",
         description: "Hydrophobic treatment for convertible tops.",
         category: "ceramicAddon",
-        variants: [{ label: "Standard", price: 10000, durationMin: 30 }],
+        variants: [{ label: "Standard", price: 6000, durationMin: 30 }],
         isActive: true,
         sortOrder: 2,
       },
@@ -828,5 +828,43 @@ export const seed = mutation({
     }
 
     return `Seeded ${items.length} catalog items`;
+  },
+});
+
+// ─── One-time migration: Update service descriptions for receptionist clarity ──
+export const migrateDescriptions = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const updates: Record<string, string> = {
+      "standard-inside-out":
+        "A full-vehicle refresh — interior and exterior in one appointment. Includes: full vacuum, carpet & upholstery shampoo, dashboard & console wipe-down, interior glass, door jambs, hand wash, wheel & tire cleaning, exterior glass, light spray wax, and tire shine.",
+      "premium-inside-out":
+        "Everything in our Standard detail PLUS: leather deep clean & conditioning, steam cleaning of vents and hard-to-reach areas, 6-month paint sealant for long-lasting protection, interior UV protection on all plastics, and a premium long-lasting air freshener.",
+      "elite-inside-out":
+        "Our most complete detail — everything in the Premium package PLUS: clay bar decontamination to remove bonded surface contaminants, iron decontamination for brake dust & fallout, 12-month ceramic wax for maximum paint protection, and full exterior trim restoration & protectant.",
+      "standard-interior-only":
+        "Complete interior detail. Includes: thorough vacuum of all surfaces, carpet & upholstery shampoo, dashboard & console wipe-down, cup holders & crevices, interior glass cleaning, door panels & jambs, and light stain treatment.",
+      "premium-interior-only":
+        "Standard interior detail PLUS: leather deep clean & conditioning, steam cleaning of vents, crevices & hard-to-reach areas, interior UV protection on dashboard & plastics, and a premium long-lasting air freshener.",
+      "standard-exterior-only":
+        "Professional exterior refresh. Includes: full hand wash, wheel & tire cleaning, tire shine, exterior glass cleaning, door jambs, and a light spray wax for protection and shine.",
+      "premium-exterior-only":
+        "Standard exterior PLUS: clay bar decontamination for a smooth paint surface, iron decontamination to remove brake dust & industrial fallout, 6-month paint sealant, and exterior trim protectant to restore faded plastics.",
+      "elite-exterior-only":
+        "Everything in the Premium exterior PLUS: upgraded 12-month ceramic wax for maximum long-term paint protection and deep gloss finish.",
+    };
+
+    let count = 0;
+    for (const [slug, description] of Object.entries(updates)) {
+      const item = await ctx.db
+        .query("serviceCatalog")
+        .withIndex("by_slug", (q) => q.eq("slug", slug))
+        .first();
+      if (item) {
+        await ctx.db.patch(item._id, { description });
+        count++;
+      }
+    }
+    return `Updated ${count} descriptions`;
   },
 });

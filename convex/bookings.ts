@@ -3,16 +3,6 @@ import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireAdmin } from "./authHelpers";
 
-// TEMP: Fix single booking price — remove after use
-export const tempFixPrice = mutation({
-  args: { id: v.string(), price: v.number(), totalPrice: v.number() },
-  handler: async (ctx, args) => {
-    const booking = await ctx.db.get(args.id as any);
-    if (!booking) return { updated: false };
-    await ctx.db.patch(booking._id, { price: args.price, totalPrice: args.totalPrice });
-    return { updated: true };
-  },
-});
 
 
 

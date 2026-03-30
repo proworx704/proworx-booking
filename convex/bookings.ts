@@ -3,79 +3,25 @@ import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireAdmin } from "./authHelpers";
 
-// TEMP: Public mutation for syncing Square bookings — remove after sync
-export const tempSyncSquareBookings = mutation({
-  args: {
-    links: v.array(v.object({
-      convexId: v.string(),
-      squareBookingId: v.string(),
-    })),
-    newBookings: v.array(v.object({
-      squareBookingId: v.string(),
-      customerName: v.string(),
-      customerPhone: v.string(),
-      customerEmail: v.string(),
-      serviceName: v.string(),
-      date: v.string(),
-      time: v.string(),
-      status: v.union(v.literal("pending"), v.literal("confirmed"), v.literal("cancelled")),
-      serviceAddress: v.string(),
-      zipCode: v.string(),
-      totalDuration: v.number(),
-      notes: v.string(),
-      confirmationCode: v.string(),
-      price: v.number(),
-      paymentStatus: v.union(v.literal("unpaid"), v.literal("paid"), v.literal("refunded")),
-    })),
-  },
-  handler: async (ctx, args) => {
-    let linked = 0;
-    let skippedLinks = 0;
-    let inserted = 0;
-    let skippedInserts = 0;
-
-    // Part A: Link squareBookingId on existing bookings
-    for (const link of args.links) {
-      try {
-        const existing = await ctx.db.get(link.convexId as any);
-        if (!existing) { skippedLinks++; continue; }
-        if ((existing as any).squareBookingId === link.squareBookingId) { skippedLinks++; continue; }
-        await ctx.db.patch(link.convexId as any, { squareBookingId: link.squareBookingId });
-        linked++;
-      } catch (e) {
-        skippedLinks++;
-      }
-    }
-
-    // Part B: Insert new bookings (dedup by squareBookingId)
-    for (const b of args.newBookings) {
-      const dup = await ctx.db
-        .query("bookings")
-        .withIndex("by_square_booking_id", (q) => q.eq("squareBookingId", b.squareBookingId))
-        .first();
-      if (dup) { skippedInserts++; continue; }
-
-      await ctx.db.insert("bookings", {
-        customerName: b.customerName,
-        customerPhone: b.customerPhone,
-        customerEmail: b.customerEmail,
-        serviceAddress: b.serviceAddress,
-        zipCode: b.zipCode || undefined,
-        serviceName: b.serviceName,
-        price: b.price,
-        totalDuration: b.totalDuration,
+// TEMP: Verification query — remove after sync verification
+export const tempVerifySync = query({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("bookings").collect();
+    const withSq = all.filter((b) => b.squareBookingId);
+    const withoutSq = all.filter((b) => !b.squareBookingId);
+    return {
+      total: all.length,
+      withSquareId: withSq.length,
+      withoutSquareId: withoutSq.length,
+      linked: withSq.map((b) => ({
         date: b.date,
         time: b.time,
+        customer: b.customerName,
         status: b.status,
-        paymentStatus: b.paymentStatus,
-        confirmationCode: b.confirmationCode,
-        notes: b.notes,
-        squareBookingId: b.squareBookingId,
-      });
-      inserted++;
-    }
-
-    return { linked, skippedLinks, inserted, skippedInserts };
+        sqId: b.squareBookingId,
+      })),
+    };
   },
 });
 

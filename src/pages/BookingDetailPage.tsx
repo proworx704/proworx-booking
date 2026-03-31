@@ -108,6 +108,9 @@ function PaymentDialog({
   const [isGenerating, setIsGenerating] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [readerOpened, setReaderOpened] = useState(false);
+  const [zettleOpened, setZettleOpened] = useState(false);
+  const [zettleDeepLinkFailed, setZettleDeepLinkFailed] = useState(false);
+  const [zelleDetailsCopied, setZelleDetailsCopied] = useState(false);
   const [manualUrl, setManualUrl] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
   const markPaid = useMutation(api.bookings.markPaid);
@@ -118,6 +121,11 @@ function PaymentDialog({
   const amountFormatted = `$${Number.parseFloat(amount).toFixed(2)}`;
 
   const [deepLinkFailed, setDeepLinkFailed] = useState(false);
+
+  // Zelle business details
+  const ZELLE_BUSINESS_NAME = "ProWorx Detailing LLC";
+  const ZELLE_TAG = "proworxdetailingllc";
+  const ZELLE_EMAIL = "detailing@proworxdetailing.com";
 
   // Build the Square POS deep link URL (matches Square docs exactly)
   // Docs: https://developer.squareup.com/docs/pos-api/build-mobile-web
@@ -139,15 +147,15 @@ function PaymentDialog({
     return "square-commerce-v1://payment/create?data=" + encodeURIComponent(JSON.stringify(dataParameter));
   };
 
-  const handleChargeWithReader = () => {
-    // Square docs: window.location = url (must be synchronous, no async before)
-    const posUrl = buildPosUrl();
-    window.location.href = posUrl;
-
-    // Copy amount to clipboard as backup (non-blocking, after navigation)
+  // Try to open a POS app via deep link with fallback detection
+  const openPosApp = (
+    deepLinkUrl: string,
+    onOpened: () => void,
+    onFailed: () => void,
+  ) => {
+    window.location.href = deepLinkUrl;
     navigator.clipboard.writeText(amount).catch(() => {});
 
-    // Track whether the deep link opened
     const startTime = Date.now();
     let didLeave = false;
     const handleBlur = () => { didLeave = true; };
@@ -159,10 +167,27 @@ function PaymentDialog({
       window.removeEventListener("blur", handleBlur);
       document.removeEventListener("visibilitychange", handleVisibility);
       if (!didLeave && Date.now() - startTime < 3000) {
-        setDeepLinkFailed(true);
+        onFailed();
       }
-      setReaderOpened(true);
+      onOpened();
     }, 2500);
+  };
+
+  const handleChargeWithReader = () => {
+    openPosApp(
+      buildPosUrl(),
+      () => setReaderOpened(true),
+      () => setDeepLinkFailed(true),
+    );
+  };
+
+  const handleChargeWithZettle = () => {
+    // Zettle Go app deep link — tries to open the app
+    openPosApp(
+      "izettle://",
+      () => setZettleOpened(true),
+      () => setZettleDeepLinkFailed(true),
+    );
   };
 
   const handleGenerateLink = async () => {
@@ -218,6 +243,18 @@ function PaymentDialog({
     }
   };
 
+  const handleCopyZelleDetails = () => {
+    const details = `Send ${amountFormatted} via Zelle to:\n${ZELLE_BUSINESS_NAME}\n${ZELLE_EMAIL}`;
+    navigator.clipboard.writeText(details).catch(() => {});
+    setZelleDetailsCopied(true);
+    setTimeout(() => setZelleDetailsCopied(false), 2000);
+  };
+
+  const handleTextZelleDetails = () => {
+    const message = `Hi ${customerName.split(" ")[0]}! Please send ${amountFormatted} via Zelle to:\n\nProWorx Detailing LLC\n${ZELLE_EMAIL}\n\nThank you!`;
+    window.open(`sms:?body=${encodeURIComponent(message)}`, "_blank");
+  };
+
   const handleMarkPaid = async (payMethod: string) => {
     setIsProcessing(true);
     try {
@@ -228,6 +265,7 @@ function PaymentDialog({
       });
       setOpen(false);
       setReaderOpened(false);
+      setZettleOpened(false);
     } catch (e) {
       console.error("Payment failed:", e);
       alert("Payment recording failed");
@@ -245,12 +283,31 @@ function PaymentDialog({
     await handleMarkPaid(method);
   };
 
+  // Reset sub-states when method changes
+  const handleMethodChange = (newMethod: string) => {
+    setMethod(newMethod);
+    setReaderOpened(false);
+    setZettleOpened(false);
+    setDeepLinkFailed(false);
+    setZettleDeepLinkFailed(false);
+    setZelleDetailsCopied(false);
+  };
+
+  // Whether the footer "Confirm" button should be hidden (reader flows have their own buttons)
+  const hideFooterConfirm =
+    (method === "card" && cardMode === "reader") ||
+    (method === "zettle") ||
+    (method === "zelle");
+
   return (
     <Dialog
       open={open}
       onOpenChange={(v) => {
         setOpen(v);
-        if (!v) setReaderOpened(false);
+        if (!v) {
+          setReaderOpened(false);
+          setZettleOpened(false);
+        }
       }}
     >
       <DialogTrigger asChild>
@@ -270,7 +327,7 @@ function PaymentDialog({
           {/* Payment Method Selector */}
           <div className="space-y-2">
             <Label>Payment Method</Label>
-            <Select value={method} onValueChange={setMethod}>
+            <Select value={method} onValueChange={handleMethodChange}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -278,8 +335,11 @@ function PaymentDialog({
                 <SelectItem value="card">
                   💳 Credit/Debit Card (Square)
                 </SelectItem>
-                <SelectItem value="cash">💵 Cash</SelectItem>
+                <SelectItem value="zettle">
+                  💳 Credit/Debit Card (PayPal Zettle)
+                </SelectItem>
                 <SelectItem value="zelle">⚡ Zelle</SelectItem>
+                <SelectItem value="cash">💵 Cash</SelectItem>
                 <SelectItem value="venmo">💜 Venmo</SelectItem>
                 <SelectItem value="paypal">🅿️ PayPal</SelectItem>
                 <SelectItem value="check">📝 Check</SelectItem>
@@ -287,7 +347,9 @@ function PaymentDialog({
             </Select>
           </div>
 
-          {/* Square Card Section */}
+          {/* ═══════════════════════════════════════════════ */}
+          {/* SQUARE CARD SECTION                            */}
+          {/* ═══════════════════════════════════════════════ */}
           {method === "card" && (
             <div className="space-y-3">
               {/* Toggle: Reader vs Payment Link */}
@@ -547,6 +609,187 @@ function PaymentDialog({
             </div>
           )}
 
+          {/* ═══════════════════════════════════════════════ */}
+          {/* ZETTLE (PayPal) CARD READER SECTION            */}
+          {/* ═══════════════════════════════════════════════ */}
+          {method === "zettle" && (
+            <div className="space-y-3">
+              {!zettleOpened ? (
+                <div className="space-y-3">
+                  <div className="p-4 bg-gradient-to-br from-blue-900 to-blue-800 rounded-xl text-white text-center">
+                    <p className="text-3xl font-bold tracking-tight">
+                      {amountFormatted}
+                    </p>
+                    <p className="text-blue-300 text-xs mt-1">
+                      {serviceName} — {customerName}
+                    </p>
+                  </div>
+                  <Button
+                    className="w-full h-12 text-base font-semibold bg-blue-700 hover:bg-blue-800"
+                    onClick={handleChargeWithZettle}
+                  >
+                    <CreditCard className="size-5 mr-2" />
+                    Open Zettle — {amountFormatted}
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Opens PayPal Zettle app. Enter {amountFormatted} and process card.
+                    <br />
+                    Tap to Pay, insert, or swipe with your Zettle reader.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="p-4 bg-gradient-to-br from-blue-900 to-blue-800 rounded-xl text-white text-center">
+                    <p className="text-3xl font-bold tracking-tight">
+                      {amountFormatted}
+                    </p>
+                    <p className="text-blue-300 text-xs mt-1">
+                      {serviceName} — {customerName}
+                    </p>
+                    <p className="text-blue-400 text-[10px] mt-1">
+                      Amount copied to clipboard
+                    </p>
+                  </div>
+
+                  {/* Deep link failed — show manual instructions */}
+                  {zettleDeepLinkFailed && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2.5">
+                      <p className="text-xs font-medium text-amber-900 text-center">
+                        ⚠️ Zettle app didn't open automatically
+                      </p>
+                      <a
+                        href="izettle://"
+                        className="block w-full text-center py-2 px-3 bg-blue-700 text-white text-sm font-medium rounded-lg"
+                      >
+                        Tap here to open Zettle →
+                      </a>
+                      <p className="text-[11px] text-amber-700 text-center">
+                        Open Zettle Go app manually and charge <span className="font-bold">{amountFormatted}</span>
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs"
+                        onClick={() => {
+                          navigator.clipboard.writeText(amount).catch(() => {});
+                        }}
+                      >
+                        <Copy className="size-3 mr-1" />
+                        Copy ${amount}
+                      </Button>
+                    </div>
+                  )}
+
+                  {!zettleDeepLinkFailed && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs text-amber-800 text-center">
+                        Charge <span className="font-bold">{amountFormatted}</span> in Zettle, then tap the green button below to record it.
+                      </p>
+                    </div>
+                  )}
+
+                  <Button
+                    className="w-full h-12 bg-green-600 hover:bg-green-700"
+                    onClick={() => handleMarkPaid("zettle")}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="size-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="size-5 mr-2" />
+                    )}
+                    {isProcessing
+                      ? "Recording..."
+                      : "I Charged in Zettle ✓"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-muted-foreground"
+                    onClick={() => { setZettleOpened(false); setZettleDeepLinkFailed(false); }}
+                  >
+                    ← Try again
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════ */}
+          {/* ZELLE SECTION                                  */}
+          {/* ═══════════════════════════════════════════════ */}
+          {method === "zelle" && (
+            <div className="space-y-3">
+              {/* Payment details card */}
+              <div className="p-4 bg-gradient-to-br from-purple-900 to-purple-800 rounded-xl text-white">
+                <p className="text-3xl font-bold tracking-tight text-center">
+                  {amountFormatted}
+                </p>
+                <p className="text-purple-300 text-xs mt-1 text-center">
+                  {serviceName} — {customerName}
+                </p>
+                <div className="mt-3 pt-3 border-t border-purple-700 space-y-1.5">
+                  <p className="text-purple-200 text-[10px] uppercase tracking-wider font-medium">
+                    Send Zelle to
+                  </p>
+                  <p className="text-white text-sm font-semibold">
+                    {ZELLE_BUSINESS_NAME}
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="size-3 text-purple-300" />
+                    <p className="text-purple-100 text-xs">{ZELLE_EMAIL}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <User className="size-3 text-purple-300" />
+                    <p className="text-purple-100 text-xs">@{ZELLE_TAG}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={handleCopyZelleDetails}
+                >
+                  {zelleDetailsCopied ? (
+                    <CheckCircle2 className="size-3.5 mr-1.5 text-green-500" />
+                  ) : (
+                    <Copy className="size-3.5 mr-1.5" />
+                  )}
+                  {zelleDetailsCopied ? "Copied!" : "Copy Details"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={handleTextZelleDetails}
+                >
+                  <MessageSquare className="size-3.5 mr-1.5" />
+                  Text to Customer
+                </Button>
+              </div>
+
+              {/* Confirm payment received */}
+              <Button
+                className="w-full h-12 bg-green-600 hover:bg-green-700"
+                onClick={() => handleMarkPaid("zelle")}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="size-5 mr-2" />
+                )}
+                {isProcessing
+                  ? "Recording..."
+                  : "I Received Zelle Payment ✓"}
+              </Button>
+            </div>
+          )}
+
           {/* Amount */}
           <div className="space-y-2">
             <Label>Amount</Label>
@@ -566,7 +809,7 @@ function PaymentDialog({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          {!(method === "card" && cardMode === "reader") && (
+          {!hideFooterConfirm && (
             <Button onClick={handlePayment} disabled={isProcessing}>
               {isProcessing
                 ? "Processing..."

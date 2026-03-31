@@ -109,7 +109,7 @@ function PaymentDialog({
   const [linkCopied, setLinkCopied] = useState(false);
   const [readerOpened, setReaderOpened] = useState(false);
   const [zettleOpened, setZettleOpened] = useState(false);
-  const [zettleDeepLinkFailed, setZettleDeepLinkFailed] = useState(false);
+  // zettleDeepLinkFailed removed — we skip deep links entirely
   const [zelleDetailsCopied, setZelleDetailsCopied] = useState(false);
   const [manualUrl, setManualUrl] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
@@ -182,12 +182,10 @@ function PaymentDialog({
   };
 
   const handleChargeWithZettle = () => {
-    // Zettle Go app deep link — tries to open the app
-    openPosApp(
-      "izettle://",
-      () => setZettleOpened(true),
-      () => setZettleDeepLinkFailed(true),
-    );
+    // Copy amount to clipboard, then skip straight to "opened" state
+    // (deep links like izettle:// don't work in iOS Safari PWAs)
+    navigator.clipboard.writeText(amount).catch(() => {});
+    setZettleOpened(true);
   };
 
   const handleGenerateLink = async () => {
@@ -652,42 +650,22 @@ function PaymentDialog({
                     </p>
                   </div>
 
-                  {/* Deep link failed — show manual instructions */}
-                  {zettleDeepLinkFailed && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2.5">
-                      <p className="text-xs font-medium text-amber-900 text-center">
-                        ⚠️ Zettle app didn't open automatically
-                      </p>
-                      <a
-                        href="izettle://"
-                        className="block w-full text-center py-2 px-3 bg-blue-700 text-white text-sm font-medium rounded-lg"
-                      >
-                        Tap here to open Zettle →
-                      </a>
-                      <p className="text-[11px] text-amber-700 text-center">
-                        Open Zettle Go app manually and charge <span className="font-bold">{amountFormatted}</span>
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-xs"
-                        onClick={() => {
-                          navigator.clipboard.writeText(amount).catch(() => {});
-                        }}
-                      >
-                        <Copy className="size-3 mr-1" />
-                        Copy ${amount}
-                      </Button>
-                    </div>
-                  )}
-
-                  {!zettleDeepLinkFailed && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-xs text-amber-800 text-center">
-                        Charge <span className="font-bold">{amountFormatted}</span> in Zettle, then tap the green button below to record it.
-                      </p>
-                    </div>
-                  )}
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2.5">
+                    <p className="text-xs text-blue-800 text-center">
+                      Open <span className="font-semibold">Zettle Go</span> app, charge <span className="font-bold">{amountFormatted}</span>, then confirm below.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => {
+                        navigator.clipboard.writeText(amount).catch(() => {});
+                      }}
+                    >
+                      <Copy className="size-3 mr-1" />
+                      Copy ${amount}
+                    </Button>
+                  </div>
 
                   <Button
                     className="w-full h-12 bg-green-600 hover:bg-green-700"

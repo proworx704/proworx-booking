@@ -297,7 +297,8 @@ function PaymentDialog({
   const hideFooterConfirm =
     (method === "card" && cardMode === "reader") ||
     (method === "zettle") ||
-    (method === "zelle");
+    (method === "zelle") ||
+    (method === "paypal");
 
   return (
     <Dialog
@@ -786,6 +787,49 @@ function PaymentDialog({
                 {isProcessing
                   ? "Recording..."
                   : "I Received Zelle Payment ✓"}
+              </Button>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════ */}
+          {/* PAYPAL SECTION                                 */}
+          {/* ═══════════════════════════════════════════════ */}
+          {method === "paypal" && (
+            <div className="space-y-3">
+              <div className="p-4 bg-gradient-to-br from-blue-700 to-blue-600 rounded-xl text-white text-center">
+                <p className="text-3xl font-bold tracking-tight">
+                  {amountFormatted}
+                </p>
+                <p className="text-blue-200 text-xs mt-1">
+                  {serviceName} — {customerName}
+                </p>
+              </div>
+              <div className="bg-white border rounded-xl p-4 flex flex-col items-center">
+                <p className="text-xs text-muted-foreground mb-2">
+                  Customer scans to pay via PayPal
+                </p>
+                <img
+                  src="/paypal-qr.png"
+                  alt="PayPal QR Code"
+                  className="w-48 h-48 mx-auto"
+                />
+                <p className="text-xs text-muted-foreground mt-2 font-medium">
+                  Proworx Mobile Detailing
+                </p>
+              </div>
+              <Button
+                className="w-full h-12 bg-green-600 hover:bg-green-700"
+                onClick={() => handleMarkPaid("paypal")}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="size-5 mr-2" />
+                )}
+                {isProcessing
+                  ? "Recording..."
+                  : "I Received PayPal Payment ✓"}
               </Button>
             </div>
           )}

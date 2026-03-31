@@ -782,9 +782,11 @@ function PaymentDialog({
                   {serviceName} — {customerName}
                 </p>
               </div>
+
+              {/* In-Person: QR Code */}
               <div className="bg-white border rounded-xl p-4 flex flex-col items-center">
-                <p className="text-xs text-muted-foreground mb-2">
-                  Customer scans to pay via PayPal
+                <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                  In-Person — Customer Scans QR
                 </p>
                 <img
                   src="/paypal-qr.png"
@@ -795,6 +797,41 @@ function PaymentDialog({
                   Proworx Mobile Detailing
                 </p>
               </div>
+
+              {/* Remote: Payment Link */}
+              <div className="bg-white border rounded-xl p-4 space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center">
+                  Remote — Send Payment Link
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-10 text-sm border-blue-200 text-blue-700 hover:bg-blue-50"
+                    onClick={() => {
+                      navigator.clipboard.writeText("https://www.paypal.com/ncp/payment/Y5YT2KWSGQH5E");
+                      const btn = document.getElementById("pp-copy-btn");
+                      if (btn) { btn.textContent = "Copied ✓"; setTimeout(() => { btn.textContent = "Copy Link"; }, 2000); }
+                    }}
+                  >
+                    <span id="pp-copy-btn">Copy Link</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-10 text-sm border-blue-200 text-blue-700 hover:bg-blue-50"
+                    onClick={() => {
+                      const msg = `Hi ${customerName}, here's your PayPal payment link for ${serviceName} (${amountFormatted}):\nhttps://www.paypal.com/ncp/payment/Y5YT2KWSGQH5E`;
+                      if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
+                        window.open(`sms:?body=${encodeURIComponent(msg)}`);
+                      } else {
+                        navigator.clipboard.writeText(msg);
+                      }
+                    }}
+                  >
+                    Text to Customer
+                  </Button>
+                </div>
+              </div>
+
               <Button
                 className="w-full h-12 bg-green-600 hover:bg-green-700"
                 onClick={() => handleMarkPaid("paypal")}

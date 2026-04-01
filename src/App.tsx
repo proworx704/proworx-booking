@@ -138,6 +138,7 @@ function App() {
             <Route element={<ClientLayout />}>
               <Route element={<ClientRoute />}>
                 <Route path="/rewards" element={<ClientDashboardPage />} />
+                <Route path="/rewards/book" element={<BookingPage />} />
                 <Route path="/rewards/points" element={<ClientPointsPage />} />
                 <Route path="/rewards/bookings" element={<ClientBookingsPage />} />
                 <Route path="/rewards/redeem" element={<ClientRedeemPage />} />

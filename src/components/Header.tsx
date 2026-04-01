@@ -1,16 +1,21 @@
 import { useConvexAuth } from "convex/react";
-import { ArrowRight, LogIn } from "lucide-react";
+import { ArrowRight, LogIn, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { APP_NAME } from "@/lib/constants";
+import { useUserRole } from "@/contexts/RoleContext";
 import { Button } from "./ui/button";
 
 export function Header() {
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const { isClient, isAdmin, isEmployee } = useUserRole();
   const location = useLocation();
 
   const isAuthPage =
     location.pathname === "/login" || location.pathname === "/signup";
   const isBookingPage = location.pathname === "/book";
+  const isRewardsAuth =
+    location.pathname === "/rewards/login" ||
+    location.pathname === "/rewards/register";
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
@@ -34,18 +39,31 @@ export function Header() {
               </Button>
             )}
             {isLoading ? null : isAuthenticated ? (
-              <Button size="sm" variant="outline" asChild>
-                <Link to="/dashboard">
-                  Admin
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
+              <>
+                {isClient && (
+                  <Button size="sm" variant="outline" asChild>
+                    <Link to="/rewards">
+                      <User className="size-4" />
+                      My Account
+                    </Link>
+                  </Button>
+                )}
+                {(isAdmin || isEmployee) && (
+                  <Button size="sm" variant="outline" asChild>
+                    <Link to={isAdmin ? "/dashboard" : "/my/dashboard"}>
+                      Admin
+                      <ArrowRight className="size-4" />
+                    </Link>
+                  </Button>
+                )}
+              </>
             ) : (
-              !isAuthPage && (
+              !isAuthPage &&
+              !isRewardsAuth && (
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/login">
+                  <Link to="/rewards/login">
                     <LogIn className="size-4" />
-                    Admin
+                    Sign In
                   </Link>
                 </Button>
               )

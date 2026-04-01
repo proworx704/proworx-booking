@@ -3,17 +3,22 @@ import {
   ArrowRight,
   CalendarCheck,
   Car,
+  LogIn,
   Shield,
   ShieldCheck,
   Sparkles,
   Star,
+  User,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useConvexAuth } from "convex/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BUSINESS_NAME, BUSINESS_PHONE } from "@/lib/constants";
 
 export function LandingPage() {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+
   return (
     <div className="flex flex-col">
       {/* Hero */}
@@ -33,7 +38,7 @@ export function LandingPage() {
             We come to you. Top-of-the-line products, eco-friendly approach, and
             12+ years of experience. Book your detail today.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button
               size="lg"
               asChild
@@ -44,15 +49,70 @@ export function LandingPage() {
                 <ArrowRight className="size-5 ml-2" />
               </Link>
             </Button>
+            {!isLoading && !isAuthenticated && (
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="border-blue-400/50 text-white hover:bg-white/10 text-lg px-8 py-6"
+              >
+                <Link to="/rewards/login">
+                  <LogIn className="size-5 mr-2" />
+                  Sign In
+                </Link>
+              </Button>
+            )}
+            {!isLoading && isAuthenticated && (
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="border-blue-400/50 text-white hover:bg-white/10 text-lg px-8 py-6"
+              >
+                <Link to="/rewards">
+                  <User className="size-5 mr-2" />
+                  My Account
+                </Link>
+              </Button>
+            )}
             <Button
               size="lg"
-              variant="outline"
+              variant="ghost"
               asChild
-              className="border-slate-500 text-slate-900 hover:bg-white/10 hover:text-white text-lg px-8 py-6"
+              className="text-slate-300 hover:text-white hover:bg-white/10 text-lg px-8 py-6"
             >
               <a href={`tel:${BUSINESS_PHONE}`}>
                 Call {BUSINESS_PHONE}
               </a>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Client Portal Promo */}
+      <section className="py-10 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+        <div className="container">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-3xl mx-auto">
+            <div className="flex items-center gap-3">
+              <div className="size-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <Star className="size-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">ProWorx Rewards</h3>
+                <p className="text-blue-100 text-sm">
+                  Create a free profile to earn points, track bookings, and redeem rewards.
+                </p>
+              </div>
+            </div>
+            <Button
+              asChild
+              variant="secondary"
+              className="shrink-0 bg-white text-blue-700 hover:bg-blue-50"
+            >
+              <Link to={isAuthenticated ? "/rewards" : "/rewards/register"}>
+                {isAuthenticated ? "My Dashboard" : "Join Free"}
+                <ArrowRight className="size-4 ml-1" />
+              </Link>
             </Button>
           </div>
         </div>
@@ -162,12 +222,22 @@ export function LandingPage() {
             Pick your service, choose a time that works, and we'll handle the
             rest. Quick online booking — no phone calls needed.
           </p>
-          <Button size="lg" asChild className="text-lg px-8 py-6">
-            <Link to="/book">
-              Book Your Detail Now
-              <ArrowRight className="size-5 ml-2" />
-            </Link>
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button size="lg" asChild className="text-lg px-8 py-6">
+              <Link to="/book">
+                Book Your Detail Now
+                <ArrowRight className="size-5 ml-2" />
+              </Link>
+            </Button>
+            {!isLoading && !isAuthenticated && (
+              <Button size="lg" variant="outline" asChild className="text-lg px-8 py-6">
+                <Link to="/rewards/register">
+                  <Star className="size-5 mr-2" />
+                  Create Free Account
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
       </section>
 

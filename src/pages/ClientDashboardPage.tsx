@@ -2,6 +2,7 @@ import { useQuery } from "convex/react";
 import {
   ArrowRight,
   CalendarCheck,
+  CalendarPlus,
   Gift,
   Rocket,
   Star,
@@ -61,6 +62,35 @@ export function ClientDashboardPage() {
           Here's your ProWorx Rewards overview
         </p>
       </div>
+
+      {/* Book Now CTA */}
+      <Card className="bg-gradient-to-r from-blue-600 to-blue-700 text-white border-0">
+        <CardContent className="pt-6 pb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="size-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <CalendarPlus className="size-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">Ready for your next detail?</h3>
+                <p className="text-blue-100 text-sm">
+                  Book online in minutes — your info is already saved.
+                </p>
+              </div>
+            </div>
+            <Button
+              asChild
+              size="lg"
+              className="bg-white text-blue-700 hover:bg-blue-50 shrink-0 font-semibold"
+            >
+              <Link to="/rewards/book">
+                Book Now
+                <ArrowRight className="size-4 ml-1" />
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Points Overview Cards */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -264,7 +294,7 @@ export function ClientDashboardPage() {
                   No upcoming bookings
                 </p>
                 <Button size="sm" asChild>
-                  <Link to="/book">Book Now</Link>
+                  <Link to="/rewards/book">Book Now</Link>
                 </Button>
               </div>
             ) : (

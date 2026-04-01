@@ -2,6 +2,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import {
   CalendarCheck,
+  CalendarPlus,
   Gift,
   Headphones,
   LayoutDashboard,
@@ -37,6 +38,7 @@ import {
 
 const clientNav = [
   { href: "/rewards", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/rewards/book", label: "Book Now", icon: CalendarPlus },
   { href: "/rewards/points", label: "My Points", icon: Star },
   { href: "/rewards/bookings", label: "My Bookings", icon: CalendarCheck },
   { href: "/rewards/redeem", label: "Rewards", icon: Gift },

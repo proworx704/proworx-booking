@@ -1,4 +1,5 @@
-import { useMutation, useQuery } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -6,16 +7,19 @@ import {
   Check,
   CheckCircle2,
   Clock,
+  Lock,
+  LogIn,
   Mail,
   MapPin,
   Phone,
   ShoppingCart,
   Sparkles,
+  Star,
   User,
   Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -56,7 +60,7 @@ type AddonSelection = {
   durationMin: number;
 };
 
-type BookingStep = "service" | "addons" | "info" | "datetime" | "confirm";
+type BookingStep = "service" | "addons" | "info" | "account" | "datetime" | "confirm";
 
 interface BookingData {
   catalogItemId: Id<"serviceCatalog"> | null;
@@ -643,6 +647,271 @@ function InfoStep({
   );
 }
 
+// ─── Step 3b: Account Creation (for unauthenticated users) ───────────────────
+
+function AccountStep({ data }: { data: BookingData }) {
+  const { signIn } = useAuthActions();
+  const { isAuthenticated } = useConvexAuth();
+  const initClientProfile = useMutation(api.userProfiles.initClientProfile);
+  const [mode, setMode] = useState<"signup" | "verify" | "signin">("signup");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState("");
+  const didInit = useRef(false);
+
+  // Auto-init client profile when authenticated
+  useEffect(() => {
+    if (isAuthenticated && !didInit.current) {
+      didInit.current = true;
+      initClientProfile({}).catch(() => {});
+    }
+  }, [isAuthenticated, initClientProfile]);
+
+  // Already authenticated — show success state
+  if (isAuthenticated) {
+    return (
+      <div className="space-y-4 max-w-lg mx-auto text-center py-8">
+        <div className="size-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
+          <CheckCircle2 className="size-8 text-green-600" />
+        </div>
+        <h2 className="text-2xl font-bold">Account Ready!</h2>
+        <p className="text-muted-foreground">
+          You're signed in. Click Next to pick your date & time.
+        </p>
+      </div>
+    );
+  }
+
+  if (mode === "verify") {
+    return (
+      <div className="space-y-4 max-w-lg mx-auto">
+        <div className="text-center mb-6">
+          <div className="size-14 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-3">
+            <Mail className="size-7 text-blue-500" />
+          </div>
+          <h2 className="text-2xl font-bold">Verify Your Email</h2>
+          <p className="text-muted-foreground">
+            We sent a verification code to <strong>{verifyEmail}</strong>
+          </p>
+        </div>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setError("");
+            setLoading(true);
+            const formData = new FormData(e.currentTarget);
+            try {
+              await signIn("password", formData);
+            } catch {
+              setError("Invalid or expired code. Please try again.");
+            } finally {
+              setLoading(false);
+            }
+          }}
+          className="space-y-4"
+        >
+          <div className="space-y-2">
+            <Label htmlFor="verify-code">Verification Code</Label>
+            <Input
+              id="verify-code"
+              name="code"
+              type="text"
+              placeholder="Enter code from your email"
+              autoComplete="one-time-code"
+              className="h-12 text-center text-lg tracking-[0.3em] font-mono"
+              required
+            />
+          </div>
+          <input name="flow" value="email-verification" type="hidden" />
+          <input name="email" value={verifyEmail} type="hidden" />
+          {error && (
+            <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
+          <Button type="submit" className="w-full h-11" disabled={loading}>
+            {loading ? "Verifying..." : "Verify & Continue"}
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            Didn't get the code? Check your spam folder or{" "}
+            <Button
+              variant="link"
+              className="p-0 h-auto text-xs"
+              onClick={() => { setMode("signup"); setError(""); }}
+            >
+              try again
+            </Button>
+          </p>
+        </form>
+      </div>
+    );
+  }
+
+  if (mode === "signin") {
+    return (
+      <div className="space-y-4 max-w-lg mx-auto">
+        <div className="text-center mb-6">
+          <div className="size-14 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-3">
+            <LogIn className="size-7 text-blue-500" />
+          </div>
+          <h2 className="text-2xl font-bold">Welcome Back</h2>
+          <p className="text-muted-foreground">
+            Sign in to your ProWorx account
+          </p>
+        </div>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setError("");
+            setLoading(true);
+            const formData = new FormData(e.currentTarget);
+            try {
+              await signIn("password", formData);
+            } catch {
+              setError("Invalid email or password.");
+            } finally {
+              setLoading(false);
+            }
+          }}
+          className="space-y-4"
+        >
+          <div className="space-y-2">
+            <Label htmlFor="si-email">Email</Label>
+            <Input
+              id="si-email"
+              name="email"
+              type="email"
+              defaultValue={data.customerEmail}
+              autoComplete="email"
+              className="h-11"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="si-password">Password</Label>
+            <Input
+              id="si-password"
+              name="password"
+              type="password"
+              placeholder="Your password"
+              autoComplete="current-password"
+              className="h-11"
+              required
+            />
+          </div>
+          <input name="flow" value="signIn" type="hidden" />
+          {error && (
+            <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
+          <Button type="submit" className="w-full h-11" disabled={loading}>
+            {loading ? "Signing in..." : "Sign In & Continue"}
+          </Button>
+        </form>
+        <p className="text-center text-sm text-muted-foreground">
+          Don't have an account?{" "}
+          <Button variant="link" className="p-0 h-auto font-medium" onClick={() => { setMode("signup"); setError(""); }}>
+            Create one
+          </Button>
+        </p>
+      </div>
+    );
+  }
+
+  // Default: signup mode
+  return (
+    <div className="space-y-4 max-w-lg mx-auto">
+      <div className="text-center mb-6">
+        <div className="size-14 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-3">
+          <Star className="size-7 text-amber-500" />
+        </div>
+        <h2 className="text-2xl font-bold">Create Your Account</h2>
+        <p className="text-muted-foreground">
+          One quick step — then pick your date & time
+        </p>
+      </div>
+
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-sm space-y-1.5">
+        <p className="font-semibold text-amber-800 dark:text-amber-300">⭐ ProWorx Rewards Included</p>
+        <ul className="text-amber-700 dark:text-amber-400 space-y-0.5">
+          <li>✓ Track your booking status & history</li>
+          <li>✓ Earn 1 point for every $1 spent</li>
+          <li>✓ Redeem points for discounts & free services</li>
+        </ul>
+      </div>
+
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setError("");
+          setLoading(true);
+          const formData = new FormData(e.currentTarget);
+          const email = data.customerEmail;
+          try {
+            await signIn("password", formData);
+            setVerifyEmail(email);
+            setMode("verify");
+          } catch {
+            setError("Could not create account. This email may already be registered.");
+          } finally {
+            setLoading(false);
+          }
+        }}
+        className="space-y-4"
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-muted-foreground">Name</Label>
+            <Input value={data.customerName} disabled className="bg-muted/50 h-11" />
+            <input name="name" type="hidden" value={data.customerName} />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-muted-foreground">Email</Label>
+            <Input value={data.customerEmail} disabled className="bg-muted/50 h-11" />
+            <input name="email" type="hidden" value={data.customerEmail} />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="acct-password" className="flex items-center gap-2">
+            <Lock className="size-4" /> Choose a Password
+          </Label>
+          <Input
+            id="acct-password"
+            name="password"
+            type="password"
+            placeholder="At least 6 characters"
+            minLength={6}
+            autoComplete="new-password"
+            className="h-11"
+            required
+          />
+        </div>
+
+        <input name="flow" value="signUp" type="hidden" />
+
+        {error && (
+          <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" className="w-full h-11" disabled={loading}>
+          {loading ? "Creating account..." : "Create Account & Continue"}
+        </Button>
+      </form>
+
+      <p className="text-center text-sm text-muted-foreground">
+        Already have an account?{" "}
+        <Button variant="link" className="p-0 h-auto font-medium" onClick={() => { setMode("signin"); setError(""); }}>
+          Sign in
+        </Button>
+      </p>
+    </div>
+  );
+}
+
 // ─── Step 4: Date & Time ──────────────────────────────────────────────────────
 
 function DateTimeStep({
@@ -1021,9 +1290,13 @@ function ConfirmStep({ data, isMembership }: { data: BookingData; isMembership?:
 function SuccessScreen({
   confirmationCode,
   data,
+  isAuthenticated,
+  isInsidePortal,
 }: {
   confirmationCode: string;
   data: BookingData;
+  isAuthenticated: boolean;
+  isInsidePortal: boolean;
 }) {
   const totalPrice =
     data.basePrice + data.addons.reduce((s, a) => s + a.price, 0);
@@ -1081,6 +1354,32 @@ function SuccessScreen({
         </CardContent>
       </Card>
 
+      {/* Prompt to create account for non-authenticated users */}
+      {!isAuthenticated && (
+        <Card className="mb-6 border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/30">
+          <CardContent className="p-5 text-center">
+            <div className="size-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mx-auto mb-3">
+              <User className="size-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="font-semibold mb-1">Create Your Free Profile</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Track your bookings, earn loyalty points, and get rewards on every visit.
+            </p>
+            <Button asChild className="bg-blue-600 hover:bg-blue-700 w-full">
+              <Link to="/rewards/register">
+                Create Account
+              </Link>
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Already have one?{" "}
+              <Link to="/rewards/login" className="text-blue-600 hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <p className="text-sm text-muted-foreground mb-4">
         Questions? Call us at{" "}
         <a
@@ -1091,9 +1390,22 @@ function SuccessScreen({
         </a>
       </p>
 
-      <Button asChild variant="outline">
-        <Link to="/book">Book Another Appointment</Link>
-      </Button>
+      <div className="flex flex-col sm:flex-row gap-2 justify-center">
+        {isInsidePortal ? (
+          <>
+            <Button asChild>
+              <Link to="/rewards/bookings">View My Bookings</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/rewards/book">Book Another</Link>
+            </Button>
+          </>
+        ) : (
+          <Button asChild variant="outline">
+            <Link to="/book">Book Another Appointment</Link>
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -1102,13 +1414,36 @@ function SuccessScreen({
 
 export function BookingPage() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [step, setStep] = useState<BookingStep>("service");
   const [data, setData] = useState<BookingData>(initialData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
 
+  const { isAuthenticated } = useConvexAuth();
+  const isInsidePortal = location.pathname.startsWith("/rewards");
+  const clientProfile = useQuery(
+    api.loyalty.getMyProfile,
+    isAuthenticated ? {} : "skip",
+  );
+
   const catalog = useQuery(api.catalog.listActive, {});
   const createBooking = useMutation(api.bookings.create);
+
+  // ─── Auto-fill customer info from profile when logged in ───────────────────
+  const didAutoFill = useRef(false);
+  useEffect(() => {
+    if (!clientProfile || didAutoFill.current) return;
+    didAutoFill.current = true;
+    setData((prev) => ({
+      ...prev,
+      customerName: prev.customerName || clientProfile.name || "",
+      customerEmail: prev.customerEmail || clientProfile.email || "",
+      customerPhone: prev.customerPhone || clientProfile.phone || "",
+      serviceAddress: prev.serviceAddress || clientProfile.address || "",
+      zipCode: prev.zipCode || clientProfile.zipCode || "",
+    }));
+  }, [clientProfile]);
 
   // ─── Capture UTM params & referrer on landing (persist in sessionStorage) ──
   useEffect(() => {
@@ -1357,7 +1692,7 @@ export function BookingPage() {
   if (confirmationCode) {
     return (
       <div className="container max-w-2xl py-8">
-        <SuccessScreen confirmationCode={confirmationCode} data={data} />
+        <SuccessScreen confirmationCode={confirmationCode} data={data} isAuthenticated={isAuthenticated} isInsidePortal={isInsidePortal} />
       </div>
     );
   }

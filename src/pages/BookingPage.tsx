@@ -1512,21 +1512,22 @@ export function BookingPage() {
     }
   }, [serviceSlug, catalog, data.catalogItemId]);
 
-  const steps: BookingStep[] = [
-    "service",
-    "addons",
-    "info",
-    "datetime",
-    "confirm",
-  ];
+  // ─── Dynamic steps: skip account step if already authenticated ───────────
+  const needsAccount = !isAuthenticated;
+  const steps: BookingStep[] = needsAccount
+    ? ["service", "addons", "info", "account", "datetime", "confirm"]
+    : ["service", "addons", "info", "datetime", "confirm"];
   const stepIndex = steps.indexOf(step);
-  const stepLabels = [
-    "Service",
-    "Add-Ons",
-    "Your Info",
-    "Date & Time",
-    "Confirm",
-  ];
+  const stepLabels = needsAccount
+    ? ["Service", "Add-Ons", "Your Info", "Account", "Date & Time", "Confirm"]
+    : ["Service", "Add-Ons", "Your Info", "Date & Time", "Confirm"];
+
+  // Auto-advance past account step when user signs up during flow
+  useEffect(() => {
+    if (step === "account" && isAuthenticated) {
+      setStep("datetime");
+    }
+  }, [isAuthenticated, step]);
 
   const canGoNext = () => {
     switch (step) {
@@ -1541,6 +1542,8 @@ export function BookingPage() {
           data.customerEmail.trim() !== "" &&
           data.serviceAddress.trim() !== ""
         );
+      case "account":
+        return isAuthenticated; // can proceed once signed in/up
       case "datetime":
         return data.date !== "" && data.time !== "";
       case "confirm":
@@ -1781,6 +1784,8 @@ export function BookingPage() {
             }
           />
         )}
+
+        {step === "account" && <AccountStep data={data} />}
 
         {step === "datetime" && (
           <DateTimeStep

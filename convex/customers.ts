@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
 import { requireAdmin } from "./authHelpers";
 
 // List all customers with optional search
@@ -236,5 +236,13 @@ export const stats = query({
         square: all.filter((c) => c.source === "square").length,
       },
     };
+  },
+});
+
+// ─── Internal: list all customers (for actions like email campaigns) ─────────
+export const listInternal = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("customers").collect();
   },
 });

@@ -619,6 +619,66 @@ const schema = defineSchema({
     .index("by_customer", ["customerId"])
     .index("by_active", ["isActive"]),
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // EMAIL CAMPAIGNS
+  // ═══════════════════════════════════════════════════════════════════════
+  emailCampaigns: defineTable({
+    name: v.string(),
+    subject: v.string(),
+    body: v.string(),                // HTML content
+    templateType: v.union(
+      v.literal("coupon"),
+      v.literal("announcement"),
+      v.literal("seasonal"),
+      v.literal("thank_you"),
+      v.literal("newsletter"),
+      v.literal("custom"),
+    ),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("scheduled"),
+      v.literal("sending"),
+      v.literal("sent"),
+      v.literal("failed"),
+    ),
+    audience: v.union(
+      v.literal("all"),              // all customers with email
+      v.literal("recent"),           // booked in last 90 days
+      v.literal("inactive"),         // no booking in 90+ days
+      v.literal("high_value"),       // top 20% by spend
+    ),
+    audienceCount: v.optional(v.number()),
+    scheduledAt: v.optional(v.number()),   // ms epoch
+    sentAt: v.optional(v.number()),        // ms epoch
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    // Coupon-specific fields
+    couponCode: v.optional(v.string()),
+    couponAmount: v.optional(v.number()),  // cents
+    couponPercent: v.optional(v.number()), // e.g. 10 for 10%
+    couponExpiry: v.optional(v.string()),  // YYYY-MM-DD
+    // Stats
+    totalSent: v.optional(v.number()),
+    totalFailed: v.optional(v.number()),
+  })
+    .index("by_status", ["status"])
+    .index("by_created", ["createdAt"]),
+
+  emailSends: defineTable({
+    campaignId: v.id("emailCampaigns"),
+    email: v.string(),
+    customerName: v.string(),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("sent"),
+      v.literal("failed"),
+    ),
+    sentAt: v.optional(v.number()),
+    error: v.optional(v.string()),
+  })
+    .index("by_campaign", ["campaignId"])
+    .index("by_status", ["status"]),
+
   // ─── System settings (secure key-value store for API keys etc.) ──────────
   systemSettings: defineTable({
     key: v.string(),       // e.g. "gemini_api_key"

@@ -52,6 +52,7 @@ import { MyJobDetailPage } from "./pages/MyJobDetailPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { AiAssistantPage } from "./pages/AiAssistantPage";
 import { MarketingPage } from "./pages/MarketingPage";
+import { EmailCampaignsPage } from "./pages/EmailCampaignsPage";
 import { ClientSupportPage } from "./pages/ClientSupportPage";
 import { LoyaltyDashboardPage } from "./pages/LoyaltyDashboardPage";
 import { LoyaltyRewardsPage } from "./pages/LoyaltyRewardsPage";
@@ -121,6 +122,7 @@ function App() {
                 <Route path="/team" element={<TeamPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/marketing" element={<MarketingPage />} />
+                <Route path="/email-campaigns" element={<EmailCampaignsPage />} />
                 <Route path="/ai-assistant" element={<AiAssistantPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 {/* Loyalty Admin */}

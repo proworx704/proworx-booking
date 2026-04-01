@@ -219,10 +219,19 @@ export const updateCampaignStatus = internalMutation({
   },
 });
 
+// ─── Types for customer data in actions ──────────────────────────────────────
+interface CustomerRecord {
+  name: string;
+  email?: string;
+  phone?: string;
+  lastServiceDate?: string;
+  totalSpent?: number;
+}
+
 // ─── Send campaign action (runs in Node.js runtime) ──────────────────────────
 export const sendCampaign = action({
   args: { id: v.id("emailCampaigns") },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ sent: number; failed: number; total: number }> => {
     // 1. Get campaign
     const campaign = await ctx.runQuery(
       internal.emailCampaigns.getInternal,
@@ -239,12 +248,12 @@ export const sendCampaign = action({
     });
 
     // 3. Get audience
-    const allCustomers = await ctx.runQuery(
+    const allCustomers: CustomerRecord[] = await ctx.runQuery(
       internal.customers.listInternal,
       {},
     );
-    const withEmail = allCustomers.filter(
-      (c: { email?: string }) => c.email && c.email.trim(),
+    const withEmail: CustomerRecord[] = allCustomers.filter(
+      (c) => c.email && c.email.trim(),
     );
 
     const now = Date.now();
@@ -252,27 +261,22 @@ export const sendCampaign = action({
       .toISOString()
       .split("T")[0];
 
-    let audience: typeof withEmail;
+    let audience: CustomerRecord[];
     switch (campaign.audience) {
       case "recent":
         audience = withEmail.filter(
-          (c: { lastServiceDate?: string }) =>
-            c.lastServiceDate && c.lastServiceDate >= ninetyDaysAgo,
+          (c) => c.lastServiceDate && c.lastServiceDate >= ninetyDaysAgo,
         );
         break;
       case "inactive":
         audience = withEmail.filter(
-          (c: { lastServiceDate?: string }) =>
-            !c.lastServiceDate || c.lastServiceDate < ninetyDaysAgo,
+          (c) => !c.lastServiceDate || c.lastServiceDate < ninetyDaysAgo,
         );
         break;
       case "high_value": {
         const sorted = withEmail
-          .filter((c: { totalSpent?: number }) => (c.totalSpent || 0) > 0)
-          .sort(
-            (a: { totalSpent?: number }, b: { totalSpent?: number }) =>
-              (b.totalSpent || 0) - (a.totalSpent || 0),
-          );
+          .filter((c) => (c.totalSpent || 0) > 0)
+          .sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0));
         audience = sorted.slice(0, Math.max(1, Math.ceil(sorted.length * 0.2)));
         break;
       }
@@ -299,8 +303,8 @@ export const sendCampaign = action({
     // Send in batches of 5 to avoid overwhelming the API
     for (let i = 0; i < audience.length; i += 5) {
       const batch = audience.slice(i, i + 5);
-      const results = await Promise.allSettled(
-        batch.map(async (customer: { email?: string; name: string }) => {
+      await Promise.allSettled(
+        batch.map(async (customer) => {
           const email = customer.email!;
           try {
             const response = await fetch(

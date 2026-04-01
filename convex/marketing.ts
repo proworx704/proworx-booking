@@ -17,6 +17,12 @@ const LEAD_SOURCE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
+// Helper: membership rebookings are recurring maintenance, not new customer
+// acquisitions — exclude them from marketing attribution metrics.
+function isMembershipRebooking(b: { serviceName?: string }): boolean {
+  return !!b.serviceName && b.serviceName.toLowerCase().includes("membership");
+}
+
 const CHANNEL_VALIDATOR = v.union(
   v.literal("google_ads"),
   v.literal("google_local"),
@@ -43,6 +49,9 @@ export const attributionOverview = query({
     if (args.endDate) {
       bookings = bookings.filter((b) => b.date <= args.endDate!);
     }
+
+    // Exclude membership rebookings — recurring maintenance, not new acquisitions
+    bookings = bookings.filter((b) => !isMembershipRebooking(b));
 
     // Group by lead source
     const sourceMap: Record<string, {
@@ -155,9 +164,10 @@ export const recentAttributedBookings = query({
       .order("desc")
       .collect();
 
-    // Only bookings with a lead source (not direct/unknown)
+    // Only bookings with a lead source (not direct/unknown),
+    // excluding recurring membership rebookings
     const attributed = bookings
-      .filter((b) => b.leadSource && b.leadSource !== "direct")
+      .filter((b) => b.leadSource && b.leadSource !== "direct" && !isMembershipRebooking(b))
       .slice(0, limit)
       .map((b) => ({
         _id: b._id,
@@ -251,6 +261,9 @@ export const roiByChannel = query({
 
     if (args.startDate) bookings = bookings.filter((b) => b.date >= args.startDate!);
     if (args.endDate) bookings = bookings.filter((b) => b.date <= args.endDate!);
+
+    // Exclude membership rebookings from ROI attribution
+    bookings = bookings.filter((b) => !isMembershipRebooking(b));
 
     // Get months in the date range for spend filtering
     const months = new Set<string>();

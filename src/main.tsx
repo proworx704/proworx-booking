@@ -17,3 +17,4 @@ createRoot(document.getElementById("root")!).render(
     </ConvexAuthProvider>
   </StrictMode>,
 );
+// Switched to consolidated Convex backend — 2026-04-02T15:02:35Z

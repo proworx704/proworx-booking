@@ -1,6 +1,6 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { Bot, ChevronRight, Eye, EyeOff, Loader2, Megaphone, Moon, Palette, RefreshCw, Sun, User } from "lucide-react";
+import { Bot, ChevronRight, CreditCard, Eye, EyeOff, Loader2, Megaphone, Moon, Palette, RefreshCw, Sun, User } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -203,6 +203,9 @@ export function SettingsPage() {
 
       {/* AI Assistant API Key — owner/admin only */}
       <GeminiApiKeyCard />
+
+      {/* Square Access Token — owner/admin only */}
+      <SquareAccessTokenCard />
 
       {/* Square Customer Sync — owner/admin only */}
       <SquareCustomerSyncCard />
@@ -549,6 +552,115 @@ function GeminiApiKeyCard() {
           <Button onClick={handleSave} disabled={!keyInput.trim() || saving} size="sm">
             {saving && <Loader2 className="size-4 animate-spin mr-1" />}
             {currentKey ? "Update" : "Save"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Square Access Token Card (owner/admin only) ───────────────────────────────
+
+function SquareAccessTokenCard() {
+  const { isAdmin } = useUserRole();
+  const currentToken = useQuery(api.systemSettings.get, { key: "square_access_token" });
+  const syncStatus = useQuery(api.squareBookingSync.getSyncStatus);
+  const setSetting = useMutation(api.systemSettings.set);
+  const [tokenInput, setTokenInput] = useState("");
+  const [showToken, setShowToken] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  if (!isAdmin) return null;
+
+  const maskedToken = currentToken
+    ? currentToken.slice(0, 8) + "•".repeat(Math.max(0, currentToken.length - 12)) + currentToken.slice(-4)
+    : null;
+
+  const handleSave = async () => {
+    const trimmed = tokenInput.trim();
+    if (!trimmed) return;
+    setSaving(true);
+    try {
+      await setSetting({ key: "square_access_token", value: trimmed });
+      toast.success("Square access token saved — bookings will now auto-sync!");
+      setTokenInput("");
+      setShowToken(false);
+    } catch {
+      toast.error("Failed to save token");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <CreditCard className="size-4 text-muted-foreground" />
+          Square Booking Sync
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-1">
+          <Label className="text-sm font-medium">Square Access Token</Label>
+          <p className="text-xs text-muted-foreground">
+            Enables auto-sync of new bookings to Square. Get your token from{" "}
+            <a
+              href="https://developer.squareup.com/apps"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline underline-offset-2"
+            >
+              Square Developer Dashboard
+            </a>
+            {" "}→ your app → Credentials → Production Access Token.
+          </p>
+        </div>
+
+        {currentToken && (
+          <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2">
+            <code className="flex-1 text-sm font-mono text-muted-foreground">
+              {showToken ? currentToken : maskedToken}
+            </code>
+            <button
+              type="button"
+              onClick={() => setShowToken(!showToken)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
+        )}
+
+        {currentToken && syncStatus && (
+          <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
+            <p className="flex items-center gap-2">
+              <span className="size-2 rounded-full bg-green-500 inline-block" />
+              <strong>Active</strong> — new bookings auto-sync to Square
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {syncStatus.synced} synced • {syncStatus.unsynced} pending
+            </p>
+          </div>
+        )}
+
+        {!currentToken && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-3 text-sm text-amber-700 dark:text-amber-400">
+            ⚠️ No token set — bookings won't sync to Square until you add one.
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Input
+            type="password"
+            placeholder={currentToken ? "Enter new token to replace…" : "Paste your Square access token…"}
+            value={tokenInput}
+            onChange={(e) => setTokenInput(e.target.value)}
+            className="flex-1 font-mono text-sm"
+          />
+          <Button onClick={handleSave} disabled={!tokenInput.trim() || saving} size="sm">
+            {saving && <Loader2 className="size-4 animate-spin mr-1" />}
+            {currentToken ? "Update" : "Save"}
           </Button>
         </div>
       </CardContent>

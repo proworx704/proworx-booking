@@ -282,6 +282,11 @@ export const create = mutation({
       bookingId,
     });
 
+    // ── Auto-sync to Square (non-blocking) ──
+    await ctx.scheduler.runAfter(0, internal.squareBookingSync.pushBookingToSquare, {
+      bookingId,
+    });
+
     return {
       bookingId,
       confirmationCode,
@@ -1227,6 +1232,11 @@ export const adminCreate = mutation({
 
     // Send confirmation
     await ctx.scheduler.runAfter(0, internal.notifications.sendConfirmation, {
+      bookingId,
+    });
+
+    // ── Auto-sync to Square (non-blocking) ──
+    await ctx.scheduler.runAfter(0, internal.squareBookingSync.pushBookingToSquare, {
       bookingId,
     });
 

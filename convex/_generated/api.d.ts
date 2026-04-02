@@ -45,6 +45,7 @@ import type * as services from "../services.js";
 import type * as siteConfig from "../siteConfig.js";
 import type * as sitePages from "../sitePages.js";
 import type * as sitePhotos from "../sitePhotos.js";
+import type * as squareBookingSync from "../squareBookingSync.js";
 import type * as squareCustomerSync from "../squareCustomerSync.js";
 import type * as squareImport from "../squareImport.js";
 import type * as squarePayments from "../squarePayments.js";
@@ -103,6 +104,7 @@ declare const fullApi: ApiFromModules<{
   siteConfig: typeof siteConfig;
   sitePages: typeof sitePages;
   sitePhotos: typeof sitePhotos;
+  squareBookingSync: typeof squareBookingSync;
   squareCustomerSync: typeof squareCustomerSync;
   squareImport: typeof squareImport;
   squarePayments: typeof squarePayments;

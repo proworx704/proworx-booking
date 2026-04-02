@@ -182,7 +182,7 @@ function generateEmailHTML(opts: {
 
   <!-- HEADER -->
   <div style="background: linear-gradient(135deg, #18181b, #27272a); padding: 32px; text-align: center;">
-    <img src="https://proworx-booking-8ee2b7c6.viktor.space/logo192.png" alt="ProWorx" style="width:56px;height:56px;border-radius:12px;" />
+    <img src="https://book.proworxdetailing.com/logo192.png" alt="ProWorx" style="width:56px;height:56px;border-radius:12px;" />
     <p style="color: #a1a1aa; font-size: 13px; margin: 12px 0 0 0; letter-spacing: 1px;">PROWORX MOBILE DETAILING</p>
   </div>
 

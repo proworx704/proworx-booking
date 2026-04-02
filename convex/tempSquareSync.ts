@@ -265,3 +265,21 @@ export const listCatalogNoAuth = query({
     return await ctx.db.query("serviceCatalog").collect();
   },
 });
+
+// Temp: patch a customer record (no auth)
+export const patchCustomerNoAuth = mutation({
+  args: {
+    customerId: v.id("customers"),
+    name: v.optional(v.string()),
+    address: v.optional(v.string()),
+    zipCode: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const patch: Record<string, string> = {};
+    if (args.name !== undefined) patch.name = args.name;
+    if (args.address !== undefined) patch.address = args.address;
+    if (args.zipCode !== undefined) patch.zipCode = args.zipCode;
+    await ctx.db.patch(args.customerId, patch);
+    return "ok";
+  },
+});

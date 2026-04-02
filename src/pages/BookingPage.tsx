@@ -1432,20 +1432,7 @@ export function BookingPage() {
   const catalog = useQuery(api.catalog.listActive, {});
   const createBooking = useMutation(api.bookings.create);
 
-  // ─── Auto-fill customer info from profile when logged in ───────────────────
-  const didAutoFill = useRef(false);
-  useEffect(() => {
-    if (!clientProfile || didAutoFill.current) return;
-    didAutoFill.current = true;
-    setData((prev) => ({
-      ...prev,
-      customerName: prev.customerName || clientProfile.name || "",
-      customerEmail: prev.customerEmail || clientProfile.email || "",
-      customerPhone: prev.customerPhone || clientProfile.phone || "",
-      serviceAddress: prev.serviceAddress || clientProfile.address || "",
-      zipCode: prev.zipCode || clientProfile.zipCode || "",
-    }));
-  }, [clientProfile]);
+  // Auto-fill disabled — form always starts blank so customers enter their own info
 
   // ─── Capture UTM params & referrer on landing (persist in sessionStorage) ──
   useEffect(() => {

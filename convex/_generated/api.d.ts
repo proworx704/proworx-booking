@@ -26,6 +26,7 @@ import type * as emailCampaigns from "../emailCampaigns.js";
 import type * as employeePortal from "../employeePortal.js";
 import type * as http from "../http.js";
 import type * as loyalty from "../loyalty.js";
+import type * as maintenanceMembers from "../maintenanceMembers.js";
 import type * as marketing from "../marketing.js";
 import type * as migrations_addTouchUpPaint from "../migrations/addTouchUpPaint.js";
 import type * as migrations_updateTo90PerHour from "../migrations/updateTo90PerHour.js";
@@ -82,6 +83,7 @@ declare const fullApi: ApiFromModules<{
   employeePortal: typeof employeePortal;
   http: typeof http;
   loyalty: typeof loyalty;
+  maintenanceMembers: typeof maintenanceMembers;
   marketing: typeof marketing;
   "migrations/addTouchUpPaint": typeof migrations_addTouchUpPaint;
   "migrations/updateTo90PerHour": typeof migrations_updateTo90PerHour;

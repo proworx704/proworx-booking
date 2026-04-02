@@ -346,6 +346,44 @@ const schema = defineSchema({
     .index("by_date", ["date"])
     .index("by_status", ["status"]),
 
+  // ─── Maintenance Members ──
+  maintenanceMembers: defineTable({
+    customerId: v.optional(v.id("customers")),
+    name: v.string(),
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+    address: v.string(),
+    zipCode: v.string(),
+    vehicleType: v.optional(v.union(v.literal("sedan"), v.literal("suv"))),
+    vehicleYear: v.optional(v.string()),
+    vehicleMake: v.optional(v.string()),
+    vehicleModel: v.optional(v.string()),
+    vehicleColor: v.optional(v.string()),
+    planType: v.union(
+      v.literal("monthly"),
+      v.literal("quarterly"),
+      v.literal("yearly"),
+    ),
+    membershipTier: v.union(
+      v.literal("exterior"),
+      v.literal("interior"),
+      v.literal("full"),
+    ),
+    serviceFrequencyDays: v.number(), // e.g. 30, 90, 365
+    nextServiceDate: v.optional(v.string()), // YYYY-MM-DD
+    lastServiceDate: v.optional(v.string()), // YYYY-MM-DD
+    planStartDate: v.optional(v.string()), // YYYY-MM-DD — when the plan started
+    planEndDate: v.optional(v.string()), // YYYY-MM-DD — when quarterly/annual plan ends (null for monthly)
+    notes: v.optional(v.string()),
+    isActive: v.boolean(),
+    joinedAt: v.string(), // ISO timestamp
+  })
+    .index("by_zip", ["zipCode"])
+    .index("by_planType", ["planType"])
+    .index("by_nextService", ["nextServiceDate"])
+    .index("by_active_zip", ["isActive", "zipCode"])
+    .index("by_active", ["isActive"]),
+
   payrollPayouts: defineTable({
     workerId: v.id("payrollWorkers"),
     weekStart: v.string(), // YYYY-MM-DD (Monday)

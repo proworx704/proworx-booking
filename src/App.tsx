@@ -67,6 +67,9 @@ import { ClientBookingsPage } from "./pages/ClientBookingsPage";
 import { ClientRedeemPage } from "./pages/ClientRedeemPage";
 import { ClientPromosPage } from "./pages/ClientPromosPage";
 import { ClientProfilePage } from "./pages/ClientProfilePage";
+// Maintenance
+import { MaintenanceMembersPage } from "./pages/MaintenanceMembersPage";
+import { MaintenanceSchedulePage } from "./pages/MaintenanceSchedulePage";
 
 function App() {
   return (
@@ -118,6 +121,9 @@ function App() {
                 <Route path="/payroll/time-entries" element={<PayrollTimeEntriesPage />} />
                 <Route path="/payroll/payouts" element={<PayrollPayoutsPage />} />
                 <Route path="/payroll/tax-settings" element={<PayrollTaxSettingsPage />} />
+                {/* Maintenance */}
+                <Route path="/maintenance/members" element={<MaintenanceMembersPage />} />
+                <Route path="/maintenance/schedule" element={<MaintenanceSchedulePage />} />
                 <Route path="/website" element={<WebsiteEditorPage />} />
                 <Route path="/team" element={<TeamPage />} />
                 <Route path="/reports" element={<ReportsPage />} />

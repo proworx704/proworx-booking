@@ -29,6 +29,7 @@ import {
   UserCog,
   Users,
   Wallet,
+  Wrench,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -89,6 +90,11 @@ const loyaltyNav = [
   { href: "/loyalty/rewards", label: "Rewards", icon: Gift },
   { href: "/loyalty/amplifiers", label: "Amplifiers", icon: Rocket },
   { href: "/loyalty/settings", label: "Settings", icon: Settings },
+];
+
+const maintenanceNav = [
+  { href: "/maintenance/members", label: "Members", icon: Contact },
+  { href: "/maintenance/schedule", label: "ZIP Schedule", icon: MapPin },
 ];
 
 const toolsNav = [
@@ -227,6 +233,12 @@ function AdminSidebarNav() {
           label="Payroll"
           icon={Wallet}
           items={payrollNav}
+          pathname={p}
+        />
+        <CollapsibleNavSection
+          label="Maintenance"
+          icon={Wrench}
+          items={maintenanceNav}
           pathname={p}
         />
         <CollapsibleNavSection

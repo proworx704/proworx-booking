@@ -5,7 +5,7 @@ import { requireActionAuth } from "./authHelpers";
 
 declare const process: { env: Record<string, string | undefined> };
 
-const SQUARE_ROLE = "squareup_make_api_request";
+const SQUARE_ROLE = "mcp_square_make_api_request";
 
 interface SquareCustomer {
   id: string;

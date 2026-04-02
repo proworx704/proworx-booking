@@ -56,7 +56,7 @@ export const createPaymentLink = action({
       body: JSON.stringify({
         project_name: PROJECT_NAME,
         project_secret: PROJECT_SECRET,
-        role: "squareup_make_api_request",
+        role: "mcp_square_make_api_request",
         arguments: {
           service: "checkout",
           method: "createPaymentLink",

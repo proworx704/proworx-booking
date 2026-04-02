@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import {
   Car,
   ChevronDown,
@@ -121,16 +121,22 @@ const SERVICE_CATEGORIES: CategoryDef[] = [
     icon: <Sparkles className="size-5" />,
     services: [
       {
-        slug: "single-stage-paint-correction",
-        name: "Single Stage Paint Correction",
+        slug: "1-step-enhancement-polish",
+        name: "1-Step Enhancement Polish",
         description:
-          "One-step machine polish to remove light swirls, water spots, and minor scratches — restores up to 70% clarity.",
+          "Removes light swirls and minor imperfections. Restores depth and gloss for vehicles in good condition — ~60-70% defect removal.",
       },
       {
-        slug: "multi-stage-paint-correction",
-        name: "Multi-Stage Paint Correction",
+        slug: "2-step-paint-correction",
+        name: "2-Step Paint Correction",
         description:
-          "Two or more cutting/polishing stages for heavy swirls, deep scratches, and oxidation — restores up to 95% clarity.",
+          "A compounding stage to remove deeper scratches and heavy swirl marks, followed by a fine polishing stage — ~85-95% defect removal.",
+      },
+      {
+        slug: "multi-stage-correction",
+        name: "Multi-Stage Correction",
+        description:
+          "Our most thorough correction process with multiple cutting and polishing stages. Transforms neglected paint to showroom-quality — ~95-99% defect removal.",
       },
     ],
   },
@@ -358,12 +364,20 @@ function CategorySection({
 export function ServiceWidgetsPage() {
   const widgets = useQuery(api.systemSettings.getMultiple, { keys: ALL_WIDGET_KEYS });
   const setSetting = useMutation(api.systemSettings.set);
+  const pushToWebsite = useAction(api.websiteSync.pushWidgetUrl);
   const [saving, setSaving] = useState<string | null>(null);
 
   const handleSave = async (slug: string, url: string) => {
     setSaving(slug);
     try {
+      // Save widget URL in booking app
       await setSetting({ key: `widget:${slug}`, value: url });
+      // Also sync to website CMS so "Book Now" links update automatically
+      if (url) {
+        pushToWebsite({ slug, url }).catch((err: any) =>
+          console.warn("Website sync failed (non-blocking):", err)
+        );
+      }
     } finally {
       setSaving(null);
     }

@@ -298,3 +298,41 @@ export const updateCatalogNoAuth = mutation({
     return "ok";
   },
 });
+
+// Temp: delete catalog item (no auth)
+export const deleteCatalogNoAuth = mutation({
+  args: { id: v.id("serviceCatalog") },
+  handler: async (ctx, { id }) => {
+    await ctx.db.delete(id);
+    return "ok";
+  },
+});
+
+// Temp: update catalog sortOrder (no auth)
+export const updateCatalogSortOrderNoAuth = mutation({
+  args: { id: v.id("serviceCatalog"), sortOrder: v.number() },
+  handler: async (ctx, { id, sortOrder }) => {
+    await ctx.db.patch(id, { sortOrder });
+    return "ok";
+  },
+});
+
+export const renameCatalogNoAuth = mutation({
+  args: {
+    id: v.id("serviceCatalog"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    sortOrder: v.optional(v.number()),
+    slug: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...patch } = args;
+    const clean: Record<string, any> = {};
+    if (patch.name !== undefined) clean.name = patch.name;
+    if (patch.description !== undefined) clean.description = patch.description;
+    if (patch.sortOrder !== undefined) clean.sortOrder = patch.sortOrder;
+    if (patch.slug !== undefined) clean.slug = patch.slug;
+    await ctx.db.patch(id, clean);
+    return "ok";
+  },
+});

@@ -59,6 +59,7 @@ import type * as updateMemberships from "../updateMemberships.js";
 import type * as userProfiles from "../userProfiles.js";
 import type * as users from "../users.js";
 import type * as viktorTools from "../viktorTools.js";
+import type * as websiteSync from "../websiteSync.js";
 
 import type {
   ApiFromModules,
@@ -118,6 +119,7 @@ declare const fullApi: ApiFromModules<{
   userProfiles: typeof userProfiles;
   users: typeof users;
   viktorTools: typeof viktorTools;
+  websiteSync: typeof websiteSync;
 }>;
 
 /**

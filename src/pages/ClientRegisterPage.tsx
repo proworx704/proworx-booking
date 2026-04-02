@@ -14,21 +14,45 @@ export function ClientRegisterPage() {
   const marketingOptIn = useMutation(api.marketing.optIn);
   const didInit = useRef(false);
   const [wantsMarketing, setWantsMarketing] = useState(true);
+  const [profileReady, setProfileReady] = useState(false);
 
-  // When a new user signs up through this page, auto-init them as a client
+  // When authenticated with no role, immediately create client profile
+  // Don't wait for isLoading — that creates a circular dependency
+  // (isLoading is true BECAUSE there's no profile)
   useEffect(() => {
-    if (!isAuthenticated || isLoading || didInit.current) return;
-    // If no role yet or already client → init client profile
-    if (role === null || role === "client") {
+    if (!isAuthenticated || didInit.current) return;
+
+    // No role yet → create client profile right away
+    if (role === null && !isLoading) {
       didInit.current = true;
       initClientProfile({}).then(() => {
-        // Auto opt-in to marketing if checked
+        setProfileReady(true);
         if (wantsMarketing) {
           marketingOptIn({ source: "portal_registration" }).catch(() => {});
         }
       }).catch(() => {
         didInit.current = false;
       });
+      return;
+    }
+
+    // Still initializing (role null, isLoading true) — RoleProvider's auto-init
+    // should create the profile. But add a fallback timer in case it stalls.
+    if (role === null && isLoading) {
+      const timer = setTimeout(() => {
+        if (!didInit.current) {
+          didInit.current = true;
+          initClientProfile({}).then(() => {
+            setProfileReady(true);
+            if (wantsMarketing) {
+              marketingOptIn({ source: "portal_registration" }).catch(() => {});
+            }
+          }).catch(() => {
+            didInit.current = false;
+          });
+        }
+      }, 2000); // 2s fallback
+      return () => clearTimeout(timer);
     }
   }, [isAuthenticated, isLoading, role, initClientProfile, marketingOptIn, wantsMarketing]);
 
@@ -37,6 +61,11 @@ export function ClientRegisterPage() {
     if (isClient) return <Navigate to="/rewards" replace />;
     if (isAdmin) return <Navigate to="/dashboard" replace />;
     if (isEmployee) return <Navigate to="/my/dashboard" replace />;
+  }
+
+  // Fallback redirect if profile was just created
+  if (isAuthenticated && profileReady && isClient) {
+    return <Navigate to="/rewards" replace />;
   }
 
   return (

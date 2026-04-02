@@ -51,6 +51,7 @@ import type * as support from "../support.js";
 import type * as systemSettings from "../systemSettings.js";
 import type * as tempSquareSync from "../tempSquareSync.js";
 import type * as testAuth from "../testAuth.js";
+import type * as testEmailEnv from "../testEmailEnv.js";
 import type * as updateMemberships from "../updateMemberships.js";
 import type * as userProfiles from "../userProfiles.js";
 import type * as users from "../users.js";
@@ -106,6 +107,7 @@ declare const fullApi: ApiFromModules<{
   systemSettings: typeof systemSettings;
   tempSquareSync: typeof tempSquareSync;
   testAuth: typeof testAuth;
+  testEmailEnv: typeof testEmailEnv;
   updateMemberships: typeof updateMemberships;
   userProfiles: typeof userProfiles;
   users: typeof users;

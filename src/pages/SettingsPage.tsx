@@ -1,6 +1,6 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useMutation, useQuery } from "convex/react";
-import { Bot, ChevronRight, Eye, EyeOff, Loader2, Megaphone, Moon, Palette, Sun, User } from "lucide-react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { Bot, ChevronRight, Eye, EyeOff, Loader2, Megaphone, Moon, Palette, RefreshCw, Sun, User } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -203,6 +203,9 @@ export function SettingsPage() {
 
       {/* AI Assistant API Key — owner/admin only */}
       <GeminiApiKeyCard />
+
+      {/* Square Customer Sync — owner/admin only */}
+      <SquareCustomerSyncCard />
 
       {/* Ad Integrations — owner/admin only */}
       <AdIntegrationsCard />
@@ -548,6 +551,89 @@ function GeminiApiKeyCard() {
             {currentKey ? "Update" : "Save"}
           </Button>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Square Customer Sync Card (owner/admin only) ──────────────────────────────
+function SquareCustomerSyncCard() {
+  const { isAdmin } = useUserRole();
+  const [syncing, setSyncing] = useState(false);
+  const [result, setResult] = useState<{
+    totalImported: number;
+    totalSkipped: number;
+    batchesProcessed: number;
+  } | null>(null);
+  const syncAction = useAction(api.squareCustomerSync.syncAllCustomers);
+
+  if (!isAdmin) return null;
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setResult(null);
+    try {
+      const r = await syncAction();
+      setResult(r);
+      toast.success(
+        `Synced ${r.totalImported} new customers (${r.totalSkipped} already existed)`,
+      );
+    } catch (err) {
+      toast.error(
+        `Sync failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <RefreshCw className="size-4 text-muted-foreground" />
+          Square Customer Sync
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Import customers from your Square account. Duplicates are
+          automatically skipped.
+        </p>
+
+        {result && (
+          <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+            <p>
+              ✅ <strong>{result.totalImported}</strong> new customers imported
+            </p>
+            <p>
+              ⏭️ <strong>{result.totalSkipped}</strong> already existed (skipped)
+            </p>
+            <p className="text-muted-foreground text-xs mt-1">
+              Processed {result.batchesProcessed} batch
+              {result.batchesProcessed !== 1 ? "es" : ""}
+            </p>
+          </div>
+        )}
+
+        <Button
+          onClick={handleSync}
+          disabled={syncing}
+          size="sm"
+          className="w-full sm:w-auto"
+        >
+          {syncing ? (
+            <>
+              <Loader2 className="size-4 animate-spin mr-2" />
+              Syncing customers…
+            </>
+          ) : (
+            <>
+              <RefreshCw className="size-4 mr-2" />
+              Sync from Square
+            </>
+          )}
+        </Button>
       </CardContent>
     </Card>
   );

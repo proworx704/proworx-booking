@@ -88,9 +88,10 @@ export function TeamPage() {
     payrollWorkerId: "" as string,
   });
 
-  // Users who don't have a profile yet
+  // Users who don't have a profile yet AND are not customers
+  // Customers who signed up through booking are completely separate from staff
   const unassignedUsers = allUsers?.filter(
-    (u) => !u.profile && !u.email?.includes("@test.")
+    (u) => !u.profile && !u.email?.includes("@test.") && !(u as any).isCustomer
   ) ?? [];
 
   const openAdd = () => {

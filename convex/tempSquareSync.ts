@@ -97,3 +97,61 @@ export const countCustomers = query({
 });
 
 
+
+// Temp: list all staff (no auth)
+export const listStaffNoAuth = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("staff").collect();
+  },
+});
+
+// Temp: remove staff by ID (no auth)
+export const removeStaffNoAuth = mutation({
+  args: { staffId: v.id("staff") },
+  handler: async (ctx, { staffId }) => {
+    // Remove service assignments
+    const assignments = await ctx.db
+      .query("staffServices")
+      .withIndex("by_staff", (q) => q.eq("staffId", staffId))
+      .collect();
+    for (const a of assignments) await ctx.db.delete(a._id);
+    
+    // Remove availability
+    const avail = await ctx.db
+      .query("staffAvailability")
+      .withIndex("by_staff_day", (q) => q.eq("staffId", staffId))
+      .collect();
+    for (const a of avail) await ctx.db.delete(a._id);
+    
+    // Remove staff
+    await ctx.db.delete(staffId);
+    return "removed";
+  },
+});
+
+// Temp: search customers by email
+export const searchCustomerByEmail = query({
+  args: { email: v.string() },
+  handler: async (ctx, { email }) => {
+    const all = await ctx.db.query("customers").collect();
+    return all.filter((c: any) => (c.email ?? "").toLowerCase().includes(email.toLowerCase()));
+  },
+});
+
+// Temp: list all user profiles
+export const listAllProfilesNoAuth = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("userProfiles").collect();
+  },
+});
+
+// Temp: list all auth users
+export const listAuthUsersNoAuth = query({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    return users.map(u => ({ id: u._id, email: u.email, name: u.name }));
+  },
+});

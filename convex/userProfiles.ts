@@ -178,12 +178,33 @@ export const listAllUsers = query({
 
     const profileMap = new Map(allProfiles.map((p) => [p.userId as string, p]));
 
-    return allUsers.map((user) => ({
-      userId: user._id,
-      email: user.email,
-      name: user.name,
-      profile: profileMap.get(user._id as string) ?? null,
-    }));
+    // Build a set of customer emails so we can exclude them from "unassigned"
+    const allCustomers = await ctx.db.query("customers").collect();
+    const customerEmails = new Set(
+      allCustomers
+        .map((c: any) => (c.email ?? "").toLowerCase())
+        .filter((e: string) => e !== ""),
+    );
+
+    // Also check booking customer emails
+    const allBookings = await ctx.db.query("bookings").collect();
+    for (const b of allBookings) {
+      if (b.customerEmail) customerEmails.add(b.customerEmail.toLowerCase());
+    }
+
+    return allUsers.map((user) => {
+      const profile = profileMap.get(user._id as string) ?? null;
+      const email = (user.email ?? "").toLowerCase();
+      // Mark users as customers if their email matches a customer/booking
+      const isCustomer = !profile && customerEmails.has(email);
+      return {
+        userId: user._id,
+        email: user.email,
+        name: user.name,
+        profile,
+        isCustomer,
+      };
+    });
   },
 });
 

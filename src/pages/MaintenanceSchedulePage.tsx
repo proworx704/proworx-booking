@@ -13,14 +13,14 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const TIER_LABELS: Record<string, string> = {
-  exterior: "Clean",
-  interior: "Shield",
-  full: "Armor",
+  exterior: "Exterior Only",
+  interior: "Interior Only",
+  full: "Inside & Out",
 };
 const TIER_COLORS: Record<string, string> = {
   exterior: "bg-blue-100 text-blue-800",
   interior: "bg-purple-100 text-purple-800",
-  full: "bg-amber-100 text-amber-800",
+  full: "bg-emerald-100 text-emerald-800",
 };
 const PLAN_LABELS: Record<string, string> = {
   monthly: "Mo",

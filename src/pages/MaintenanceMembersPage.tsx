@@ -40,14 +40,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 const TIER_LABELS: Record<string, string> = {
-  exterior: "Clean (Exterior)",
-  interior: "Shield (Interior)",
-  full: "Armor (Full)",
+  exterior: "Exterior Only",
+  interior: "Interior Only",
+  full: "Inside & Out",
 };
 const TIER_COLORS: Record<string, string> = {
   exterior: "bg-blue-100 text-blue-800",
   interior: "bg-purple-100 text-purple-800",
-  full: "bg-amber-100 text-amber-800",
+  full: "bg-emerald-100 text-emerald-800",
 };
 const PLAN_LABELS: Record<string, string> = {
   monthly: "Monthly",
@@ -360,9 +360,9 @@ export function MaintenanceMembersPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Tiers</SelectItem>
-              <SelectItem value="exterior">Clean</SelectItem>
-              <SelectItem value="interior">Shield</SelectItem>
-              <SelectItem value="full">Armor</SelectItem>
+              <SelectItem value="exterior">Exterior Only</SelectItem>
+              <SelectItem value="interior">Interior Only</SelectItem>
+              <SelectItem value="full">Inside & Out</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -583,9 +583,9 @@ export function MaintenanceMembersPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="exterior">Clean (Exterior Only)</SelectItem>
-                    <SelectItem value="interior">Shield (Interior Only)</SelectItem>
-                    <SelectItem value="full">Armor (Full Inside & Out)</SelectItem>
+                    <SelectItem value="exterior">Exterior Only</SelectItem>
+                    <SelectItem value="interior">Interior Only</SelectItem>
+                    <SelectItem value="full">Inside & Out</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

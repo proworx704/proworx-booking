@@ -10,7 +10,8 @@ interface RoleContextValue {
   isAdmin: boolean;       // owner or admin
   isEmployee: boolean;    // employee only
   isClient: boolean;      // client portal user
-  isLoading: boolean;
+  isLoading: boolean;     // true only while query is in-flight
+  hasProfile: boolean;    // true if user has a userProfile record
   displayName: string;
   staffId: Id<"staff"> | null;
   payrollWorkerId: Id<"payrollWorkers"> | null;
@@ -25,6 +26,7 @@ const RoleContext = createContext<RoleContextValue>({
   isEmployee: false,
   isClient: false,
   isLoading: true,
+  hasProfile: false,
   displayName: "",
   staffId: null,
   payrollWorkerId: null,
@@ -38,35 +40,33 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const initProfile = useMutation(api.userProfiles.initMyProfile);
   const didInit = useRef(false);
 
-  // Auto-create a profile if the user is authenticated but has none,
-  // OR auto-link payroll worker / staff if an employee profile is missing them.
+  // Only auto-init for EXISTING profiles that need linking (employee payroll/staff).
+  // New user profile creation is handled by register/login pages directly.
   useEffect(() => {
     if (!profile || !profile.userId || didInit.current) return;
 
-    const needsInit = profile.role === null; // no profile yet
+    // Only auto-link for employees missing payroll/staff links
     const needsLink =
       profile.role === "employee" &&
       profile.profile &&
       (!profile.profile.payrollWorkerId || !profile.profile.staffId);
 
-    if (needsInit || needsLink) {
+    if (needsLink) {
       didInit.current = true;
       initProfile().catch(() => {
-        // Reset so it can retry on next render
         didInit.current = false;
       });
     }
   }, [profile, initProfile]);
-
-  // Still loading if query hasn't resolved, or if we just triggered init
-  const isInitializing = profile?.userId && profile?.role === null;
 
   const value: RoleContextValue = {
     role: profile?.role ?? null,
     isAdmin: profile?.role === "owner" || profile?.role === "admin",
     isEmployee: profile?.role === "employee",
     isClient: profile?.role === "client",
-    isLoading: profile === undefined || isInitializing === true,
+    // isLoading = true only when query hasn't resolved yet (not when profile is missing)
+    isLoading: profile === undefined,
+    hasProfile: !!profile?.profile,
     displayName: profile?.profile?.displayName || profile?.name || profile?.email || "",
     staffId: (profile?.profile?.staffId as Id<"staff">) ?? null,
     payrollWorkerId: (profile?.profile?.payrollWorkerId as Id<"payrollWorkers">) ?? null,

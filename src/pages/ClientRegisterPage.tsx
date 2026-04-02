@@ -9,63 +9,36 @@ import { api } from "../../convex/_generated/api";
 
 export function ClientRegisterPage() {
   const { isAuthenticated } = useConvexAuth();
-  const { isClient, isAdmin, isEmployee, isLoading, role } = useUserRole();
+  const { isClient, isAdmin, isEmployee, isLoading, role, hasProfile } = useUserRole();
   const initClientProfile = useMutation(api.userProfiles.initClientProfile);
   const marketingOptIn = useMutation(api.marketing.optIn);
   const didInit = useRef(false);
   const [wantsMarketing, setWantsMarketing] = useState(true);
-  const [profileReady, setProfileReady] = useState(false);
 
-  // When authenticated with no role, immediately create client profile
-  // Don't wait for isLoading — that creates a circular dependency
-  // (isLoading is true BECAUSE there's no profile)
+  // Create client profile as soon as user is authenticated with no profile
   useEffect(() => {
-    if (!isAuthenticated || didInit.current) return;
+    if (!isAuthenticated || isLoading || didInit.current) return;
 
-    // No role yet → create client profile right away
-    if (role === null && !isLoading) {
+    // User is authenticated but has no profile → create client profile
+    if (!hasProfile) {
       didInit.current = true;
-      initClientProfile({}).then(() => {
-        setProfileReady(true);
-        if (wantsMarketing) {
-          marketingOptIn({ source: "portal_registration" }).catch(() => {});
-        }
-      }).catch(() => {
-        didInit.current = false;
-      });
-      return;
+      initClientProfile({})
+        .then(() => {
+          if (wantsMarketing) {
+            marketingOptIn({ source: "portal_registration" }).catch(() => {});
+          }
+        })
+        .catch(() => {
+          didInit.current = false;
+        });
     }
+  }, [isAuthenticated, isLoading, hasProfile, initClientProfile, marketingOptIn, wantsMarketing]);
 
-    // Still initializing (role null, isLoading true) — RoleProvider's auto-init
-    // should create the profile. But add a fallback timer in case it stalls.
-    if (role === null && isLoading) {
-      const timer = setTimeout(() => {
-        if (!didInit.current) {
-          didInit.current = true;
-          initClientProfile({}).then(() => {
-            setProfileReady(true);
-            if (wantsMarketing) {
-              marketingOptIn({ source: "portal_registration" }).catch(() => {});
-            }
-          }).catch(() => {
-            didInit.current = false;
-          });
-        }
-      }, 2000); // 2s fallback
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthenticated, isLoading, role, initClientProfile, marketingOptIn, wantsMarketing]);
-
-  // Redirect authenticated users
+  // Redirect authenticated users who have a profile
   if (isAuthenticated && !isLoading) {
     if (isClient) return <Navigate to="/rewards" replace />;
     if (isAdmin) return <Navigate to="/dashboard" replace />;
     if (isEmployee) return <Navigate to="/my/dashboard" replace />;
-  }
-
-  // Fallback redirect if profile was just created
-  if (isAuthenticated && profileReady && isClient) {
-    return <Navigate to="/rewards" replace />;
   }
 
   return (

@@ -9,18 +9,18 @@ import { api } from "../../convex/_generated/api";
 
 export function ClientLoginPage() {
   const { isAuthenticated } = useConvexAuth();
-  const { isClient, isAdmin, isEmployee, isLoading, role } = useUserRole();
+  const { isClient, isAdmin, isEmployee, isLoading, hasProfile } = useUserRole();
   const initClientProfile = useMutation(api.userProfiles.initClientProfile);
   const didInit = useRef(false);
 
-  // Auto-create client profile if authenticated but no role (orphaned account)
+  // Auto-create client profile if authenticated but no profile (orphaned account)
   useEffect(() => {
     if (!isAuthenticated || isLoading || didInit.current) return;
-    if (role === null) {
+    if (!hasProfile) {
       didInit.current = true;
       initClientProfile({}).catch(() => { didInit.current = false; });
     }
-  }, [isAuthenticated, isLoading, role, initClientProfile]);
+  }, [isAuthenticated, isLoading, hasProfile, initClientProfile]);
 
   // If already authenticated, redirect to appropriate area
   if (isAuthenticated && !isLoading) {

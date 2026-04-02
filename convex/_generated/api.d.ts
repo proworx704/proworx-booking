@@ -21,7 +21,6 @@ import type * as catalog from "../catalog.js";
 import type * as constants from "../constants.js";
 import type * as crons from "../crons.js";
 import type * as customers from "../customers.js";
-import type * as debugAuth from "../debugAuth.js";
 import type * as emailCampaigns from "../emailCampaigns.js";
 import type * as employeePortal from "../employeePortal.js";
 import type * as http from "../http.js";
@@ -77,7 +76,6 @@ declare const fullApi: ApiFromModules<{
   constants: typeof constants;
   crons: typeof crons;
   customers: typeof customers;
-  debugAuth: typeof debugAuth;
   emailCampaigns: typeof emailCampaigns;
   employeePortal: typeof employeePortal;
   http: typeof http;

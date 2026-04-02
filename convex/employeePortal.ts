@@ -18,7 +18,10 @@ async function getEmployeeContext(ctx: any) {
     .withIndex("by_user", (q: any) => q.eq("userId", userId))
     .first();
 
-  if (!profile) throw new Error("No profile found");
+  if (!profile) {
+    // Return a stub so queries return empty/null instead of crashing
+    return { userId, profile: { role: null, payrollWorkerId: null, staffId: null } as any };
+  }
 
   return { userId, profile };
 }

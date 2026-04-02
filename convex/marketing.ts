@@ -327,3 +327,37 @@ export const setBookingLeadSource = mutation({
     await ctx.db.patch(args.bookingId, { leadSource: args.leadSource });
   },
 });
+
+// ─── Client Marketing Opt-In ────────────────────────────────────────────────
+
+export const optIn = mutation({
+  args: { source: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const { getAuthUserId } = await import("@convex-dev/auth/server");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return;
+
+    const user = await ctx.db.get(userId);
+    if (!user?.email) return;
+
+    // Find the client profile to get customer link
+    const profile = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_user", (q: any) => q.eq("userId", userId))
+      .first();
+
+    const customerId = profile?.customerId;
+    if (!customerId) return;
+
+    // Store opt-in on customer record (use notes field for now)
+    const customer = await ctx.db.get(customerId);
+    if (customer) {
+      const existingNotes = customer.notes || "";
+      if (!existingNotes.includes("marketing_opt_in")) {
+        await ctx.db.patch(customerId, {
+          notes: `${existingNotes}\n[marketing_opt_in: ${args.source || "unknown"} @ ${new Date().toISOString()}]`.trim(),
+        });
+      }
+    }
+  },
+});

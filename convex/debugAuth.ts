@@ -20,7 +20,7 @@ export const checkVerificationCodes = query({
       userProfile = profiles[0] || null;
     }
     return {
-      account: account ? { id: account._id, userId: account.userId, emailVerified: account.emailVerified, secret: account.secret ? "HAS_HASH" : "NONE" } : null,
+      account: account ? { id: account._id, userId: account.userId, emailVerified: account.emailVerified } : null,
       user: user ? { id: (user as any)._id, email: (user as any).email, name: (user as any).name } : null,
       userProfile,
     };
@@ -29,9 +29,8 @@ export const checkVerificationCodes = query({
 
 // Temp: create client profile for a user by userId
 export const createClientProfile = mutation({
-  args: { userId: v.id("users"), displayName: v.string(), email: v.string() },
-  handler: async (ctx, { userId, displayName, email }) => {
-    // Check if profile already exists
+  args: { userId: v.id("users"), displayName: v.string() },
+  handler: async (ctx, { userId, displayName }) => {
     const existing = await ctx.db
       .query("userProfiles")
       .filter((q) => q.eq(q.field("userId"), userId))
@@ -41,7 +40,6 @@ export const createClientProfile = mutation({
       userId,
       role: "client",
       displayName,
-      email,
     });
     return { status: "created", id };
   },

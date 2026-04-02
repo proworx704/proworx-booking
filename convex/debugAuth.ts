@@ -44,7 +44,7 @@ export const listAllProfiles = query({
 // Test what initMyProfile would do for a given user
 export const testInitLogic = query({
   args: { userId: v.string() },
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const userId = ctx.db.normalizeId("users", args.userId as any);
     if (!userId) return { error: "Invalid userId" };
     

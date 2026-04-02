@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "convex/react";
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Car,
   CalendarDays,
@@ -517,7 +517,26 @@ export function MaintenanceMembersPage() {
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Name *</Label>
-                <Input value={form.name} onChange={(e) => setField("name", e.target.value)} />
+                <CustomerAutocomplete
+                  value={form.name}
+                  onChange={(name) => setField("name", name)}
+                  onSelect={(customer) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      name: customer.name,
+                      phone: customer.phone || prev.phone,
+                      email: customer.email || prev.email,
+                      address: customer.address || prev.address,
+                      zipCode: customer.zipCode || prev.zipCode,
+                      vehicleYear: customer.vehicleYear || prev.vehicleYear,
+                      vehicleMake: customer.vehicleMake || prev.vehicleMake,
+                      vehicleModel: customer.vehicleModel || prev.vehicleModel,
+                      vehicleColor: customer.vehicleColor || prev.vehicleColor,
+                      vehicleType: (customer.vehicleType as "sedan" | "suv" | "") || prev.vehicleType,
+                    }));
+                  }}
+                  disabled={!!editingId}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Phone</Label>
@@ -715,6 +734,127 @@ export function MaintenanceMembersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ── Customer Autocomplete ──────────────────────────────────────────────────────
+
+type CustomerResult = {
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  zipCode?: string;
+  vehicleYear?: string;
+  vehicleMake?: string;
+  vehicleModel?: string;
+  vehicleColor?: string;
+  vehicleType?: string;
+};
+
+function CustomerAutocomplete({
+  value,
+  onChange,
+  onSelect,
+  disabled,
+}: {
+  value: string;
+  onChange: (name: string) => void;
+  onSelect: (customer: CustomerResult) => void;
+  disabled?: boolean;
+}) {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [query, setQuery] = useState("");
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Debounce search query
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const handleChange = useCallback(
+    (val: string) => {
+      onChange(val);
+      clearTimeout(debounceRef.current);
+      if (val.trim().length >= 2) {
+        debounceRef.current = setTimeout(() => setQuery(val.trim()), 200);
+      } else {
+        setQuery("");
+        setShowDropdown(false);
+      }
+    },
+    [onChange],
+  );
+
+  // Fetch matching customers
+  const results = useQuery(
+    api.customers.list,
+    query.length >= 2 ? { search: query } : "skip",
+  );
+
+  // Show dropdown when results arrive
+  useEffect(() => {
+    if (results && results.length > 0 && query.length >= 2) {
+      setShowDropdown(true);
+    } else {
+      setShowDropdown(false);
+    }
+  }, [results, query]);
+
+  // Close on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const selectCustomer = (c: CustomerResult) => {
+    onSelect(c);
+    setShowDropdown(false);
+    setQuery("");
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <Input
+        value={value}
+        onChange={(e) => handleChange(e.target.value)}
+        placeholder="Start typing to search..."
+        disabled={disabled}
+        autoComplete="off"
+      />
+      {showDropdown && results && results.length > 0 && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          {results.slice(0, 8).map((c) => (
+            <button
+              key={c._id}
+              type="button"
+              className="w-full text-left px-3 py-2 hover:bg-muted/60 transition-colors border-b last:border-0"
+              onClick={() =>
+                selectCustomer({
+                  name: c.name,
+                  phone: c.phone ?? undefined,
+                  email: c.email ?? undefined,
+                  address: c.address ?? undefined,
+                  zipCode: c.zipCode ?? undefined,
+                  vehicleYear: c.vehicleYear ?? undefined,
+                  vehicleMake: c.vehicleMake ?? undefined,
+                  vehicleModel: c.vehicleModel ?? undefined,
+                  vehicleColor: c.vehicleColor ?? undefined,
+                  vehicleType: c.vehicleType ?? undefined,
+                })
+              }
+            >
+              <p className="font-medium text-sm">{c.name}</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {[c.phone, c.email, c.zipCode].filter(Boolean).join(" · ")}
+              </p>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

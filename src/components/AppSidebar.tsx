@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Contact,
   Mail,
+  MapPin,
   Megaphone,
   Gift,
   Globe,

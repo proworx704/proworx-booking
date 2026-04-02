@@ -7,6 +7,7 @@ export { BookingPage } from "./BookingPage";
 export { BookingsPage } from "./BookingsPage";
 export { BookingDetailPage } from "./BookingDetailPage";
 export { ServicesPage } from "./ServicesPage";
+export { ServiceWidgetsPage } from "./ServiceWidgetsPage";
 export { AvailabilityPage } from "./AvailabilityPage";
 export { CustomersPage } from "./CustomersPage";
 export { CustomerDetailPage } from "./CustomerDetailPage";

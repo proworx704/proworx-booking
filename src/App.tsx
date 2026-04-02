@@ -23,6 +23,7 @@ import {
   LoginPage,
   ServiceFreezePage,
   ServicesPage,
+  ServiceWidgetsPage,
   SettingsPage,
   SignupPage,
   StaffDetailPage,
@@ -113,6 +114,7 @@ function App() {
                 <Route path="/staff/:id" element={<StaffDetailPage />} />
                 <Route path="/catalog" element={<CatalogPage />} />
                 <Route path="/services" element={<ServicesPage />} />
+                <Route path="/service-widgets" element={<ServiceWidgetsPage />} />
                 <Route path="/availability" element={<AvailabilityPage />} />
                 <Route path="/schedule-blocks" element={<ScheduleBlocksPage />} />
                 <Route path="/service-freeze" element={<ServiceFreezePage />} />

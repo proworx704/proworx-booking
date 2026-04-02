@@ -48,3 +48,19 @@ export const getInternal = internalQuery({
     return row?.value ?? null;
   },
 });
+
+// ── Bulk read (for loading many widget URLs at once) ─────────────────────────
+export const getMultiple = query({
+  args: { keys: v.array(v.string()) },
+  handler: async (ctx, { keys }) => {
+    const result: Record<string, string> = {};
+    for (const key of keys) {
+      const row = await ctx.db
+        .query("systemSettings")
+        .withIndex("by_key", (q) => q.eq("key", key))
+        .unique();
+      if (row) result[key] = row.value;
+    }
+    return result;
+  },
+});

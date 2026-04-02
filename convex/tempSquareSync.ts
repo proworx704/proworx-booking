@@ -283,3 +283,18 @@ export const patchCustomerNoAuth = mutation({
     return "ok";
   },
 });
+
+// Temp: update catalog item (no auth)
+export const updateCatalogNoAuth = mutation({
+  args: {
+    id: v.id("serviceCatalog"),
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...patch } = args;
+    const clean: Record<string, string> = {};
+    if (patch.description !== undefined) clean.description = patch.description;
+    await ctx.db.patch(id, clean);
+    return "ok";
+  },
+});

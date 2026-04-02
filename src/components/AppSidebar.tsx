@@ -17,6 +17,7 @@ import {
   Globe,
   Headphones,
   LayoutDashboard,
+  LayoutGrid,
   List,
   LogOut,
   Moon,
@@ -69,13 +70,17 @@ import {
 const mainNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/bookings", label: "Bookings", icon: CalendarCheck },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/marketing", label: "Marketing", icon: Megaphone },
   { href: "/email-campaigns", label: "Email Campaigns", icon: Mail },
   { href: "/ai-assistant", label: "AI Assistant", icon: Bot },
   { href: "/customers", label: "Clients", icon: Contact },
   { href: "/staff", label: "Staff", icon: Users },
+];
+
+const bookingsNav = [
+  { href: "/bookings", label: "All Bookings", icon: CalendarCheck },
+  { href: "/service-widgets", label: "Services", icon: LayoutGrid },
 ];
 
 const payrollNav = [
@@ -216,7 +221,6 @@ function AdminSidebarNav() {
             icon={item.icon}
             isActive={
               p === item.href ||
-              (item.href === "/bookings" && p.startsWith("/bookings")) ||
               (item.href === "/customers" && p.startsWith("/customers")) ||
               (item.href === "/staff" && p.startsWith("/staff"))
             }
@@ -224,6 +228,12 @@ function AdminSidebarNav() {
         ))}
 
         {/* Collapsible sections */}
+        <CollapsibleNavSection
+          label="Bookings"
+          icon={CalendarCheck}
+          items={bookingsNav}
+          pathname={p}
+        />
         <CollapsibleNavSection
           label="Loyalty"
           icon={Star}

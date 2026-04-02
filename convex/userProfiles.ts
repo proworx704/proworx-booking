@@ -263,13 +263,26 @@ export const initMyProfile = mutation({
     const user = await ctx.db.get(userId);
     const email = (user?.email ?? "").toLowerCase();
 
-    // Only specific owner emails get admin access. Everyone else is employee.
-    const role = OWNER_EMAILS.includes(email) ? "owner" : "employee";
-    const displayName = user?.name || email.split("@")[0] || "Team Member";
+    // Determine role: owner emails → owner, known employee emails → employee, everyone else → client
+    const EMPLOYEE_EMAILS = (await ctx.db.query("staff").collect())
+      .map((s: any) => (s.email ?? "").toLowerCase())
+      .filter((e: string) => e !== "");
+    
+    let role: "owner" | "employee" | "client";
+    if (OWNER_EMAILS.includes(email)) {
+      role = "owner";
+    } else if (EMPLOYEE_EMAILS.includes(email)) {
+      role = "employee";
+    } else {
+      role = "client";
+    }
+
+    const displayName = user?.name || email.split("@")[0] || (role === "client" ? "Client" : "Team Member");
 
     // For employees, auto-link or create payroll worker + match staff
     let payrollWorkerId: unknown = undefined;
     let staffId: unknown = undefined;
+    let customerId: unknown = undefined;
 
     if (role === "employee") {
       // Try to find existing payroll worker by email
@@ -300,6 +313,26 @@ export const initMyProfile = mutation({
       if (matchedStaff) {
         staffId = matchedStaff._id;
       }
+    } else if (role === "client") {
+      // For clients, find or create a customer record
+      let customer = email
+        ? await ctx.db
+            .query("customers")
+            .withIndex("by_email", (q: any) => q.eq("email", email))
+            .first()
+        : null;
+      if (!customer) {
+        const cId = await ctx.db.insert("customers", {
+          name: displayName,
+          email: email || undefined,
+          source: "booking" as const,
+          totalBookings: 0,
+          totalSpent: 0,
+        });
+        customerId = cId;
+      } else {
+        customerId = customer._id;
+      }
     }
 
     const profileData: Record<string, unknown> = {
@@ -309,6 +342,7 @@ export const initMyProfile = mutation({
     };
     if (payrollWorkerId) profileData.payrollWorkerId = payrollWorkerId;
     if (staffId) profileData.staffId = staffId;
+    if (customerId) profileData.customerId = customerId;
 
     const profileId = await ctx.db.insert("userProfiles", profileData as any);
 

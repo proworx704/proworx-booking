@@ -52,15 +52,34 @@ const STEPS = [
 type StepKey = (typeof STEPS)[number]["key"];
 
 const SERVICE_TYPES = [
-  { value: "full-detail", label: "Full Detail", category: "core", slug: "standard-inside-out" },
-  { value: "interior", label: "Interior Only", category: "core", slug: "standard-interior-only" },
-  { value: "exterior", label: "Exterior Only", category: "core", slug: "standard-exterior-only" },
-  { value: "boat", label: "Boat Detail", category: "boatDetailing", slug: "" },
-  { value: "paint-correction", label: "Paint Correction", category: "paintCorrection", slug: "" },
-  { value: "ceramic", label: "Ceramic Coating", category: "ceramicCoating", slug: "" },
+  { value: "full-detail", label: "Full Detail", category: "core" },
+  { value: "interior", label: "Interior Only", category: "core" },
+  { value: "exterior", label: "Exterior Only", category: "core" },
+  { value: "boat", label: "Boat Detail", category: "boatDetailing" },
+  { value: "paint-correction", label: "Paint Correction", category: "paintCorrection" },
+  { value: "ceramic", label: "Ceramic Coating", category: "ceramicCoating" },
 ] as const;
 
 type ServiceType = (typeof SERVICE_TYPES)[number]["value"];
+
+const TIER_OPTIONS: Record<string, Array<{ value: string; label: string; slug: string; badge?: string; description?: string }>> = {
+  "full-detail": [
+    { value: "standard", label: "Standard", slug: "standard-inside-out", description: "Full interior + exterior refresh" },
+    { value: "premium-interior", label: "Premium — Interior Focus", slug: "premium-inside-out-interior", badge: "Popular", description: "+Leather, Steam, Fragrance, UV Protection (10% off add-ons)" },
+    { value: "premium-exterior", label: "Premium — Exterior Focus", slug: "premium-inside-out-exterior", badge: "Popular", description: "+Clay Bar, Iron Decon, 6mo Sealant, Trim Restore (10% off add-ons)" },
+    { value: "elite", label: "Elite Ceramic", slug: "elite-inside-out", badge: "Best Protection", description: "+All add-ons with ceramic upgrades — Leather Shield, Ceramic Tire & Trim, 12mo Ceramic Wax (15% off)" },
+  ],
+  interior: [
+    { value: "standard", label: "Standard", slug: "standard-interior-only", description: "Complete interior detail" },
+    { value: "premium", label: "Premium", slug: "premium-interior-only", badge: "Recommended", description: "+Leather, Steam, Fragrance, UV Protection (10% off add-ons)" },
+    { value: "elite", label: "Elite Ceramic", slug: "elite-interior-only", badge: "Best Protection", description: "+Steam, Fragrance, Fabric Protection, GYEON Leather Shield (15% off)" },
+  ],
+  exterior: [
+    { value: "standard", label: "Standard", slug: "standard-exterior-only", description: "Professional exterior refresh" },
+    { value: "premium", label: "Premium", slug: "premium-exterior-only", badge: "Most Popular", description: "+Clay Bar, Iron Decon, Sealant, Trim Restore (10% off add-ons)" },
+    { value: "elite", label: "Elite Ceramic", slug: "elite-exterior-only", badge: "Best Protection", description: "+Clay Bar, Iron Decon, Ceramic Tire & Trim, 12mo Ceramic Wax (15% off)" },
+  ],
+};
 
 const VEHICLE_SIZES = [
   { value: "Coupe/Sedan", label: "Coupe / Sedan" },
@@ -136,11 +155,16 @@ function matchesVehicleSize(variantLabel: string, selectedSize: string): boolean
 
 function ServiceStep({
   value,
+  tier,
   onChange,
+  onTierChange,
 }: {
   value: ServiceType | "";
+  tier: string;
   onChange: (v: ServiceType) => void;
+  onTierChange: (t: string) => void;
 }) {
+  const tiers = value ? TIER_OPTIONS[value] : null;
   return (
     <div className="space-y-4">
       <div>
@@ -175,6 +199,48 @@ function ServiceStep({
           </button>
         ))}
       </div>
+
+      {/* Tier selection for core services */}
+      {tiers && (
+        <div className="mt-2 space-y-3">
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-1">Choose Tier</h3>
+            <p className="text-xs text-muted-foreground">Premium & Elite bundle popular add-ons at a discount</p>
+          </div>
+          <div className="grid grid-cols-1 gap-2">
+            {tiers.map((t) => {
+              const isSelected = tier === t.value;
+              return (
+                <button
+                  type="button"
+                  key={t.value}
+                  onClick={() => onTierChange(t.value)}
+                  className={`relative flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all ${
+                    isSelected
+                      ? "border-blue-600 bg-blue-50 dark:bg-blue-950/30 ring-1 ring-blue-600/30"
+                      : "border-border hover:border-blue-300 hover:bg-muted/50"
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{t.label}</span>
+                      {t.badge && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                          {t.badge}
+                        </span>
+                      )}
+                    </div>
+                    {t.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
+                    )}
+                  </div>
+                  {isSelected && <Check className="size-5 text-blue-600 shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -921,6 +987,7 @@ export function ReceptionistPage({ standalone = false }: { standalone?: boolean 
   // State
   const [step, setStep] = useState<StepKey>("service");
   const [serviceType, setServiceType] = useState<ServiceType | "">("");
+  const [tier, setTier] = useState("");
   const [subService, setSubService] = useState("");
   const [vehicleSize, setVehicleSize] = useState("");
   const [boatLength, setBoatLength] = useState("");
@@ -942,6 +1009,7 @@ export function ReceptionistPage({ standalone = false }: { standalone?: boolean 
 
   // Reset dependent state when service changes
   useEffect(() => {
+    setTier("");
     setVehicleSize("");
     setBoatLength("");
     setSubService("");
@@ -995,9 +1063,14 @@ export function ReceptionistPage({ standalone = false }: { standalone?: boolean 
       }
     }
 
-    // For core services, use slug match
-    if (svc.slug) {
-      const item = catalog.find((c) => c.slug === svc.slug);
+    // For core services, resolve slug from tier selection
+    const tiers = TIER_OPTIONS[serviceType as string];
+    const resolvedSlug = tiers
+      ? (tiers.find((t) => t.value === tier)?.slug ?? "")
+      : "";
+
+    if (resolvedSlug) {
+      const item = catalog.find((c) => c.slug === resolvedSlug);
       if (item && vehicleSize) {
         const variant = item.variants.find((v) =>
           matchesVehicleSize(v.label, vehicleSize),
@@ -1020,7 +1093,7 @@ export function ReceptionistPage({ standalone = false }: { standalone?: boolean 
     }
 
     return { catalogItemId: null, serviceName: svc.label, basePrice: 0, baseDuration: 120 };
-  }, [catalog, serviceType, vehicleSize, boatLength, subService]);
+  }, [catalog, serviceType, tier, vehicleSize, boatLength, subService]);
 
   // Resolve selected variant label
   const selectedVariantLabel = useMemo(() => {
@@ -1076,8 +1149,11 @@ export function ReceptionistPage({ standalone = false }: { standalone?: boolean 
   // Step validation
   const canAdvance = useMemo(() => {
     switch (step) {
-      case "service":
-        return !!serviceType;
+      case "service": {
+        if (!serviceType) return false;
+        const tiers = TIER_OPTIONS[serviceType as string];
+        return tiers ? !!tier : true;
+      }
       case "size":
         if (serviceType === "boat") return !!boatLength && !!subService;
         if (["paint-correction", "ceramic"].includes(serviceType as string))
@@ -1157,6 +1233,7 @@ export function ReceptionistPage({ standalone = false }: { standalone?: boolean 
         // Reset form for next booking in standalone mode
         setStep("service");
         setServiceType("");
+        setTier("");
         setSubService("");
         setVehicleSize("");
         setBoatLength("");
@@ -1281,7 +1358,7 @@ export function ReceptionistPage({ standalone = false }: { standalone?: boolean 
       <div className="flex-1 overflow-auto">
         <div className="max-w-3xl mx-auto px-4 py-6">
           {step === "service" && (
-            <ServiceStep value={serviceType} onChange={setServiceType} />
+            <ServiceStep value={serviceType} tier={tier} onChange={setServiceType} onTierChange={setTier} />
           )}
           {step === "size" && (
             <SizeStep

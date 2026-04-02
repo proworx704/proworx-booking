@@ -171,6 +171,7 @@ export const seed = mutation({
       popular?: boolean;
     }> = [
       // ─── CORE SERVICES ──────────────────────────────────────
+      // ── Inside & Out (4 tiers) ──
       {
         name: "Standard Inside & Out",
         slug: "standard-inside-out",
@@ -186,6 +187,51 @@ export const seed = mutation({
         sortOrder: 1,
       },
       {
+        name: "Premium Inside & Out — Interior Focus",
+        slug: "premium-inside-out-interior",
+        description: "Standard Inside & Out plus interior-focused add-ons at 10% off: Leather Deep Clean & Conditioning, Steam Cleaning, Premium Fragrance, and UV Protection.",
+        category: "core",
+        variants: [
+          { label: "Coupe/Sedan", price: 31100, durationMin: 210 },
+          { label: "Small SUV / Small Truck", price: 34700, durationMin: 240 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 38300, durationMin: 270 },
+          { label: "Vans", price: 41900, durationMin: 300 },
+        ],
+        isActive: true,
+        sortOrder: 2,
+        popular: true,
+      },
+      {
+        name: "Premium Inside & Out — Exterior Focus",
+        slug: "premium-inside-out-exterior",
+        description: "Standard Inside & Out plus exterior-focused add-ons at 10% off: Clay Bar Treatment, Iron Decontamination, 6-Month Paint Sealant, and Trim Restoration.",
+        category: "core",
+        variants: [
+          { label: "Coupe/Sedan", price: 45000, durationMin: 210 },
+          { label: "Small SUV / Small Truck", price: 48600, durationMin: 240 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 52200, durationMin: 270 },
+          { label: "Vans", price: 55800, durationMin: 300 },
+        ],
+        isActive: true,
+        sortOrder: 3,
+        popular: true,
+      },
+      {
+        name: "Elite Inside & Out — Ceramic",
+        slug: "elite-inside-out",
+        description: "The ultimate package — Standard base plus all add-ons at 15% off with ceramic upgrades: Steam Cleaning, Premium Fragrance, Clay Bar Treatment, Iron Decontamination, Fabric Protection, GYEON Leather Shield, Ceramic Tire Dressing, Plastic & Trim Ceramic, and 12-Month Ceramic Wax.",
+        category: "core",
+        variants: [
+          { label: "Coupe/Sedan", price: 67300, durationMin: 330 },
+          { label: "Small SUV / Small Truck", price: 70900, durationMin: 360 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 74500, durationMin: 390 },
+          { label: "Vans", price: 78100, durationMin: 420 },
+        ],
+        isActive: true,
+        sortOrder: 4,
+      },
+      // ── Interior Only (3 tiers) ──
+      {
         name: "Standard Interior Only",
         slug: "standard-interior-only",
         description: "Complete interior detail. Includes: thorough vacuum of all surfaces, carpet & upholstery shampoo, dashboard & console wipe-down, cup holders & crevices, interior glass cleaning, door panels & jambs, and light stain treatment.",
@@ -197,8 +243,38 @@ export const seed = mutation({
           { label: "Vans", price: 21600, durationMin: 180 },
         ],
         isActive: true,
-        sortOrder: 2,
+        sortOrder: 5,
       },
+      {
+        name: "Premium Interior Only",
+        slug: "premium-interior-only",
+        description: "Standard Interior plus bundled premium add-ons at 10% off: Leather Deep Clean & Conditioning, Steam Cleaning of vents and crevices, Premium Fragrance, and UV Protection for dashboard and plastics.",
+        category: "core",
+        variants: [
+          { label: "Coupe/Sedan", price: 25800, durationMin: 165 },
+          { label: "Small SUV / Small Truck", price: 27500, durationMin: 180 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 31100, durationMin: 210 },
+          { label: "Vans", price: 34700, durationMin: 240 },
+        ],
+        isActive: true,
+        sortOrder: 6,
+        popular: true,
+      },
+      {
+        name: "Elite Interior Only — Ceramic",
+        slug: "elite-interior-only",
+        description: "Standard Interior plus ceramic add-ons at 15% off: Steam Cleaning, Premium Fragrance, Fabric Protection / Weather Guard, and GYEON Leather Shield.",
+        category: "core",
+        variants: [
+          { label: "Coupe/Sedan", price: 31400, durationMin: 210 },
+          { label: "Small SUV / Small Truck", price: 33100, durationMin: 225 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 36700, durationMin: 255 },
+          { label: "Vans", price: 40300, durationMin: 285 },
+        ],
+        isActive: true,
+        sortOrder: 7,
+      },
+      // ── Exterior Only (3 tiers) ──
       {
         name: "Standard Exterior Only",
         slug: "standard-exterior-only",
@@ -211,7 +287,36 @@ export const seed = mutation({
           { label: "Vans", price: 16500, durationMin: 120 },
         ],
         isActive: true,
-        sortOrder: 3,
+        sortOrder: 8,
+      },
+      {
+        name: "Premium Exterior Only",
+        slug: "premium-exterior-only",
+        description: "Standard Exterior plus bundled premium add-ons at 10% off: Clay Bar Treatment for smooth paint, Iron Decontamination, 6-Month Paint Sealant, and Trim Restoration to revive faded plastics.",
+        category: "core",
+        variants: [
+          { label: "Coupe/Sedan", price: 37300, durationMin: 150 },
+          { label: "Small SUV / Small Truck", price: 39400, durationMin: 165 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 41400, durationMin: 180 },
+          { label: "Vans", price: 43500, durationMin: 195 },
+        ],
+        isActive: true,
+        sortOrder: 9,
+        popular: true,
+      },
+      {
+        name: "Elite Exterior Only — Ceramic",
+        slug: "elite-exterior-only",
+        description: "Standard Exterior plus ceramic add-ons at 15% off: Clay Bar, Iron Decontamination, Ceramic Tire Dressing, Plastic & Trim Ceramic, and 12-Month Ceramic Wax for ultimate exterior protection.",
+        category: "core",
+        variants: [
+          { label: "Coupe/Sedan", price: 40900, durationMin: 195 },
+          { label: "Small SUV / Small Truck", price: 43000, durationMin: 210 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 45000, durationMin: 225 },
+          { label: "Vans", price: 47100, durationMin: 240 },
+        ],
+        isActive: true,
+        sortOrder: 10,
       },
       {
         name: "Basic Exterior Maintenance Wash",
@@ -222,7 +327,7 @@ export const seed = mutation({
           { label: "All Vehicles", price: 7500, durationMin: 45 },
         ],
         isActive: true,
-        sortOrder: 4,
+        sortOrder: 9,
       },
 
       // ─── PAINT CORRECTION ───────────────────────────────────
@@ -831,40 +936,216 @@ export const seed = mutation({
   },
 });
 
-// ─── One-time migration: Update service descriptions for receptionist clarity ──
-export const migrateDescriptions = mutation({
+// ─── Production migration: 10-tier bundle pricing (April 2026) ────────────────
+// Internal migration – callable from CLI: npx convex run catalog:runAddBundleTiers
+// Also callable from the /migrate-tiers HTTP endpoint
+type CatalogCategory = "core" | "paintCorrection" | "ceramicCoating" | "interiorAddon" | "exteriorAddon" | "ceramicAddon" | "boatDetailing" | "boatCeramic" | "boatAddon" | "membership";
+
+export const runAddBundleTiers = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const updates: Record<string, string> = {
-      "standard-inside-out":
-        "A full-vehicle refresh — interior and exterior in one appointment. Includes: full vacuum, carpet & upholstery shampoo, dashboard & console wipe-down, interior glass, door jambs, hand wash, wheel & tire cleaning, exterior glass, light spray wax, and tire shine.",
-      "premium-inside-out":
-        "Everything in our Standard detail PLUS: leather deep clean & conditioning, steam cleaning of vents and hard-to-reach areas, 6-month paint sealant for long-lasting protection, interior UV protection on all plastics, and a premium long-lasting air freshener.",
-      "elite-inside-out":
-        "Our most complete detail — everything in the Premium package PLUS: clay bar decontamination to remove bonded surface contaminants, iron decontamination for brake dust & fallout, 12-month ceramic wax for maximum paint protection, and full exterior trim restoration & protectant.",
-      "standard-interior-only":
-        "Complete interior detail. Includes: thorough vacuum of all surfaces, carpet & upholstery shampoo, dashboard & console wipe-down, cup holders & crevices, interior glass cleaning, door panels & jambs, and light stain treatment.",
-      "premium-interior-only":
-        "Standard interior detail PLUS: leather deep clean & conditioning, steam cleaning of vents, crevices & hard-to-reach areas, interior UV protection on dashboard & plastics, and a premium long-lasting air freshener.",
-      "standard-exterior-only":
-        "Professional exterior refresh. Includes: full hand wash, wheel & tire cleaning, tire shine, exterior glass cleaning, door jambs, and a light spray wax for protection and shine.",
-      "premium-exterior-only":
-        "Standard exterior PLUS: clay bar decontamination for a smooth paint surface, iron decontamination to remove brake dust & industrial fallout, 6-month paint sealant, and exterior trim protectant to restore faded plastics.",
-      "elite-exterior-only":
-        "Everything in the Premium exterior PLUS: upgraded 12-month ceramic wax for maximum long-term paint protection and deep gloss finish.",
-    };
+    const tiers: Array<{
+      slug: string;
+      name: string;
+      category: CatalogCategory;
+      description: string;
+      variants: Array<{ label: string; price: number; durationMin: number }>;
+      sortOrder: number;
+      popular?: boolean;
+    }> = [
+      // ── Inside & Out (4 tiers) ──
+      {
+        slug: "standard-inside-out",
+        name: "Standard Inside & Out",
+        category: "core",
+        description: "A full-vehicle refresh — interior and exterior in one appointment. Includes: full vacuum, carpet & upholstery shampoo, dashboard & console wipe-down, interior glass, door jambs, hand wash, wheel & tire cleaning, exterior glass, light spray wax, and tire shine.",
+        variants: [
+          { label: "Coupe/Sedan", price: 18000, durationMin: 150 },
+          { label: "Small SUV / Small Truck", price: 21600, durationMin: 180 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 25200, durationMin: 210 },
+          { label: "Vans", price: 28800, durationMin: 240 },
+        ],
+        sortOrder: 1,
+      },
+      {
+        slug: "premium-inside-out-interior",
+        name: "Premium Inside & Out — Interior Focus",
+        category: "core",
+        description: "Standard Inside & Out plus interior-focused add-ons at 10% off: Leather Deep Clean & Conditioning, Steam Cleaning, Premium Fragrance, and UV Protection.",
+        variants: [
+          { label: "Coupe/Sedan", price: 31100, durationMin: 210 },
+          { label: "Small SUV / Small Truck", price: 34700, durationMin: 240 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 38300, durationMin: 270 },
+          { label: "Vans", price: 41900, durationMin: 300 },
+        ],
+        sortOrder: 2,
+        popular: true,
+      },
+      {
+        slug: "premium-inside-out-exterior",
+        name: "Premium Inside & Out — Exterior Focus",
+        category: "core",
+        description: "Standard Inside & Out plus exterior-focused add-ons at 10% off: Clay Bar Treatment, Iron Decontamination, 6-Month Paint Sealant, and Trim Restoration.",
+        variants: [
+          { label: "Coupe/Sedan", price: 45000, durationMin: 210 },
+          { label: "Small SUV / Small Truck", price: 48600, durationMin: 240 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 52200, durationMin: 270 },
+          { label: "Vans", price: 55800, durationMin: 300 },
+        ],
+        sortOrder: 3,
+        popular: true,
+      },
+      {
+        slug: "elite-inside-out",
+        name: "Elite Inside & Out — Ceramic",
+        category: "core",
+        description: "The ultimate package — Standard base plus all add-ons at 15% off with ceramic upgrades: Steam Cleaning, Premium Fragrance, Clay Bar Treatment, Iron Decontamination, Fabric Protection, GYEON Leather Shield, Ceramic Tire Dressing, Plastic & Trim Ceramic, and 12-Month Ceramic Wax.",
+        variants: [
+          { label: "Coupe/Sedan", price: 67300, durationMin: 330 },
+          { label: "Small SUV / Small Truck", price: 70900, durationMin: 360 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 74500, durationMin: 390 },
+          { label: "Vans", price: 78100, durationMin: 420 },
+        ],
+        sortOrder: 4,
+      },
+      // ── Interior Only (3 tiers) ──
+      {
+        slug: "standard-interior-only",
+        name: "Standard Interior Only",
+        category: "core",
+        description: "Complete interior detail. Includes: thorough vacuum of all surfaces, carpet & upholstery shampoo, dashboard & console wipe-down, cup holders & crevices, interior glass cleaning, door panels & jambs, and light stain treatment.",
+        variants: [
+          { label: "Coupe/Sedan", price: 12700, durationMin: 105 },
+          { label: "Small SUV / Small Truck", price: 14400, durationMin: 120 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 18000, durationMin: 150 },
+          { label: "Vans", price: 21600, durationMin: 180 },
+        ],
+        sortOrder: 5,
+      },
+      {
+        slug: "premium-interior-only",
+        name: "Premium Interior Only",
+        category: "core",
+        description: "Standard Interior plus bundled premium add-ons at 10% off: Leather Deep Clean & Conditioning, Steam Cleaning of vents and crevices, Premium Fragrance, and UV Protection for dashboard and plastics.",
+        variants: [
+          { label: "Coupe/Sedan", price: 25800, durationMin: 165 },
+          { label: "Small SUV / Small Truck", price: 27500, durationMin: 180 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 31100, durationMin: 210 },
+          { label: "Vans", price: 34700, durationMin: 240 },
+        ],
+        sortOrder: 6,
+        popular: true,
+      },
+      {
+        slug: "elite-interior-only",
+        name: "Elite Interior Only — Ceramic",
+        category: "core",
+        description: "Standard Interior plus ceramic add-ons at 15% off: Steam Cleaning, Premium Fragrance, Fabric Protection / Weather Guard, and GYEON Leather Shield.",
+        variants: [
+          { label: "Coupe/Sedan", price: 31400, durationMin: 210 },
+          { label: "Small SUV / Small Truck", price: 33100, durationMin: 225 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 36700, durationMin: 255 },
+          { label: "Vans", price: 40300, durationMin: 285 },
+        ],
+        sortOrder: 7,
+      },
+      // ── Exterior Only (3 tiers) ──
+      {
+        slug: "standard-exterior-only",
+        name: "Standard Exterior Only",
+        category: "core",
+        description: "Professional exterior refresh. Includes: full hand wash, wheel & tire cleaning, tire shine, exterior glass cleaning, door jambs, and a light spray wax for protection and shine.",
+        variants: [
+          { label: "Coupe/Sedan", price: 10300, durationMin: 75 },
+          { label: "Small SUV / Small Truck", price: 12400, durationMin: 90 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 14400, durationMin: 105 },
+          { label: "Vans", price: 16500, durationMin: 120 },
+        ],
+        sortOrder: 8,
+      },
+      {
+        slug: "premium-exterior-only",
+        name: "Premium Exterior Only",
+        category: "core",
+        description: "Standard Exterior plus bundled premium add-ons at 10% off: Clay Bar Treatment for smooth paint, Iron Decontamination, 6-Month Paint Sealant, and Trim Restoration to revive faded plastics.",
+        variants: [
+          { label: "Coupe/Sedan", price: 37300, durationMin: 150 },
+          { label: "Small SUV / Small Truck", price: 39400, durationMin: 165 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 41400, durationMin: 180 },
+          { label: "Vans", price: 43500, durationMin: 195 },
+        ],
+        sortOrder: 9,
+        popular: true,
+      },
+      {
+        slug: "elite-exterior-only",
+        name: "Elite Exterior Only — Ceramic",
+        category: "core",
+        description: "Standard Exterior plus ceramic add-ons at 15% off: Clay Bar, Iron Decontamination, Ceramic Tire Dressing, Plastic & Trim Ceramic, and 12-Month Ceramic Wax for ultimate exterior protection.",
+        variants: [
+          { label: "Coupe/Sedan", price: 40900, durationMin: 195 },
+          { label: "Small SUV / Small Truck", price: 43000, durationMin: 210 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 45000, durationMin: 225 },
+          { label: "Vans", price: 47100, durationMin: 240 },
+        ],
+        sortOrder: 10,
+      },
+    ];
 
-    let count = 0;
-    for (const [slug, description] of Object.entries(updates)) {
-      const item = await ctx.db
+    let updated = 0;
+    let created = 0;
+    const log: string[] = [];
+
+    for (const t of tiers) {
+      const existing = await ctx.db
         .query("serviceCatalog")
-        .withIndex("by_slug", (q) => q.eq("slug", slug))
+        .withIndex("by_slug", (q) => q.eq("slug", t.slug))
         .first();
-      if (item) {
-        await ctx.db.patch(item._id, { description });
-        count++;
+      if (existing) {
+        await ctx.db.patch(existing._id, {
+          name: t.name,
+          category: t.category,
+          description: t.description,
+          variants: t.variants,
+          sortOrder: t.sortOrder,
+          popular: t.popular,
+          isActive: true,
+        });
+        log.push(`updated: ${t.slug}`);
+        updated++;
+      } else {
+        await ctx.db.insert("serviceCatalog", {
+          slug: t.slug,
+          name: t.name,
+          category: t.category,
+          description: t.description,
+          variants: t.variants,
+          sortOrder: t.sortOrder,
+          popular: t.popular,
+          isActive: true,
+        });
+        log.push(`created: ${t.slug}`);
+        created++;
       }
     }
-    return `Updated ${count} descriptions`;
+
+    // Deactivate old "premium-inside-out" (replaced by interior/exterior variants)
+    const oldPremiumIO = await ctx.db
+      .query("serviceCatalog")
+      .withIndex("by_slug", (q) => q.eq("slug", "premium-inside-out"))
+      .first();
+    if (oldPremiumIO) {
+      await ctx.db.patch(oldPremiumIO._id, { isActive: false });
+      log.push("deactivated: premium-inside-out (replaced by interior/exterior focus variants)");
+    }
+
+    // Fix sort order for basic wash
+    const wash = await ctx.db
+      .query("serviceCatalog")
+      .withIndex("by_slug", (q) => q.eq("slug", "basic-exterior-wash"))
+      .first();
+    if (wash) await ctx.db.patch(wash._id, { sortOrder: 11 });
+
+    return `10-tier migration complete: ${created} created, ${updated} updated. ${log.join("; ")}`;
   },
 });

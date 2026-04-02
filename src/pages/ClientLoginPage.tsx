@@ -1,13 +1,26 @@
-import { useConvexAuth } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
 import { Link, Navigate } from "react-router-dom";
 import { useUserRole } from "@/contexts/RoleContext";
 import { SignIn } from "@/components/SignIn";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { api } from "../../convex/_generated/api";
 
 export function ClientLoginPage() {
   const { isAuthenticated } = useConvexAuth();
-  const { isClient, isAdmin, isEmployee, isLoading } = useUserRole();
+  const { isClient, isAdmin, isEmployee, isLoading, role } = useUserRole();
+  const initClientProfile = useMutation(api.userProfiles.initClientProfile);
+  const didInit = useRef(false);
+
+  // Auto-create client profile if authenticated but no role (orphaned account)
+  useEffect(() => {
+    if (!isAuthenticated || isLoading || didInit.current) return;
+    if (role === null) {
+      didInit.current = true;
+      initClientProfile({}).catch(() => { didInit.current = false; });
+    }
+  }, [isAuthenticated, isLoading, role, initClientProfile]);
 
   // If already authenticated, redirect to appropriate area
   if (isAuthenticated && !isLoading) {

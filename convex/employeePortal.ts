@@ -302,7 +302,27 @@ export const getMyJob = query({
       booking.staffId?.toString() === myStaffId ||
       (booking as any).staffIds?.some((sid: any) => sid.toString() === myStaffId);
     if (!isAssigned) return null;
-    return booking;
+
+    // Enrich with vehicle info from customer profile
+    let vehicleInfo = null;
+    if (booking.customerId) {
+      const customer = await ctx.db.get(booking.customerId);
+      if (customer) {
+        let vehiclePhotoUrl: string | null = null;
+        if (customer.vehiclePhotoId) {
+          vehiclePhotoUrl = await ctx.storage.getUrl(customer.vehiclePhotoId);
+        }
+        vehicleInfo = {
+          vehicleYear: customer.vehicleYear,
+          vehicleMake: customer.vehicleMake,
+          vehicleModel: customer.vehicleModel,
+          vehicleColor: customer.vehicleColor,
+          vehicleType: customer.vehicleType,
+          vehiclePhotoUrl,
+        };
+      }
+    }
+    return { ...booking, vehicleInfo };
   },
 });
 

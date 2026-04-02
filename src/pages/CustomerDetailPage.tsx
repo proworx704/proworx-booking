@@ -2,7 +2,9 @@ import { useMutation, useQuery } from "convex/react";
 import {
   ArrowLeft,
   Calendar,
+  Camera,
   Car,
+  Loader2,
   Mail,
   MapPin,
   Navigation,
@@ -10,9 +12,11 @@ import {
   Phone,
   Trash2,
   Truck,
+  Upload,
   User,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,10 +71,13 @@ export function CustomerDetailPage() {
   );
   const updateCustomer = useMutation(api.customers.update);
   const deleteCustomer = useMutation(api.customers.remove);
+  const generateUploadUrl = useMutation(api.customers.generateVehicleUploadUrl);
 
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (customer === undefined) {
     return <div className="text-center py-12 text-muted-foreground">Loading...</div>;
@@ -127,6 +134,31 @@ export function CustomerDetailPage() {
   const handleDelete = async () => {
     await deleteCustomer({ id: customer._id });
     navigate("/customers");
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const uploadUrl = await generateUploadUrl();
+      const result = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      const { storageId } = await result.json();
+      await updateCustomer({ id: customer._id, vehiclePhotoId: storageId });
+    } catch (err) {
+      console.error("Upload failed:", err);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    await updateCustomer({ id: customer._id, removeVehiclePhoto: true });
   };
 
   const vehicleStr = [
@@ -236,12 +268,51 @@ export function CustomerDetailPage() {
           </Card>
 
           {/* Vehicle Info */}
-          {(vehicleStr || customer.vehicleColor || customer.vehicleType) && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Vehicle</CardTitle>
-              </CardHeader>
-              <CardContent>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Vehicle</CardTitle>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoUpload}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <><Loader2 className="size-4 mr-1 animate-spin" /> Uploading...</>
+                ) : customer.vehiclePhotoUrl ? (
+                  <><Camera className="size-4 mr-1" /> Change Photo</>
+                ) : (
+                  <><Upload className="size-4 mr-1" /> Add Photo</>
+                )}
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Vehicle Photo */}
+              {customer.vehiclePhotoUrl && (
+                <div className="relative group">
+                  <img
+                    src={customer.vehiclePhotoUrl}
+                    alt={vehicleStr || "Customer vehicle"}
+                    className="w-full h-48 object-cover rounded-lg border"
+                  />
+                  <button
+                    onClick={handleRemovePhoto}
+                    className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+                    title="Remove photo"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              )}
+              {/* Vehicle Details */}
+              {(vehicleStr || customer.vehicleColor || customer.vehicleType) ? (
                 <div className="flex items-center gap-3 p-3 rounded-lg border">
                   {customer.vehicleType === "suv" ? (
                     <Truck className="size-5 text-muted-foreground" />
@@ -266,9 +337,13 @@ export function CustomerDetailPage() {
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              ) : !customer.vehiclePhotoUrl && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No vehicle info yet. Click Edit to add year, make, model, and color.
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Notes */}
           {customer.notes && (

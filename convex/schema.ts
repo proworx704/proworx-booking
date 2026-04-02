@@ -130,6 +130,7 @@ const schema = defineSchema({
     vehicleMake: v.optional(v.string()),
     vehicleModel: v.optional(v.string()),
     vehicleColor: v.optional(v.string()),
+    vehiclePhotoId: v.optional(v.id("_storage")),
     notes: v.optional(v.string()),
     source: v.union(
       v.literal("booking"),

@@ -2,6 +2,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import {
   ArrowLeft,
   Calendar,
+  Car,
   CheckCircle2,
   Clock,
   Copy,
@@ -13,6 +14,7 @@ import {
   MapPin,
   Navigation,
   Phone,
+  Truck,
   User,
 } from "lucide-react";
 import { useState } from "react";
@@ -518,6 +520,48 @@ export function MyJobDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Vehicle Info */}
+      {booking.vehicleInfo && (
+        booking.vehicleInfo.vehiclePhotoUrl ||
+        booking.vehicleInfo.vehicleYear ||
+        booking.vehicleInfo.vehicleMake ||
+        booking.vehicleInfo.vehicleModel ||
+        booking.vehicleInfo.vehicleColor
+      ) && (
+        <Card>
+          <CardHeader><CardTitle className="text-base flex items-center gap-2">
+            {booking.vehicleInfo.vehicleType === "suv" ? <Truck className="size-4" /> : <Car className="size-4" />}
+            Vehicle
+          </CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {booking.vehicleInfo.vehiclePhotoUrl && (
+              <img
+                src={booking.vehicleInfo.vehiclePhotoUrl}
+                alt={[booking.vehicleInfo.vehicleYear, booking.vehicleInfo.vehicleMake, booking.vehicleInfo.vehicleModel].filter(Boolean).join(" ") || "Customer vehicle"}
+                className="w-full h-48 object-cover rounded-lg border"
+              />
+            )}
+            <div className="text-sm space-y-1">
+              {(booking.vehicleInfo.vehicleYear || booking.vehicleInfo.vehicleMake || booking.vehicleInfo.vehicleModel) && (
+                <p className="font-medium">
+                  {[booking.vehicleInfo.vehicleYear, booking.vehicleInfo.vehicleMake, booking.vehicleInfo.vehicleModel].filter(Boolean).join(" ")}
+                </p>
+              )}
+              <div className="flex gap-2 text-muted-foreground">
+                {booking.vehicleInfo.vehicleType && (
+                  <span className="capitalize">
+                    {booking.vehicleInfo.vehicleType === "suv" ? "SUV / Truck" : "Sedan / Car"}
+                  </span>
+                )}
+                {booking.vehicleInfo.vehicleColor && (
+                  <span>· {booking.vehicleInfo.vehicleColor}</span>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Crew */}
       {((booking as any).staffNames?.length > 1 || ((booking as any).staffNames?.length === 1 && (booking as any).staffNames[0])) && (

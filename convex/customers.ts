@@ -34,7 +34,13 @@ export const get = query({
   args: { id: v.id("customers") },
   handler: async (ctx, { id }) => {
     await requireAdmin(ctx);
-    return await ctx.db.get(id);
+    const customer = await ctx.db.get(id);
+    if (!customer) return null;
+    let vehiclePhotoUrl: string | null = null;
+    if (customer.vehiclePhotoId) {
+      vehiclePhotoUrl = await ctx.storage.getUrl(customer.vehiclePhotoId);
+    }
+    return { ...customer, vehiclePhotoUrl };
   },
 });
 
@@ -122,14 +128,24 @@ export const update = mutation({
     vehicleMake: v.optional(v.string()),
     vehicleModel: v.optional(v.string()),
     vehicleColor: v.optional(v.string()),
+    vehiclePhotoId: v.optional(v.id("_storage")),
+    removeVehiclePhoto: v.optional(v.boolean()),
     notes: v.optional(v.string()),
   },
-  handler: async (ctx, { id, ...fields }) => {
+  handler: async (ctx, { id, removeVehiclePhoto, ...fields }) => {
     await requireAdmin(ctx);
     // Only update fields that are provided
     const updates: Record<string, unknown> = {};
     for (const [k, val] of Object.entries(fields)) {
       if (val !== undefined) updates[k] = val;
+    }
+    // Handle photo removal
+    if (removeVehiclePhoto) {
+      const customer = await ctx.db.get(id);
+      if (customer?.vehiclePhotoId) {
+        await ctx.storage.delete(customer.vehiclePhotoId);
+      }
+      updates.vehiclePhotoId = undefined;
     }
     await ctx.db.patch(id, updates);
   },
@@ -235,6 +251,46 @@ export const stats = query({
         csv: all.filter((c) => c.source === "csv").length,
         square: all.filter((c) => c.source === "square").length,
       },
+    };
+  },
+});
+
+// ─── Vehicle Photo Upload URL ─────────────────────────────────────────────────
+
+/** Generate a pre-signed upload URL for a vehicle photo */
+export const generateVehicleUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/** Get the URL for a vehicle photo by storage ID */
+export const getVehiclePhotoUrl = query({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, { storageId }) => {
+    return await ctx.storage.getUrl(storageId);
+  },
+});
+
+/** Get vehicle info for a customer (used by employee job view) */
+export const getVehicleInfo = query({
+  args: { customerId: v.id("customers") },
+  handler: async (ctx, { customerId }) => {
+    const customer = await ctx.db.get(customerId);
+    if (!customer) return null;
+    let photoUrl: string | null = null;
+    if (customer.vehiclePhotoId) {
+      photoUrl = await ctx.storage.getUrl(customer.vehiclePhotoId);
+    }
+    return {
+      vehicleType: customer.vehicleType,
+      vehicleYear: customer.vehicleYear,
+      vehicleMake: customer.vehicleMake,
+      vehicleModel: customer.vehicleModel,
+      vehicleColor: customer.vehicleColor,
+      vehiclePhotoUrl: photoUrl,
     };
   },
 });

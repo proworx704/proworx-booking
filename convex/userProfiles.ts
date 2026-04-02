@@ -192,11 +192,20 @@ export const listAllUsers = query({
       if (b.customerEmail) customerEmails.add(b.customerEmail.toLowerCase());
     }
 
+    // Staff/owner emails should never be marked as customers
+    const staffEmails = new Set(
+      (await ctx.db.query("staff").collect())
+        .map((s: any) => (s.email ?? "").toLowerCase())
+        .filter((e: string) => e !== ""),
+    );
+    for (const oe of OWNER_EMAILS) staffEmails.add(oe.toLowerCase());
+
     return allUsers.map((user) => {
       const profile = profileMap.get(user._id as string) ?? null;
       const email = (user.email ?? "").toLowerCase();
       // Mark users as customers if their email matches a customer/booking
-      const isCustomer = !profile && customerEmails.has(email);
+      // but NOT if they're also a staff/owner email
+      const isCustomer = !profile && customerEmails.has(email) && !staffEmails.has(email);
       return {
         userId: user._id,
         email: user.email,

@@ -155,3 +155,50 @@ export const listAuthUsersNoAuth = query({
     return users.map(u => ({ id: u._id, email: u.email, name: u.name }));
   },
 });
+
+// Temp: auto-assign client profiles to users who are customers but don't have profiles
+export const fixOrphanedCustomerUsers = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const allUsers = await ctx.db.query("users").collect();
+    const allProfiles = await ctx.db.query("userProfiles").collect();
+    const allCustomers = await ctx.db.query("customers").collect();
+
+    const profileUserIds = new Set(allProfiles.map((p: any) => p.userId as string));
+    const customerEmailMap = new Map(
+      allCustomers
+        .filter((c: any) => c.email)
+        .map((c: any) => [(c.email as string).toLowerCase(), c._id]),
+    );
+
+    const fixed: string[] = [];
+    for (const user of allUsers) {
+      if (profileUserIds.has(user._id as string)) continue;
+      const email = (user.email ?? "").toLowerCase();
+      if (!email) continue;
+      
+      const customerId = customerEmailMap.get(email);
+      if (customerId) {
+        await ctx.db.insert("userProfiles", {
+          userId: user._id,
+          role: "client",
+          displayName: user.name || email.split("@")[0] || "Client",
+          customerId,
+        } as any);
+        fixed.push(email);
+      }
+    }
+    return { fixed };
+  },
+});
+
+// Temp: set user profile role
+export const setProfileRole = mutation({
+  args: { profileId: v.id("userProfiles"), role: v.string(), displayName: v.optional(v.string()) },
+  handler: async (ctx, { profileId, role, displayName }) => {
+    const patch: Record<string, unknown> = { role };
+    if (displayName) patch.displayName = displayName;
+    await ctx.db.patch(profileId, patch);
+    return "updated";
+  },
+});

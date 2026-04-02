@@ -133,6 +133,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   paintCorrection: "Paint Correction",
   ceramicCoating: "Ceramic Coating Packages",
   boatDetailing: "Boat Detailing",
+  boatCeramic: "Boat Ceramic Coatings",
   membership: "Maintenance Plans",
   interiorAddon: "Interior Add-Ons",
   exteriorAddon: "Exterior Add-Ons",
@@ -140,7 +141,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   boatAddon: "Boat Add-Ons",
 };
 
-const CORE_CATEGORIES = ["core", "paintCorrection", "ceramicCoating", "boatDetailing"];
+const CORE_CATEGORIES = ["core", "paintCorrection", "ceramicCoating", "boatDetailing", "boatCeramic"];
 const ADDON_CATEGORIES = ["interiorAddon", "exteriorAddon", "ceramicAddon", "boatAddon"];
 
 // When a ceramic coating package is selected, only show ceramic-relevant add-ons
@@ -377,17 +378,18 @@ function AddonsStep({
 }) {
   // Filter add-ons based on service category
   const BOAT_ADDON_CATEGORIES = ["boatAddon"];
+  const isBoatService = selectedServiceCategory === "boatDetailing" || selectedServiceCategory === "boatCeramic";
   const allowedCategories =
     selectedServiceCategory === "ceramicCoating"
       ? CERAMIC_ADDON_CATEGORIES
-      : selectedServiceCategory === "boatDetailing"
+      : isBoatService
         ? BOAT_ADDON_CATEGORIES
         : ADDON_CATEGORIES.filter((c) => c !== "boatAddon");
 
   const defaultTab =
     selectedServiceCategory === "ceramicCoating"
       ? "ceramicAddon"
-      : selectedServiceCategory === "boatDetailing"
+      : isBoatService
         ? "boatAddon"
         : "interiorAddon";
 

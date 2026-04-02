@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireAdmin } from "./authHelpers";
 
@@ -1241,5 +1241,29 @@ export const adminCreate = mutation({
     });
 
     return { bookingId, confirmationCode, totalPrice };
+  },
+});
+
+// Temp: insert test booking without auth (for sync testing)
+export const insertTestBooking = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const bookingId = await ctx.db.insert("bookings", {
+      customerName: "Test Customer",
+      customerPhone: "5551234567",
+      customerEmail: "test@example.com",
+      serviceAddress: "123 Test St, Rock Hill SC 29730",
+      zipCode: "29730",
+      serviceName: "Full Detail - Test",
+      price: 15000,
+      totalPrice: 15000,
+      date: "2026-04-10",
+      time: "10:00",
+      status: "confirmed",
+      confirmationCode: "TEST001",
+      notes: "TEST BOOKING - delete after sync verification",
+      paymentStatus: "unpaid",
+    } as any);
+    return bookingId;
   },
 });

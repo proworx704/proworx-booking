@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, action, internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 // Temporary: import Square customers without auth (for Viktor automation)
 export const bulkImportNoAuth = mutation({
@@ -200,5 +201,67 @@ export const setProfileRole = mutation({
     if (displayName) patch.displayName = displayName;
     await ctx.db.patch(profileId, patch);
     return "updated";
+  },
+});
+
+// Temp: test Square booking sync
+export const testSquareSyncNoAuth = action({
+  args: {},
+  handler: async (ctx): Promise<{ bookingId: string; status: string }> => {
+    const bookingId = await ctx.runMutation(internal.bookings.insertTestBooking, {});
+    await ctx.runAction(internal.squareBookingSync.pushBookingToSquare, { bookingId: bookingId as any });
+    return { bookingId: bookingId as string, status: "sync triggered" };
+  },
+});
+
+// Temp: delete test booking
+export const deleteBookingNoAuth = mutation({
+  args: { bookingId: v.id("bookings") },
+  handler: async (ctx, { bookingId }) => {
+    await ctx.db.delete(bookingId);
+    return "deleted";
+  },
+});
+
+// Temp: sync all unsynced bookings to Square
+export const syncAllUnsyncedNoAuth = action({
+  args: {},
+  handler: async (ctx): Promise<{ synced: number; failed: number; results: string[] }> => {
+    // Get all unsynced bookings
+    const unsynced: any[] = await ctx.runQuery(internal.squareBookingSync.getUnsyncedBookings, {});
+    const results: string[] = [];
+    let synced = 0;
+    let failed = 0;
+    
+    for (const booking of unsynced) {
+      try {
+        await ctx.runAction(internal.squareBookingSync.pushBookingToSquare, { bookingId: booking._id });
+        results.push(`✅ ${booking.customerName} - ${booking.serviceName} (${booking.date})`);
+        synced++;
+      } catch (e: any) {
+        results.push(`❌ ${booking.customerName} - ${booking.serviceName}: ${e.message?.substring(0, 80)}`);
+        failed++;
+      }
+    }
+    return { synced, failed, results };
+  },
+});
+
+// Temp: list bookings without auth
+export const listBookingsNoAuth = query({
+  args: { startDate: v.optional(v.string()), endDate: v.optional(v.string()) },
+  handler: async (ctx, { startDate, endDate }) => {
+    let bookings = await ctx.db.query("bookings").collect();
+    if (startDate) bookings = bookings.filter(b => b.date >= startDate);
+    if (endDate) bookings = bookings.filter(b => b.date <= endDate);
+    return bookings.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+  },
+});
+
+// Temp: list catalog without auth
+export const listCatalogNoAuth = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("serviceCatalog").collect();
   },
 });

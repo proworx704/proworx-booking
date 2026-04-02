@@ -413,3 +413,12 @@ function parseBookingDateTime(date: string, time: string): string {
 }
 
 
+
+// Internal: get all unsynced non-cancelled bookings
+export const getUnsyncedBookings = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("bookings").collect();
+    return all.filter((b) => !b.squareBookingId && b.status !== "cancelled");
+  },
+});

@@ -4,6 +4,7 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
+  Globe,
   Link as LinkIcon,
   Paintbrush,
   Save,
@@ -233,10 +234,46 @@ const SERVICE_CATEGORIES: CategoryDef[] = [
   },
 ];
 
+/* ─── Page-level CTA buttons (header, homepage, section CTAs) ────────────── */
+
+const PAGE_CTA_WIDGETS: CategoryDef = {
+  key: "page-ctas",
+  label: "Page Buttons & CTAs",
+  icon: <Globe className="size-5" />,
+  services: [
+    {
+      slug: "header-book-now",
+      name: "Header — Book Now",
+      description: "The \"Book Now\" button in the site navigation bar (appears on every page).",
+    },
+    {
+      slug: "homepage-cta",
+      name: "Homepage — Build Your Detail / Book Your Detail",
+      description: "The main hero CTA and bottom CTA on the homepage.",
+    },
+    {
+      slug: "paint-correction-cta",
+      name: "Paint Correction — Book Your Correction",
+      description: "The bottom CTA on the Paint Correction page.",
+    },
+    {
+      slug: "boat-detail-cta",
+      name: "Boat Detailing — Book Boat Detail",
+      description: "The bottom CTA on the Boat Detailing page.",
+    },
+    {
+      slug: "maintenance-booking",
+      name: "Maintenance — Book Here (Members)",
+      description: "The \"Book Here\" button for existing maintenance members.",
+    },
+  ],
+};
+
 // Collect all widget keys for bulk loading
-const ALL_WIDGET_KEYS = SERVICE_CATEGORIES.flatMap((cat) =>
-  cat.services.map((s) => `widget:${s.slug}`),
-);
+const ALL_WIDGET_KEYS = [
+  ...SERVICE_CATEGORIES.flatMap((cat) => cat.services.map((s) => `widget:${s.slug}`)),
+  ...PAGE_CTA_WIDGETS.services.map((s) => `widget:${s.slug}`),
+];
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
 
@@ -409,7 +446,17 @@ export function ServiceWidgetsPage() {
         </div>
       )}
 
-      {/* Category sections */}
+      {/* Page CTAs section (top) */}
+      {widgets && (
+        <CategorySection
+          key={PAGE_CTA_WIDGETS.key}
+          category={PAGE_CTA_WIDGETS}
+          widgets={widgets}
+          onSave={handleSave}
+        />
+      )}
+
+      {/* Service category sections */}
       {widgets &&
         SERVICE_CATEGORIES.map((cat) => (
           <CategorySection

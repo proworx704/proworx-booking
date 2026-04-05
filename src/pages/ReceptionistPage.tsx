@@ -1172,7 +1172,7 @@ export function ReceptionistPage({ standalone = false }: { standalone?: boolean 
       default:
         return false;
     }
-  }, [step, serviceType, vehicleSize, boatLength, subService, customerName, customerPhone, customerAddress, customerZip, date, time]);
+  }, [step, serviceType, tier, vehicleSize, boatLength, subService, customerName, customerPhone, customerAddress, customerZip, date, time]);
 
   const goNext = () => {
     const idx = stepIdx + 1;

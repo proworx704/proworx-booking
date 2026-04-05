@@ -53,20 +53,19 @@ export const pushWidgetUrl = action({
       { key: "website_convex_deploy_key" }
     );
 
-    if (!websiteUrl || !deployKey) {
-      console.error("Website Convex credentials not configured in systemSettings");
-      return { success: false, error: "Website credentials not configured" };
+    if (!websiteUrl) {
+      console.error("Website Convex URL not configured in systemSettings");
+      return { success: false, error: "Website URL not configured" };
     }
 
     try {
       // Push to website's CMS siteConfig table
       const cmsKey = `widgetUrl:${slug}`;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (deployKey) headers.Authorization = `Convex ${deployKey}`;
       const response: Response = await fetch(`${websiteUrl}/api/mutation`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Convex ${deployKey}`,
-        },
+        headers,
         body: JSON.stringify({
           path: "cms:setConfig",
           args: { key: cmsKey, value: url },
@@ -86,12 +85,11 @@ export const pushWidgetUrl = action({
       const categoryKey = SLUG_TO_CATEGORY_KEY[slug];
       if (categoryKey) {
         try {
+          const catHeaders: Record<string, string> = { "Content-Type": "application/json" };
+          if (deployKey) catHeaders.Authorization = `Convex ${deployKey}`;
           const catResponse: Response = await fetch(`${websiteUrl}/api/mutation`, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Convex ${deployKey}`,
-            },
+            headers: catHeaders,
             body: JSON.stringify({
               path: "cms:setConfig",
               args: { key: categoryKey, value: url },

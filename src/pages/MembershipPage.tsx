@@ -50,18 +50,29 @@ const TIER_FEATURES: Record<string, string[]> = {
     "Tire shine & trim dressing",
     "Priority scheduling",
   ],
+  "membership-ceramic-maintenance": [
+    "Full inside & out detail",
+    "Everything in Full I&O plan",
+    "GYEON ceramic top-coat refresh",
+    "Ceramic trim & plastic refresh",
+    "Iron decontamination",
+    "Priority scheduling",
+    "15% off add-on services",
+  ],
 };
 
 const TIER_GRADIENTS: Record<string, string> = {
   "membership-exterior-only": "from-slate-500 to-slate-400",
   "membership-interior-only": "from-blue-600 to-cyan-500",
   "membership-full-inside-out": "from-amber-500 to-orange-500",
+  "membership-ceramic-maintenance": "from-emerald-500 to-teal-500",
 };
 
 const TIER_ACCENT: Record<string, string> = {
   "membership-exterior-only": "border-slate-300 dark:border-slate-600",
   "membership-interior-only": "border-blue-400/50 ring-2 ring-blue-400/20",
   "membership-full-inside-out": "border-amber-400/50 ring-1 ring-amber-400/20",
+  "membership-ceramic-maintenance": "border-emerald-400/50 ring-2 ring-emerald-400/20",
 };
 
 export function MembershipPage() {

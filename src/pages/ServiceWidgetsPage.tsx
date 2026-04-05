@@ -230,6 +230,38 @@ const SERVICE_CATEGORIES: CategoryDef[] = [
         name: "Full Inside & Out Membership",
         description: "Monthly full-service membership — complete inside & out detail every month.",
       },
+      {
+        slug: "membership-ceramic",
+        name: "Ceramic Maintenance Membership",
+        description: "Monthly ceramic maintenance membership — preserve your ceramic coating with professional-grade care.",
+      },
+    ],
+  },
+  {
+    key: "member-booking",
+    label: "✅ Already a Member? Book Here",
+    icon: <Star className="size-5" />,
+    services: [
+      {
+        slug: "member-booking-exterior",
+        name: "Member Booking — Exterior Maintenance",
+        description: "Free booking for existing Exterior Maintenance members.",
+      },
+      {
+        slug: "member-booking-interior",
+        name: "Member Booking — Interior Maintenance",
+        description: "Free booking for existing Interior Maintenance members.",
+      },
+      {
+        slug: "member-booking-full",
+        name: "Member Booking — Full Inside & Out",
+        description: "Free booking for existing Full Inside & Out members.",
+      },
+      {
+        slug: "member-booking-ceramic",
+        name: "Member Booking — Ceramic Maintenance",
+        description: "Free booking for existing Ceramic Maintenance members.",
+      },
     ],
   },
 ];

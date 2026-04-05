@@ -65,19 +65,19 @@ type ServiceType = (typeof SERVICE_TYPES)[number]["value"];
 const TIER_OPTIONS: Record<string, Array<{ value: string; label: string; slug: string; badge?: string; description?: string }>> = {
   "full-detail": [
     { value: "standard", label: "Standard", slug: "standard-inside-out", description: "Full interior + exterior refresh" },
-    { value: "premium-interior", label: "Premium — Interior Focus", slug: "premium-inside-out-interior", badge: "Popular", description: "+Leather, Steam, Fragrance, UV Protection (10% off add-ons)" },
-    { value: "premium-exterior", label: "Premium — Exterior Focus", slug: "premium-inside-out-exterior", badge: "Popular", description: "+Clay Bar, Iron Decon, 6mo Sealant, Trim Restore (10% off add-ons)" },
+    { value: "premium-interior", label: "Premium — Interior Focus", slug: "premium-io-interior-focus", badge: "Popular", description: "+Leather, Steam, Fragrance, UV Protection (10% off add-ons)" },
+    { value: "premium-exterior", label: "Premium — Exterior Focus", slug: "premium-io-exterior-focus", badge: "Popular", description: "+Clay Bar, Iron Decon, 6mo Sealant, Trim Restore (10% off add-ons)" },
     { value: "elite", label: "Elite Ceramic", slug: "elite-inside-out", badge: "Best Protection", description: "+All add-ons with ceramic upgrades — Leather Shield, Ceramic Tire & Trim, 12mo Ceramic Wax (15% off)" },
   ],
   interior: [
     { value: "standard", label: "Standard", slug: "standard-interior-only", description: "Complete interior detail" },
-    { value: "premium", label: "Premium", slug: "premium-interior-only", badge: "Recommended", description: "+Leather, Steam, Fragrance, UV Protection (10% off add-ons)" },
+    { value: "premium", label: "Premium", slug: "premium-interior", badge: "Recommended", description: "+Leather, Steam, Fragrance, UV Protection (10% off add-ons)" },
     { value: "elite", label: "Elite Ceramic", slug: "elite-interior-only", badge: "Best Protection", description: "+Steam, Fragrance, Fabric Protection, GYEON Leather Shield (15% off)" },
   ],
   exterior: [
     { value: "standard", label: "Standard", slug: "standard-exterior-only", description: "Professional exterior refresh" },
-    { value: "premium", label: "Premium", slug: "premium-exterior-only", badge: "Most Popular", description: "+Clay Bar, Iron Decon, Sealant, Trim Restore (10% off add-ons)" },
-    { value: "elite", label: "Elite Ceramic", slug: "elite-exterior-only", badge: "Best Protection", description: "+Clay Bar, Iron Decon, Ceramic Tire & Trim, 12mo Ceramic Wax (15% off)" },
+    { value: "premium", label: "Premium", slug: "premium-exterior", badge: "Most Popular", description: "+Clay Bar, Iron Decon, Sealant, Trim Restore (10% off add-ons)" },
+    { value: "elite", label: "Elite Ceramic", slug: "elite-exterior", badge: "Best Protection", description: "+Clay Bar, Iron Decon, Ceramic Tire & Trim, 12mo Ceramic Wax (15% off)" },
   ],
 };
 

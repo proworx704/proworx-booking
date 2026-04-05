@@ -1100,8 +1100,11 @@ export function ReceptionistPage({ standalone = false }: { standalone?: boolean 
       ? (tiers.find((t) => t.value === tier)?.slug ?? "")
       : "";
 
+    console.log("[PRICE]", { serviceType, tier, resolvedSlug, catalogLen: catalog.length, hasTiers: !!tiers });
+
     if (resolvedSlug) {
       const item = catalog.find((c) => c.slug === resolvedSlug);
+      console.log("[PRICE] item:", item?.name, item?.slug, "variants:", item?.variants?.length);
       if (item && vehicleSize) {
         const variant = item.variants.find((v) =>
           matchesVehicleSize(v.label, vehicleSize),

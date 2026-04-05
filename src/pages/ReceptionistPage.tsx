@@ -88,6 +88,31 @@ const VEHICLE_SIZES = [
   { value: "Vans", label: "Van" },
 ] as const;
 
+// Map (serviceType, tier) → add-on slugs already bundled in that package.
+// These are hidden from the Add-Ons step so the customer doesn't double-select.
+const TIER_INCLUDED_ADDONS: Record<string, Record<string, string[]>> = {
+  "full-detail": {
+    standard: [],
+    "premium-interior": ["leather-clean", "steam-cleaning", "premium-fragrance", "uv-protection"],
+    "premium-exterior": ["clay-bar", "iron-decontamination", "paint-protection", "trim-restoration"],
+    elite: [
+      "leather-clean", "steam-cleaning", "premium-fragrance", "uv-protection",
+      "clay-bar", "iron-decontamination", "paint-protection", "trim-restoration",
+      "gyeon-leather", "ceramic-tire", "plastic-ceramic",
+    ],
+  },
+  interior: {
+    standard: [],
+    premium: ["leather-clean", "steam-cleaning", "premium-fragrance", "uv-protection"],
+    elite: ["steam-cleaning", "premium-fragrance", "fabric-protection", "gyeon-leather"],
+  },
+  exterior: {
+    standard: [],
+    premium: ["clay-bar", "iron-decontamination", "paint-protection", "trim-restoration"],
+    elite: ["clay-bar", "iron-decontamination", "ceramic-tire", "plastic-ceramic"],
+  },
+};
+
 interface AddonSelection {
   catalogItemId: Id<"serviceCatalog">;
   name: string;
@@ -377,11 +402,13 @@ function AddonsStep({
   addonItems,
   selectedAddons,
   onToggleAddon,
+  excludedSlugs = [],
 }: {
   serviceType: ServiceType;
   addonItems: Array<{
     _id: Id<"serviceCatalog">;
     name: string;
+    slug?: string;
     category: string;
     variants: Array<{ label: string; price: number; durationMin: number }>;
   }>;
@@ -394,9 +421,13 @@ function AddonsStep({
     },
     variantIdx: number,
   ) => void;
+  excludedSlugs?: string[];
 }) {
   const categories = getAddonCategories(serviceType);
-  const relevant = addonItems.filter((a) => categories.includes(a.category));
+  const excludeSet = new Set(excludedSlugs);
+  const relevant = addonItems.filter(
+    (a) => categories.includes(a.category) && !excludeSet.has(a.slug ?? ""),
+  );
 
   if (relevant.length === 0) {
     return (
@@ -1378,6 +1409,7 @@ export function ReceptionistPage({ standalone = false }: { standalone?: boolean 
               addonItems={catalog ?? []}
               selectedAddons={selectedAddons}
               onToggleAddon={toggleAddon}
+              excludedSlugs={TIER_INCLUDED_ADDONS[serviceType]?.[tier] ?? []}
             />
           )}
           {step === "summary" && (

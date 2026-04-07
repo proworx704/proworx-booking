@@ -1595,18 +1595,43 @@ export function BookingPage() {
         });
         setConfirmationCode(result.confirmationCode);
 
-        // ─── Fire GA4 conversion event ──────────────────────────────
+        // ─── Fire conversion events (GA4 + Google Ads + Meta) ────────
+        const totalValue = data.basePrice + data.addons.reduce((s, a) => s + a.price, 0);
+        const valueDollars = totalValue / 100; // cents → dollars
+
         if (typeof window !== "undefined" && typeof (window as any).gtag === "function") {
-          const totalValue = data.basePrice + data.addons.reduce((s, a) => s + a.price, 0);
+          // GA4 conversion event
           (window as any).gtag("event", "booking_confirmed", {
             event_category: "conversion",
             event_label: data.serviceName,
-            value: totalValue / 100, // cents → dollars
+            value: valueDollars,
             currency: "USD",
             service_name: data.serviceName,
             service_category: data.serviceCategory || "",
             confirmation_code: result.confirmationCode,
             lead_source: utmAttribution.leadSource || "direct",
+          });
+
+          // Google Ads conversion event
+          (window as any).gtag("event", "conversion", {
+            send_to: "AW-11353787151/booking_confirmed",
+            value: valueDollars,
+            currency: "USD",
+          });
+        }
+
+        // Meta Pixel conversion events
+        if (typeof window !== "undefined" && typeof (window as any).fbq === "function") {
+          (window as any).fbq("track", "Schedule", {
+            value: valueDollars,
+            currency: "USD",
+            content_name: data.serviceName,
+            content_category: data.serviceCategory || "",
+          });
+          (window as any).fbq("track", "Lead", {
+            value: valueDollars,
+            currency: "USD",
+            content_name: data.serviceName,
           });
         }
       } catch (e) {

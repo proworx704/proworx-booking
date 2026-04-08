@@ -1622,16 +1622,19 @@ export function BookingPage() {
 
         // Meta Pixel conversion events
         if (typeof window !== "undefined" && typeof (window as any).fbq === "function") {
+          // Purchase = primary conversion for Meta Ads ROAS optimization
+          (window as any).fbq("track", "Purchase", {
+            value: valueDollars,
+            currency: "USD",
+            content_name: data.serviceName,
+            content_category: data.serviceCategory || "Detailing",
+            content_type: "product",
+          });
           (window as any).fbq("track", "Schedule", {
             value: valueDollars,
             currency: "USD",
             content_name: data.serviceName,
             content_category: data.serviceCategory || "",
-          });
-          (window as any).fbq("track", "Lead", {
-            value: valueDollars,
-            currency: "USD",
-            content_name: data.serviceName,
           });
         }
       } catch (e) {

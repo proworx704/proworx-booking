@@ -696,6 +696,65 @@ export const checkAndSendFeedbackRequests = internalAction({
   },
 });
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// SEND AGREEMENT ONLY — Manual trigger from admin UI
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const sendAgreementOnly = internalAction({
+  args: { bookingId: v.id("bookings") },
+  handler: async (ctx, { bookingId }) => {
+    const booking = await ctx.runQuery(internal.notifications.getBookingById, { bookingId });
+    if (!booking) {
+      console.error(`[notif] Booking ${bookingId} not found for agreement send`);
+      return { success: false, error: "Booking not found" };
+    }
+    if (booking.agreementSigned) {
+      return { success: true, alreadySigned: true };
+    }
+
+    const agreementUrl = `${APP_URL}/agreement?code=${booking.confirmationCode}`;
+    let emailSent = false;
+    let smsSent = false;
+
+    // Send email
+    if (booking.customerEmail) {
+      const subject = `ProWorx Detailing — Please Sign Your Pre-Appointment Agreement`;
+      const body = `Hi ${booking.customerName.split(" ")[0]},\n\nPlease review and sign your Pre-Appointment Agreement before your upcoming ${booking.serviceName} appointment on ${booking.date}.\n\n✍️ Sign here: ${agreementUrl}\n\nThis agreement covers expectations for your visit including vehicle preparation, payment terms, and more.\n\nThank you!\n${BUSINESS_NAME}\n${BUSINESS_PHONE}`;
+      emailSent = await sendEmail(booking.customerEmail, subject, "", body);
+    }
+
+    // Send SMS
+    if (booking.customerPhone) {
+      const smsBody = `ProWorx Detailing — Please sign your pre-appointment agreement before your ${booking.serviceName} on ${booking.date}:\n${agreementUrl}`;
+      smsSent = await sendSms(booking.customerPhone, smsBody);
+    }
+
+    // Mark as sent
+    await ctx.runMutation(internal.notifications.markAgreementSent, {
+      bookingId,
+      emailSent,
+      smsSent,
+    });
+
+    console.log(`[notif] Agreement sent for ${booking.confirmationCode}: email=${emailSent}, sms=${smsSent}`);
+    return { success: true, emailSent, smsSent };
+  },
+});
+
+export const markAgreementSent = internalMutation({
+  args: {
+    bookingId: v.id("bookings"),
+    emailSent: v.boolean(),
+    smsSent: v.boolean(),
+  },
+  handler: async (ctx, { bookingId, emailSent, smsSent }) => {
+    await ctx.db.patch(bookingId, {
+      agreementEmailSent: emailSent,
+      agreementSmsSent: smsSent,
+    });
+  },
+});
+
 // Internal query for the cron to find completed bookings without feedback
 export const getCompletedWithoutFeedback = internalQuery({
   args: {},

@@ -8,7 +8,8 @@
  * variable pricing, cancellation, etc.
  */
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { action, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 // ─── Public Queries (no auth required — accessed via confirmation code) ──────
 
@@ -81,5 +82,13 @@ export const getStatus = query({
       agreementSignedAt: booking.agreementSignedAt,
       agreementSignerName: booking.agreementSignerName,
     };
+  },
+});
+
+/** Admin action: resend agreement email/SMS for a booking */
+export const resendAgreement = action({
+  args: { bookingId: v.id("bookings") },
+  handler: async (ctx, { bookingId }) => {
+    return await ctx.runAction(internal.notifications.sendAgreementOnly, { bookingId });
   },
 });

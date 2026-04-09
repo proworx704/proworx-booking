@@ -17,6 +17,7 @@ import {
   MessageSquare,
   Navigation,
   Phone,
+  Send,
   Truck,
   Undo2,
   User,
@@ -886,6 +887,43 @@ function PaymentDialog({
   );
 }
 
+function SendAgreementButton({ bookingId }: { bookingId: Id<"bookings"> }) {
+  const resend = useAction(api.agreements.resendAgreement);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSend = async () => {
+    setSending(true);
+    try {
+      await resend({ bookingId });
+      setSent(true);
+    } catch (e) {
+      console.error("Failed to send agreement:", e);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (sent) {
+    return (
+      <p className="text-xs text-green-600 font-medium">✅ Agreement sent!</p>
+    );
+  }
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={handleSend}
+      disabled={sending}
+      className="w-full"
+    >
+      <Send className="size-3 mr-1" />
+      {sending ? "Sending..." : "Send Agreement"}
+    </Button>
+  );
+}
+
 export function BookingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const booking = useQuery(
@@ -1380,13 +1418,14 @@ export function BookingDetailPage() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800">
                     ⏳ Awaiting Signature
                   </Badge>
                   <p className="text-xs text-muted-foreground">
                     Link: {window.location.origin}/agreement?code={booking.confirmationCode}
                   </p>
+                  <SendAgreementButton bookingId={booking._id} />
                 </div>
               )}
             </CardContent>

@@ -25,4 +25,11 @@ crons.interval(
   internal.notifications.checkAndSendFeedbackRequests,
 );
 
+// Poll Square for new bookings every 5 minutes and auto-send agreements
+crons.interval(
+  "squareInboundSync",
+  { minutes: 5 },
+  internal.squareInboundSync.pollNewBookings,
+);
+
 export default crons;

@@ -9,6 +9,7 @@ import {
   CreditCard,
   DollarSign,
   ExternalLink,
+  FileText,
   Link2,
   Loader2,
   Mail,
@@ -1353,6 +1354,40 @@ export function BookingDetailPage() {
                   <XCircle className="size-4 mr-2" />
                   Cancel Appointment
                 </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Pre-Appointment Agreement */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="size-4" />
+                Pre-Appointment Agreement
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {booking.agreementSigned ? (
+                <div className="space-y-2">
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
+                    ✅ Signed
+                  </Badge>
+                  <p className="text-sm text-muted-foreground">
+                    Signed by <strong>{booking.agreementSignerName}</strong>
+                    {booking.agreementSignedAt && (
+                      <> on {new Date(booking.agreementSignedAt).toLocaleDateString()}</>
+                    )}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800">
+                    ⏳ Awaiting Signature
+                  </Badge>
+                  <p className="text-xs text-muted-foreground">
+                    Link: {window.location.origin}/agreement?code={booking.confirmationCode}
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>

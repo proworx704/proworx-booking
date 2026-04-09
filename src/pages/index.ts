@@ -12,6 +12,7 @@ export { AvailabilityPage } from "./AvailabilityPage";
 export { CustomersPage } from "./CustomersPage";
 export { CustomerDetailPage } from "./CustomerDetailPage";
 export { FeedbackPage } from "./FeedbackPage";
+export { AgreementPage } from "./AgreementPage";
 export { StaffPage } from "./StaffPage";
 export { StaffDetailPage } from "./StaffDetailPage";
 export { ServiceFreezePage } from "./ServiceFreezePage";

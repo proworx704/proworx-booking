@@ -31,6 +31,7 @@ import {
 } from "./pages";
 import { BoatDetailingPage } from "./pages/BoatDetailingPage";
 import { CatalogPage } from "./pages/CatalogPage";
+import { AgreementPage } from "./pages/AgreementPage";
 import { IntakePage } from "./pages/IntakePage";
 import { MembershipPage } from "./pages/MembershipPage";
 import { ReceptionistPage } from "./pages/ReceptionistPage";
@@ -86,6 +87,7 @@ function App() {
             <Route path="/boat-detailing" element={<BoatDetailingPage />} />
             <Route path="/memberships" element={<MembershipPage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
+            <Route path="/agreement" element={<AgreementPage />} />
             <Route element={<PublicOnlyRoute />}>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />

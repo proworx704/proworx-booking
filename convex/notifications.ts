@@ -176,10 +176,18 @@ Your appointment with **${BUSINESS_NAME}** is confirmed!
 ${addonLines ? `\n**Add-Ons:**\n${addonLines}\n` : ""}${b.notes ? `\n> **Notes:** ${b.notes}\n` : ""}
 ---
 
+### ✍️ Pre-Appointment Agreement (Required)
+
+Before your appointment, please review and sign our Pre-Appointment Agreement. It covers expectations for your visit, including vehicle preparation, payment, and more.
+
+## 👉 [Sign Your Agreement](${APP_URL}/agreement?code=${b.confirmationCode})
+
+---
+
 ### What to Expect
 
 - We'll arrive at your location — no need to go anywhere
-- Please make sure the vehicle is accessible
+- Please make sure the vehicle is accessible and pulled out with room to work
 - We bring all equipment, water, and power
 - You'll receive a reminder before your appointment
 
@@ -259,7 +267,7 @@ Need to reschedule?
 function confirmationSms(b: {
   customerName: string; serviceName: string; date: string; time: string; confirmationCode: string;
 }): string {
-  return `ProWorx Detailing — Booking Confirmed! ✅\n\nHi ${b.customerName.split(" ")[0]}, your ${b.serviceName} is set for ${formatDateReadable(b.date)} at ${formatTime12h(b.time)}.\n\nConfirmation: ${b.confirmationCode}\nQuestions? ${BUSINESS_PHONE}`;
+  return `ProWorx Detailing — Booking Confirmed! ✅\n\nHi ${b.customerName.split(" ")[0]}, your ${b.serviceName} is set for ${formatDateReadable(b.date)} at ${formatTime12h(b.time)}.\n\n✍️ Please sign your pre-appointment agreement:\n${APP_URL}/agreement?code=${b.confirmationCode}\n\nConfirmation: ${b.confirmationCode}\nQuestions? ${BUSINESS_PHONE}`;
 }
 
 function reminderSms(b: {

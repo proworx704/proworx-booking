@@ -238,6 +238,13 @@ const schema = defineSchema({
     feedbackEmailSent: v.optional(v.boolean()),
     feedbackSmsSent: v.optional(v.boolean()),
 
+    // ─── Pre-Appointment Agreement ──
+    agreementSigned: v.optional(v.boolean()),
+    agreementSignedAt: v.optional(v.number()),     // ms epoch
+    agreementSignerName: v.optional(v.string()),   // typed full name
+    agreementEmailSent: v.optional(v.boolean()),
+    agreementSmsSent: v.optional(v.boolean()),
+
     // ─── Marketing Attribution / Lead Source Tracking ──
     leadSource: v.optional(v.union(
       v.literal("google_ads"),

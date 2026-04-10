@@ -88,7 +88,7 @@ export const getStatus = query({
 /** Admin action: resend agreement email/SMS for a booking */
 export const resendAgreement = action({
   args: { bookingId: v.id("bookings") },
-  handler: async (ctx, { bookingId }) => {
-    return await ctx.runAction(internal.notifications.sendAgreementOnly, { bookingId });
+  handler: async (ctx, { bookingId }): Promise<void> => {
+    await ctx.runAction(internal.notifications.sendAgreementOnly, { bookingId });
   },
 });

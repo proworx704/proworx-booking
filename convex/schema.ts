@@ -731,6 +731,83 @@ const schema = defineSchema({
     value: v.string(),     // the setting value
     updatedAt: v.number(), // ms epoch
   }).index("by_key", ["key"]),
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // QC CHECKLISTS MODULE
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /** Checklist templates — one per service type */
+  checklistTemplates: defineTable({
+    name: v.string(),
+    serviceType: v.string(),
+    sections: v.array(
+      v.object({
+        title: v.string(),
+        items: v.array(
+          v.object({
+            label: v.string(),
+            type: v.union(v.literal("check"), v.literal("passfail")),
+          })
+        ),
+      })
+    ),
+    isActive: v.boolean(),
+    sortOrder: v.number(),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  }).index("by_serviceType", ["serviceType"]),
+
+  /** Completed checklist submissions */
+  checklistSubmissions: defineTable({
+    templateId: v.id("checklistTemplates"),
+    templateName: v.string(),
+    submittedBy: v.string(),        // userId
+    submittedByName: v.string(),
+    staffId: v.optional(v.id("staff")),
+    customerName: v.string(),
+    vehicleYear: v.optional(v.string()),
+    vehicleMake: v.string(),
+    vehicleModel: v.string(),
+    vehicleColor: v.optional(v.string()),
+    licensePlate: v.optional(v.string()),
+    jobDate: v.string(),
+    notes: v.optional(v.string()),
+    responses: v.array(
+      v.object({
+        sectionIndex: v.number(),
+        itemIndex: v.number(),
+        checked: v.boolean(),
+        passFail: v.optional(
+          v.union(v.literal("pass"), v.literal("fail"), v.literal("na"))
+        ),
+        note: v.optional(v.string()),
+      })
+    ),
+    overallResult: v.union(v.literal("pass"), v.literal("fail")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected")
+    ),
+    reviewedBy: v.optional(v.string()),
+    reviewedByName: v.optional(v.string()),
+    reviewedAt: v.optional(v.string()),
+    reviewNotes: v.optional(v.string()),
+    createdAt: v.string(),
+  })
+    .index("by_status", ["status"])
+    .index("by_submittedBy", ["submittedBy"])
+    .index("by_staffId", ["staffId"]),
+
+  /** Before/after images attached to submissions */
+  checklistImages: defineTable({
+    submissionId: v.id("checklistSubmissions"),
+    storageId: v.string(),
+    type: v.union(v.literal("before"), v.literal("after")),
+    caption: v.optional(v.string()),
+    uploadedBy: v.string(),
+    createdAt: v.string(),
+  }).index("by_submissionId", ["submissionId"]),
 });
 
 export default schema;

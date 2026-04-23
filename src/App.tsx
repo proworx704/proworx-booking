@@ -72,6 +72,11 @@ import { ClientProfilePage } from "./pages/ClientProfilePage";
 // Maintenance
 import { MaintenanceMembersPage } from "./pages/MaintenanceMembersPage";
 import { MaintenanceSchedulePage } from "./pages/MaintenanceSchedulePage";
+// QC Checklists
+import { ChecklistsPage } from "./pages/ChecklistsPage";
+import { ChecklistFormPage } from "./pages/ChecklistFormPage";
+import { ChecklistReviewPage } from "./pages/ChecklistReviewPage";
+import { MyChecklistsPage } from "./pages/MyChecklistsPage";
 
 function App() {
   return (
@@ -103,6 +108,8 @@ function App() {
               <Route path="/my/jobs/:id" element={<MyJobDetailPage />} />
               <Route path="/my/time-entries" element={<MyTimeEntriesPage />} />
               <Route path="/my/pay" element={<MyPayPage />} />
+              <Route path="/my/checklists" element={<MyChecklistsPage />} />
+              <Route path="/checklists/new" element={<ChecklistFormPage />} />
 
               {/* Admin-only routes (employees redirected to /my/dashboard) */}
               <Route element={<AdminRoute />}>
@@ -128,6 +135,9 @@ function App() {
                 {/* Maintenance */}
                 <Route path="/maintenance/members" element={<MaintenanceMembersPage />} />
                 <Route path="/maintenance/schedule" element={<MaintenanceSchedulePage />} />
+                {/* QC Checklists (admin) */}
+                <Route path="/checklists" element={<ChecklistsPage />} />
+                <Route path="/checklists/:id" element={<ChecklistReviewPage />} />
                 <Route path="/website" element={<WebsiteEditorPage />} />
                 <Route path="/team" element={<TeamPage />} />
                 <Route path="/reports" element={<ReportsPage />} />

@@ -104,6 +104,7 @@ const maintenanceNav = [
 ];
 
 const toolsNav = [
+  { href: "/checklists", label: "QC Checklists", icon: ClipboardList },
   { href: "/receptionist", label: "Receptionist", icon: Headphones },
   { href: "/website", label: "Website Editor", icon: Globe },
 ];
@@ -121,6 +122,7 @@ const employeeNav = [
   { href: "/my/calendar", label: "My Schedule", icon: CalendarDays },
   { href: "/my/time-entries", label: "My Time", icon: ClipboardList },
   { href: "/my/pay", label: "My Pay", icon: Wallet },
+  { href: "/my/checklists", label: "My Checklists", icon: ClipboardList },
 ];
 
 // ─── Components ──────────────────────────────────────────────────────────────

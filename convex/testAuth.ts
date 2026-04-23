@@ -63,33 +63,14 @@ export const TestCredentials = ConvexCredentials<DataModel>({
       return { userId: user._id };
     }
 
-    try {
-      const result = await retrieveAccount(ctx, {
-        provider: "test",
-        account: {
-          id: email,
-          secret: password,
-        },
-      });
+    const result = await retrieveAccount(ctx, {
+      provider: "test",
+      account: {
+        id: email,
+        secret: password,
+      },
+    });
 
-      return { userId: result.user._id };
-    } catch {
-      // Account doesn't exist, create it
-      const { user } = await createAccount(ctx, {
-        provider: "test",
-        account: {
-          id: email,
-          secret: password,
-        },
-        profile: {
-          email,
-          name: (params.name as string) || "Test User",
-          emailVerificationTime: Date.now(),
-        },
-        shouldLinkViaEmail: false,
-      });
-
-      return { userId: user._id };
-    }
+    return { userId: result.user._id };
   },
 });

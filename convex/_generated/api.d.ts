@@ -9,6 +9,7 @@
  */
 
 import type * as ViktorSpacesEmail from "../ViktorSpacesEmail.js";
+import type * as _revokeLegacyTestAuth from "../_revokeLegacyTestAuth.js";
 import type * as adSync from "../adSync.js";
 import type * as agreements from "../agreements.js";
 import type * as aiAssistant from "../aiAssistant.js";
@@ -19,6 +20,7 @@ import type * as availability from "../availability.js";
 import type * as bookings from "../bookings.js";
 import type * as calendarEvents from "../calendarEvents.js";
 import type * as catalog from "../catalog.js";
+import type * as checklists from "../checklists.js";
 import type * as constants from "../constants.js";
 import type * as crons from "../crons.js";
 import type * as customers from "../customers.js";
@@ -40,6 +42,7 @@ import type * as pricingMigration from "../pricingMigration.js";
 import type * as recurringBlocks from "../recurringBlocks.js";
 import type * as repriceServices from "../repriceServices.js";
 import type * as seedCameronSchedule from "../seedCameronSchedule.js";
+import type * as seedChecklists from "../seedChecklists.js";
 import type * as seedSquareBookings from "../seedSquareBookings.js";
 import type * as seedTestUser from "../seedTestUser.js";
 import type * as serviceFreeze from "../serviceFreeze.js";
@@ -72,6 +75,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ViktorSpacesEmail: typeof ViktorSpacesEmail;
+  _revokeLegacyTestAuth: typeof _revokeLegacyTestAuth;
   adSync: typeof adSync;
   agreements: typeof agreements;
   aiAssistant: typeof aiAssistant;
@@ -82,6 +86,7 @@ declare const fullApi: ApiFromModules<{
   bookings: typeof bookings;
   calendarEvents: typeof calendarEvents;
   catalog: typeof catalog;
+  checklists: typeof checklists;
   constants: typeof constants;
   crons: typeof crons;
   customers: typeof customers;
@@ -103,6 +108,7 @@ declare const fullApi: ApiFromModules<{
   recurringBlocks: typeof recurringBlocks;
   repriceServices: typeof repriceServices;
   seedCameronSchedule: typeof seedCameronSchedule;
+  seedChecklists: typeof seedChecklists;
   seedSquareBookings: typeof seedSquareBookings;
   seedTestUser: typeof seedTestUser;
   serviceFreeze: typeof serviceFreeze;

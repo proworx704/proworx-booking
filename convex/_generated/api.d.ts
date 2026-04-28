@@ -38,7 +38,6 @@ import type * as payrollPayouts from "../payrollPayouts.js";
 import type * as payrollTaxSettings from "../payrollTaxSettings.js";
 import type * as payrollTimeEntries from "../payrollTimeEntries.js";
 import type * as payrollWorkers from "../payrollWorkers.js";
-import type * as pricingMigration from "../pricingMigration.js";
 import type * as recurringBlocks from "../recurringBlocks.js";
 import type * as repriceServices from "../repriceServices.js";
 import type * as seedCameronSchedule from "../seedCameronSchedule.js";
@@ -104,7 +103,6 @@ declare const fullApi: ApiFromModules<{
   payrollTaxSettings: typeof payrollTaxSettings;
   payrollTimeEntries: typeof payrollTimeEntries;
   payrollWorkers: typeof payrollWorkers;
-  pricingMigration: typeof pricingMigration;
   recurringBlocks: typeof recurringBlocks;
   repriceServices: typeof repriceServices;
   seedCameronSchedule: typeof seedCameronSchedule;

@@ -277,10 +277,10 @@ export const create = mutation({
       });
     }
 
-    // ── Schedule confirmation email + SMS (async, non-blocking) ──
-    await ctx.scheduler.runAfter(0, internal.notifications.sendConfirmation, {
-      bookingId,
-    });
+    // NOTE (2026-04-28): Confirmation email DISABLED per Tyler's request.
+    // await ctx.scheduler.runAfter(0, internal.notifications.sendConfirmation, {
+    //   bookingId,
+    // });
 
     // ── Auto-sync to Square (non-blocking) ──
     await ctx.scheduler.runAfter(0, internal.squareBookingSync.pushBookingToSquare, {
@@ -458,13 +458,14 @@ export const updateStatus = mutation({
     // and auto-award loyalty points
     if (status === "completed") {
       const booking = await ctx.db.get(id);
-      if (booking && !booking.followUpSent) {
-        await ctx.scheduler.runAfter(
-          2 * 60 * 60 * 1000, // 2 hours
-          internal.notifications.sendFeedbackRequest,
-          { bookingId: id },
-        );
-      }
+      // NOTE (2026-04-28): Feedback email DISABLED per Tyler's request.
+      // if (booking && !booking.followUpSent) {
+      //   await ctx.scheduler.runAfter(
+      //     2 * 60 * 60 * 1000, // 2 hours
+      //     internal.notifications.sendFeedbackRequest,
+      //     { bookingId: id },
+      //   );
+      // }
       // Auto-award loyalty points
       if (booking && booking.customerId) {
         const amount = booking.totalPrice ?? booking.price ?? 0;
@@ -1230,10 +1231,10 @@ export const adminCreate = mutation({
 
     const bookingId = await ctx.db.insert("bookings", bookingData);
 
-    // Send confirmation
-    await ctx.scheduler.runAfter(0, internal.notifications.sendConfirmation, {
-      bookingId,
-    });
+    // NOTE (2026-04-28): Confirmation email DISABLED per Tyler's request.
+    // await ctx.scheduler.runAfter(0, internal.notifications.sendConfirmation, {
+    //   bookingId,
+    // });
 
     // ── Auto-sync to Square (non-blocking) ──
     await ctx.scheduler.runAfter(0, internal.squareBookingSync.pushBookingToSquare, {

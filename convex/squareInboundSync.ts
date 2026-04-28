@@ -159,8 +159,9 @@ export const pollNewBookings = internalAction({
       });
 
       if (bookingId) {
-        // Trigger confirmation email/SMS (includes agreement link)
-        await ctx.scheduler.runAfter(0, internal.notifications.sendConfirmation, { bookingId });
+        // NOTE (2026-04-28): Confirmation email DISABLED per Tyler's request.
+        // All customer notifications should come from Square directly.
+        // await ctx.scheduler.runAfter(0, internal.notifications.sendConfirmation, { bookingId });
         imported++;
         console.log(`[SquareInbound] Imported Square booking ${sb.id} → ${bookingId}`);
       }

@@ -1,31 +1,30 @@
 /**
  * Convex cron jobs for ProWorx Booking.
  *
- * • checkReminders — every 15 minutes, scans upcoming bookings and sends
- *   24-hour and 2-hour reminder emails/SMS.
- * • checkFeedbackRequests — every 30 minutes, scans completed bookings and
- *   sends feedback/review requests (Google Review Gate).
+ * NOTE (2026-04-28): Reminder & feedback emails DISABLED per Tyler's request.
+ * All customer-facing notifications should come from Square directly.
+ * Square inbound sync kept active (data only, no emails).
  */
 import { cronJobs } from "convex/server";
 import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
-// Run the reminder checker every 15 minutes
-crons.interval(
-  "checkReminders",
-  { minutes: 15 },
-  internal.notifications.checkAndSendReminders,
-);
+// DISABLED — Reminders now handled by Square
+// crons.interval(
+//   "checkReminders",
+//   { minutes: 15 },
+//   internal.notifications.checkAndSendReminders,
+// );
 
-// Run the feedback/review request checker every 30 minutes
-crons.interval(
-  "checkFeedbackRequests",
-  { minutes: 30 },
-  internal.notifications.checkAndSendFeedbackRequests,
-);
+// DISABLED — Feedback/review requests handled separately
+// crons.interval(
+//   "checkFeedbackRequests",
+//   { minutes: 30 },
+//   internal.notifications.checkAndSendFeedbackRequests,
+// );
 
-// Poll Square for new bookings every 5 minutes and auto-send agreements
+// Poll Square for new bookings every 5 minutes (sync only, no emails)
 crons.interval(
   "squareInboundSync",
   { minutes: 5 },

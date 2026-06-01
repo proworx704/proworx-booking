@@ -248,7 +248,17 @@ export const initMyProfile = mutation({
         const email = (user?.email ?? "").toLowerCase();
         const patch: Record<string, unknown> = {};
 
-        if (!existing.payrollWorkerId) {
+        // Check if there's a pending invite to get hourly rate
+        const invite = email
+          ? await ctx.db
+              .query("teamInvites")
+              .withIndex("by_email", (q: any) => q.eq("email", email))
+              .filter((q: any) => q.eq(q.field("status"), "pending"))
+              .first()
+          : null;
+        const inviteRate = invite?.hourlyRate ?? 0;
+
+        if (!existing.payrollWorkerId && (existing.role === "employee" || existing.role === "admin")) {
           // Try to find existing payroll worker by email
           let worker = email
             ? await ctx.db
@@ -257,35 +267,54 @@ export const initMyProfile = mutation({
                 .first()
             : null;
           if (!worker) {
-            // Auto-create a payroll worker for this employee
+            // Auto-create a payroll worker
             const workerId = await ctx.db.insert("payrollWorkers", {
               name: existing.displayName || email.split("@")[0] || "Team Member",
-              hourlyRate: 0, // Admin sets this later
+              hourlyRate: inviteRate,
               email: email || undefined,
+              phone: invite?.phone || undefined,
               isActive: true,
             });
-            worker = await ctx.db.get(workerId);
             patch.payrollWorkerId = workerId;
           } else {
             patch.payrollWorkerId = worker._id;
           }
         }
 
-        if (!existing.staffId) {
-          // Try to find existing staff by email
+        if (!existing.staffId && (existing.role === "employee" || existing.role === "admin")) {
+          // Try to find existing staff by email, or auto-create
           const allStaff = await ctx.db.query("staff").collect();
-          const user = await ctx.db.get(userId);
-          const email = (user?.email ?? "").toLowerCase();
           const matchedStaff = allStaff.find(
             (s: any) => (s.email ?? "").toLowerCase() === email && email !== "",
           );
           if (matchedStaff) {
             patch.staffId = matchedStaff._id;
+          } else {
+            const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4"];
+            const colorIdx = allStaff.length % COLORS.length;
+            const sId = await ctx.db.insert("staff", {
+              name: existing.displayName || "Team Member",
+              email: email || undefined,
+              phone: invite?.phone || undefined,
+              role: existing.role === "admin" ? "manager" : "technician",
+              isActive: true,
+              color: COLORS[colorIdx],
+            });
+            patch.staffId = sId;
           }
         }
 
         if (Object.keys(patch).length > 0) {
           await ctx.db.patch(existing._id, patch);
+        }
+
+        // Mark invite as accepted if found
+        if (invite) {
+          await ctx.db.patch(invite._id, {
+            status: "accepted" as const,
+            acceptedBy: userId,
+            acceptedAt: Date.now(),
+          });
         }
       }
       return existing;
@@ -294,14 +323,28 @@ export const initMyProfile = mutation({
     const user = await ctx.db.get(userId);
     const email = (user?.email ?? "").toLowerCase();
 
-    // Check for pending team invite by email
-    const pendingInvite = email
+    // Check for pending team invite by email or phone
+    let pendingInvite = email
       ? await ctx.db
           .query("teamInvites")
           .withIndex("by_email", (q: any) => q.eq("email", email))
           .filter((q: any) => q.eq(q.field("status"), "pending"))
           .first()
       : null;
+    // If no email match, try phone (for SMS-only signups)
+    if (!pendingInvite && (user as any)?.phone) {
+      const phone = ((user as any).phone ?? "").replace(/\D/g, "");
+      if (phone.length >= 10) {
+        const allPending = await ctx.db
+          .query("teamInvites")
+          .withIndex("by_status", (q: any) => q.eq("status", "pending"))
+          .collect();
+        pendingInvite = allPending.find((inv: any) => {
+          const invPhone = (inv.phone ?? "").replace(/\D/g, "");
+          return invPhone.length >= 10 && (invPhone === phone || invPhone.endsWith(phone.slice(-10)) || phone.endsWith(invPhone.slice(-10)));
+        }) ?? null;
+      }
+    }
 
     // Determine role: owner emails → owner, invited → invite role, known employee emails → employee, everyone else → client
     const EMPLOYEE_EMAILS = (await ctx.db.query("staff").collect())
@@ -326,7 +369,10 @@ export const initMyProfile = mutation({
     let staffId: unknown = undefined;
     let customerId: unknown = undefined;
 
-    if (role === "employee") {
+    if (role === "employee" || role === "admin") {
+      // Get hourly rate from invite if available
+      const inviteRate = pendingInvite?.hourlyRate ?? 0;
+
       // Try to find existing payroll worker by email
       let worker = email
         ? await ctx.db
@@ -335,25 +381,43 @@ export const initMyProfile = mutation({
             .first()
         : null;
       if (!worker) {
-        // Auto-create one
+        // Auto-create payroll worker with invite's hourly rate
         const wId = await ctx.db.insert("payrollWorkers", {
           name: displayName,
-          hourlyRate: 0, // Admin sets this later
+          hourlyRate: inviteRate,
           email: email || undefined,
+          phone: pendingInvite?.phone || undefined,
           isActive: true,
         });
         payrollWorkerId = wId;
       } else {
         payrollWorkerId = worker._id;
+        // Update rate from invite if worker had 0 rate
+        if (worker.hourlyRate === 0 && inviteRate > 0) {
+          await ctx.db.patch(worker._id, { hourlyRate: inviteRate });
+        }
       }
 
-      // Try to match a staff record by email
+      // Try to match a staff record by email, or auto-create one
       const allStaff = await ctx.db.query("staff").collect();
       const matchedStaff = allStaff.find(
         (s: any) => (s.email ?? "").toLowerCase() === email && email !== "",
       );
       if (matchedStaff) {
         staffId = matchedStaff._id;
+      } else {
+        // Auto-create staff record so they show up in scheduling
+        const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4"];
+        const colorIdx = allStaff.length % COLORS.length;
+        const sId = await ctx.db.insert("staff", {
+          name: displayName,
+          email: email || undefined,
+          phone: pendingInvite?.phone || undefined,
+          role: role === "admin" ? "manager" : "technician",
+          isActive: true,
+          color: COLORS[colorIdx],
+        });
+        staffId = sId;
       }
     } else if (role === "client") {
       // For clients, find or create a customer record

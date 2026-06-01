@@ -45,6 +45,7 @@ export const create = mutation({
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
     role: v.union(v.literal("admin"), v.literal("employee")),
+    hourlyRate: v.optional(v.number()),
     sendVia: v.union(v.literal("email"), v.literal("sms"), v.literal("both")),
   },
   handler: async (ctx, args) => {
@@ -89,6 +90,7 @@ export const create = mutation({
       email: args.email?.toLowerCase(),
       phone: args.phone,
       role: args.role,
+      hourlyRate: args.hourlyRate,
       token,
       status: "pending",
       invitedBy: userId,
@@ -290,30 +292,41 @@ async function sendInviteSms(
   name: string,
   signupUrl: string,
 ): Promise<boolean> {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_PHONE_NUMBER;
-  if (!sid || !token || !from) {
-    console.warn("[invite] Twilio not configured — SMS skipped");
+  const apiUrl = process.env.VIKTOR_SPACES_API_URL;
+  const projectName = process.env.VIKTOR_SPACES_PROJECT_NAME;
+  const projectSecret = process.env.VIKTOR_SPACES_PROJECT_SECRET;
+  if (!apiUrl || !projectName || !projectSecret) {
+    console.warn("[invite] Viktor Spaces env vars missing — SMS skipped");
     return false;
   }
   const toE164 = normalizePhone(to);
   const body = `Hi ${name.split(" ")[0]}! You're invited to join ProWorx Detailing. Create your account here: ${signupUrl} — Sign up with this phone number so your account is linked.`;
   try {
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
-    const resp = await fetch(url, {
+    // Send SMS via Quo/OpenPhone through Viktor tool gateway
+    const resp = await fetch(`${apiUrl}/api/viktor-spaces/tools/call`, {
       method: "POST",
-      headers: {
-        Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({ To: toE164, From: from, Body: body }).toString(),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        project_name: projectName,
+        project_secret: projectSecret,
+        role: "pd_openphone_send_message",
+        arguments: {
+          from_: "PNltfAqmWF",
+          to: toE164,
+          content: body,
+        },
+      }),
     });
     if (!resp.ok) {
       console.error(`[invite] SMS HTTP ${resp.status}: ${await resp.text()}`);
       return false;
     }
-    console.log(`[invite] 📱 Invite SMS sent to ${toE164}`);
+    const json = (await resp.json()) as { success: boolean; result?: { success: boolean }; error?: string };
+    if (!json.success) {
+      console.error(`[invite] SMS API error: ${json.error}`);
+      return false;
+    }
+    console.log(`[invite] 📱 Invite SMS sent to ${toE164} via Quo`);
     return true;
   } catch (err) {
     console.error("[invite] SMS exception:", err);

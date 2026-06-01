@@ -1,6 +1,11 @@
-import { action } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+
+declare const process: { env: Record<string, string | undefined> };
+const VIKTOR_API_URL = process.env.VIKTOR_SPACES_API_URL!;
+const PROJECT_NAME = process.env.VIKTOR_SPACES_PROJECT_NAME!;
+const PROJECT_SECRET = process.env.VIKTOR_SPACES_PROJECT_SECRET!;
 
 /**
  * Mapping from service slug to the category-level booking URL key
@@ -112,5 +117,117 @@ export const pushWidgetUrl = action({
       console.error("Website sync error:", msg);
       return { success: false, error: msg };
     }
+  },
+});
+
+/**
+ * Push review count to the website's CMS AND trigger a git update
+ * for hardcoded references in the website source code.
+ */
+export const pushReviewCount = action({
+  args: {
+    oldCount: v.string(),
+    newCount: v.string(),
+    rating: v.optional(v.string()),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    cmsUpdated: v.boolean(),
+    gitTriggered: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, { oldCount, newCount, rating }): Promise<{
+    success: boolean;
+    cmsUpdated: boolean;
+    gitTriggered: boolean;
+    error?: string;
+  }> => {
+    let cmsUpdated = false;
+    let gitTriggered = false;
+
+    // 1. Push to website CMS (instant update for Convex-powered pages)
+    const websiteUrl: string | null = await ctx.runQuery(
+      internal.systemSettings.getInternal,
+      { key: "website_convex_url" }
+    );
+    const deployKey: string | null = await ctx.runQuery(
+      internal.systemSettings.getInternal,
+      { key: "website_convex_deploy_key" }
+    );
+
+    if (websiteUrl) {
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (deployKey) headers.Authorization = `Convex ${deployKey}`;
+
+        // Update reviewCount
+        const resp1 = await fetch(`${websiteUrl}/api/mutation`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            path: "cms:setConfig",
+            args: { key: "reviewCount", value: newCount },
+            format: "json",
+          }),
+        });
+        if (resp1.ok) {
+          console.log(`CMS updated: reviewCount = ${newCount}`);
+          cmsUpdated = true;
+        }
+
+        // Update reviewRating if provided
+        if (rating) {
+          await fetch(`${websiteUrl}/api/mutation`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              path: "cms:setConfig",
+              args: { key: "reviewRating", value: rating },
+              format: "json",
+            }),
+          });
+        }
+      } catch (err: unknown) {
+        console.error("CMS push error:", err instanceof Error ? err.message : String(err));
+      }
+    }
+
+    // 2. Trigger git update via Viktor tool gateway (updates hardcoded refs in source)
+    if (VIKTOR_API_URL && PROJECT_NAME && PROJECT_SECRET) {
+      try {
+        // Send a Slack message to Viktor requesting the update
+        const resp = await fetch(`${VIKTOR_API_URL}/api/viktor-spaces/tools/call`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_name: PROJECT_NAME,
+            project_secret: PROJECT_SECRET,
+            role: "coworker_send_slack_message",
+            arguments: {
+              channel_id: "U0AMD5SSZLJ",
+              blocks: [
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: `🔄 *Review count updated to ${newCount}* (from ${oldCount}) via the booking app.\n\nWebsite CMS updated instantly. I'll update the static pages now.`,
+                  },
+                },
+              ],
+              do_send: true,
+            },
+          }),
+        });
+
+        if (resp.ok) {
+          console.log("Slack notification sent");
+          gitTriggered = true;
+        }
+      } catch (err: unknown) {
+        console.error("Slack notify error:", err instanceof Error ? err.message : String(err));
+      }
+    }
+
+    return { success: cmsUpdated || gitTriggered, cmsUpdated, gitTriggered };
   },
 });

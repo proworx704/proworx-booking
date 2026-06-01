@@ -807,6 +807,7 @@ const schema = defineSchema({
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
     role: v.union(v.literal("admin"), v.literal("employee")),
+    hourlyRate: v.optional(v.number()),   // Pre-set wage for auto-onboarding
     token: v.string(),            // unique invite token
     status: v.union(
       v.literal("pending"),

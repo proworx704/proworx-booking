@@ -115,6 +115,7 @@ export function TeamPage() {
     email: "",
     phone: "",
     role: "employee" as "admin" | "employee",
+    hourlyRate: "",
     sendVia: "email" as "email" | "sms" | "both",
   });
   const [inviteSending, setInviteSending] = useState(false);
@@ -156,6 +157,7 @@ export function TeamPage() {
       email: "",
       phone: "",
       role: "employee",
+      hourlyRate: "",
       sendVia: "email",
     });
     setInviteOpen(true);
@@ -211,6 +213,7 @@ export function TeamPage() {
         email: inviteForm.email.trim() || undefined,
         phone: inviteForm.phone.trim() || undefined,
         role: inviteForm.role,
+        hourlyRate: inviteForm.hourlyRate ? parseFloat(inviteForm.hourlyRate) : undefined,
         sendVia: inviteForm.sendVia,
       });
 
@@ -695,6 +698,21 @@ export function TeamPage() {
                 {inviteForm.role === "employee"
                   ? "Can log hours, view pay, and see their schedule"
                   : "Can access all admin pages including payroll, bookings, and settings"}
+              </p>
+            </div>
+
+            <div>
+              <Label>Hourly Rate ($)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="e.g. 20.00"
+                value={inviteForm.hourlyRate}
+                onChange={(e) => setInviteForm({ ...inviteForm, hourlyRate: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Pre-sets their pay rate. They'll be auto-added to payroll when they sign up.
               </p>
             </div>
 

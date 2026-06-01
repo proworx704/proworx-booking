@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import {
   Save,
   Phone,
@@ -872,6 +872,7 @@ export function WebsiteEditorPage() {
   const createPhoto = useMutation(api.sitePhotos.create);
   const catalog = useQuery(api.catalog.listAll);
   const updateCatalog = useMutation(api.catalog.update);
+  const pushReviewCount = useAction(api.websiteSync.pushReviewCount);
 
   // State
   const [navType, setNavType] = useState<NavItem>("page");
@@ -882,6 +883,7 @@ export function WebsiteEditorPage() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const savedReviewCount = useRef<string>("63");
   const [pagesLoaded, setPagesLoaded] = useState(false);
   const [memLoaded, setMemLoaded] = useState(false);
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
@@ -894,12 +896,16 @@ export function WebsiteEditorPage() {
     email: "detailing@proworxdetailing.com",
     address: "Charlotte, NC",
     serviceArea: "Charlotte Metro Area, NC",
+    reviewCount: "63",
+    reviewRating: "5.0",
   };
 
   // Load config
   useEffect(() => {
     if (rawConfig && !loaded) {
-      setConfig({ ...SITE_DEFAULTS, ...rawConfig });
+      const merged = { ...SITE_DEFAULTS, ...rawConfig };
+      setConfig(merged);
+      savedReviewCount.current = merged.reviewCount ?? "63";
       setLoaded(true);
     }
   }, [rawConfig, loaded]);
@@ -998,6 +1004,23 @@ export function WebsiteEditorPage() {
           features: mem.features.filter((f) => f.trim() !== ""),
           subscriptionUrl: mem.subscriptionUrl || undefined,
         });
+      }
+
+      // Check if review count changed — push to website
+      const newCount = config.reviewCount ?? "63";
+      if (newCount !== savedReviewCount.current) {
+        try {
+          await pushReviewCount({
+            oldCount: savedReviewCount.current,
+            newCount,
+            rating: config.reviewRating ?? "5.0",
+          });
+          savedReviewCount.current = newCount;
+          toast.success(`Review count updated to ${newCount} on the website!`);
+        } catch (err) {
+          console.error("Review count push failed:", err);
+          toast.error("Review count saved locally but website update failed.");
+        }
       }
 
       setDirty(false);

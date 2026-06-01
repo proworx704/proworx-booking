@@ -55,4 +55,21 @@ http.route({
   }),
 });
 
+// One-time admin fix endpoint — remove after running
+http.route({
+  path: "/api/admin-fix-accounts",
+  method: "POST",
+  handler: httpAction(async (ctx) => {
+    const results = await ctx.runMutation(
+      // @ts-ignore - temporary one-time fix
+      "adminFixAccounts:fixExistingAccounts" as any,
+      {}
+    );
+    return new Response(JSON.stringify(results, null, 2), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
 export default http;

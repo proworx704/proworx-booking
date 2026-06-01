@@ -11,6 +11,7 @@
 import type * as ViktorSpacesEmail from "../ViktorSpacesEmail.js";
 import type * as _revokeLegacyTestAuth from "../_revokeLegacyTestAuth.js";
 import type * as adSync from "../adSync.js";
+import type * as adminFixAccounts from "../adminFixAccounts.js";
 import type * as agreements from "../agreements.js";
 import type * as aiAssistant from "../aiAssistant.js";
 import type * as analytics from "../analytics.js";
@@ -77,6 +78,7 @@ declare const fullApi: ApiFromModules<{
   ViktorSpacesEmail: typeof ViktorSpacesEmail;
   _revokeLegacyTestAuth: typeof _revokeLegacyTestAuth;
   adSync: typeof adSync;
+  adminFixAccounts: typeof adminFixAccounts;
   agreements: typeof agreements;
   aiAssistant: typeof aiAssistant;
   analytics: typeof analytics;

@@ -1,14 +1,13 @@
 /**
  * One-time admin fix: find existing users who matched pending invites
  * but weren't properly onboarded. Creates staff + payroll records for them.
- * 
- * Run via: npx convex run adminFixAccounts:fixExistingAccounts
  */
-import { internalMutation } from "./_generated/server";
+import { mutation } from "./_generated/server";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4"];
 
-export const fixExistingAccounts = internalMutation({
+export const fixExistingAccounts = mutation({
   args: {},
   handler: async (ctx) => {
     const results: string[] = [];
@@ -58,10 +57,9 @@ export const fixExistingAccounts = internalMutation({
         // Update role from client → employee/admin
         if (profile.role === "client" || profile.role !== invite.role) {
           await ctx.db.patch(profile._id, { role: invite.role, displayName });
-          results.push(`  → Updated profile role to ${invite.role}`);
+          results.push(`  → Updated profile role: ${profile.role} → ${invite.role}`);
         }
       } else {
-        // Create profile
         const profileId = await ctx.db.insert("userProfiles", {
           userId: matchedUser._id,
           role: invite.role,
@@ -102,10 +100,9 @@ export const fixExistingAccounts = internalMutation({
           phone: invite.phone || undefined,
           role: staffRole,
           isActive: true,
-          color: COLORS[allStaff.length % COLORS.length],
+          color: COLORS[colorIdx],
         });
         await ctx.db.patch(profile!._id, { staffId });
-        // Push to allStaff so next iteration gets a different color
         allStaff.push({ _id: staffId, name: displayName, role: staffRole, isActive: true, color: COLORS[colorIdx], _creationTime: Date.now() } as any);
         results.push(`  → Created staff record as ${staffRole}`);
       } else {

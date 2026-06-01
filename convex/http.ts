@@ -72,4 +72,20 @@ http.route({
   }),
 });
 
+http.route({
+  path: "/api/admin-diagnose",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    const results = await ctx.runMutation(
+      // @ts-ignore - temporary diagnostic
+      "adminFixAccounts:diagnose" as any,
+      {}
+    );
+    return new Response(JSON.stringify(results, null, 2), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
 export default http;

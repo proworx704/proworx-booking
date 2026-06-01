@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
 import { requireAdmin } from "./authHelpers";
 
 /** Get all site config as a key-value map */
@@ -82,6 +82,18 @@ export const setMany = mutation({
       }
     }
     return null;
+  },
+});
+
+/** Get a public config value by key (no auth — for HTTP endpoints) */
+export const getPublic = internalQuery({
+  args: { key: v.string() },
+  handler: async (ctx, args) => {
+    const row = await ctx.db
+      .query("siteConfig")
+      .withIndex("by_key", (q) => q.eq("key", args.key))
+      .unique();
+    return row?.value ?? null;
   },
 });
 

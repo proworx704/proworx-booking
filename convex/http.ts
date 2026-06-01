@@ -22,4 +22,37 @@ http.route({
   }),
 });
 
+// ── Public API: site settings (review count, etc.) ──────────────────────
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Cache-Control": "public, max-age=60",
+};
+
+http.route({
+  path: "/api/site-settings",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    const reviewCount = await ctx.runQuery(
+      internal.siteConfig.getPublic,
+      { key: "reviewCount" },
+    );
+    return new Response(
+      JSON.stringify({
+        reviewCount: reviewCount ?? "63",
+      }),
+      { headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+    );
+  }),
+});
+
+http.route({
+  path: "/api/site-settings",
+  method: "OPTIONS",
+  handler: httpAction(async () => {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }),
+});
+
 export default http;

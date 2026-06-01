@@ -29,6 +29,7 @@ import {
   Eye,
   FileText,
   Check,
+  Star,
 
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
@@ -379,7 +380,7 @@ function MembershipEditor({ mem, onChange }: { mem: MembershipEdit; onChange: (m
 /* GLOBAL SETTINGS                                                            */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-type GlobalTab = "contact" | "hours" | "links" | "seo";
+type GlobalTab = "contact" | "hours" | "links" | "seo" | "reviews";
 
 function GlobalSettings({
   config,
@@ -395,6 +396,7 @@ function GlobalSettings({
     { id: "hours", label: "Hours", icon: <Clock className="size-3.5" /> },
     { id: "links", label: "Links & Social", icon: <Link2 className="size-3.5" /> },
     { id: "seo", label: "SEO", icon: <FileText className="size-3.5" /> },
+    { id: "reviews", label: "Reviews", icon: <Star className="size-3.5" /> },
   ];
 
   return (
@@ -501,6 +503,49 @@ function GlobalSettings({
             <div>
               <Label className="mb-1.5 text-sm">Footer Text</Label>
               <Input value={config.footerText ?? ""} onChange={(e) => updateField("footerText", e.target.value)} placeholder="© 2026 ProWorx Mobile Detailing. All rights reserved." />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {tab === "reviews" && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Star className="size-4 text-yellow-500 fill-yellow-500" />
+              Google Review Count
+            </CardTitle>
+            <CardDescription>
+              Update the review count displayed across your website. Changes go live instantly — no deploy needed.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="mb-1.5 text-sm">Number of Reviews</Label>
+              <Input
+                type="number"
+                min="0"
+                value={config.reviewCount ?? "63"}
+                onChange={(e) => updateField("reviewCount", e.target.value)}
+                placeholder="63"
+                className="max-w-[160px]"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Your website will display this as <strong>"{config.reviewCount ?? "63"}+ Five-Star Reviews"</strong>
+              </p>
+            </div>
+            <div>
+              <Label className="mb-1.5 text-sm">Star Rating</Label>
+              <Input
+                type="number"
+                min="1"
+                max="5"
+                step="0.1"
+                value={config.reviewRating ?? "5.0"}
+                onChange={(e) => updateField("reviewRating", e.target.value)}
+                placeholder="5.0"
+                className="max-w-[160px]"
+              />
             </div>
           </CardContent>
         </Card>

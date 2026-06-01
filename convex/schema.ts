@@ -799,6 +799,32 @@ const schema = defineSchema({
     .index("by_submittedBy", ["submittedBy"])
     .index("by_staffId", ["staffId"]),
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // TEAM INVITES — Invite employees via email/SMS before they sign up
+  // ═══════════════════════════════════════════════════════════════════════
+  teamInvites: defineTable({
+    name: v.string(),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    role: v.union(v.literal("admin"), v.literal("employee")),
+    token: v.string(),            // unique invite token
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("expired"),
+      v.literal("cancelled"),
+    ),
+    invitedBy: v.id("users"),
+    acceptedBy: v.optional(v.id("users")),
+    acceptedAt: v.optional(v.number()),
+    sentVia: v.union(v.literal("email"), v.literal("sms"), v.literal("both")),
+    createdAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_phone", ["phone"])
+    .index("by_token", ["token"])
+    .index("by_status", ["status"]),
+
   /** Before/after images attached to submissions */
   checklistImages: defineTable({
     submissionId: v.id("checklistSubmissions"),

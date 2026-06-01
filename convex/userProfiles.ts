@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireAdmin } from "./authHelpers";
 
@@ -293,14 +294,25 @@ export const initMyProfile = mutation({
     const user = await ctx.db.get(userId);
     const email = (user?.email ?? "").toLowerCase();
 
-    // Determine role: owner emails → owner, known employee emails → employee, everyone else → client
+    // Check for pending team invite by email
+    const pendingInvite = email
+      ? await ctx.db
+          .query("teamInvites")
+          .withIndex("by_email", (q: any) => q.eq("email", email))
+          .filter((q: any) => q.eq(q.field("status"), "pending"))
+          .first()
+      : null;
+
+    // Determine role: owner emails → owner, invited → invite role, known employee emails → employee, everyone else → client
     const EMPLOYEE_EMAILS = (await ctx.db.query("staff").collect())
       .map((s: any) => (s.email ?? "").toLowerCase())
       .filter((e: string) => e !== "");
     
-    let role: "owner" | "employee" | "client";
+    let role: "owner" | "admin" | "employee" | "client";
     if (OWNER_EMAILS.includes(email)) {
       role = "owner";
+    } else if (pendingInvite) {
+      role = pendingInvite.role; // "admin" or "employee" from the invite
     } else if (EMPLOYEE_EMAILS.includes(email)) {
       role = "employee";
     } else {
@@ -375,6 +387,15 @@ export const initMyProfile = mutation({
     if (customerId) profileData.customerId = customerId;
 
     const profileId = await ctx.db.insert("userProfiles", profileData as any);
+
+    // If this signup matched a pending invite, mark it as accepted
+    if (pendingInvite) {
+      await ctx.db.patch(pendingInvite._id, {
+        status: "accepted" as const,
+        acceptedBy: userId,
+        acceptedAt: Date.now(),
+      });
+    }
 
     return { _id: profileId, userId, role, displayName };
   },

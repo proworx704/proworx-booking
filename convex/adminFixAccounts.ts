@@ -2,7 +2,7 @@ import { mutation } from "./_generated/server";
 
 const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4"];
 
-/** Diagnostic: show all invites, profiles, staff, and workers */
+/** Diagnostic: show all invites, profiles, staff, workers, AND all users */
 export const diagnose = mutation({
   args: {},
   handler: async (ctx) => {
@@ -11,6 +11,9 @@ export const diagnose = mutation({
     const staff = await ctx.db.query("staff").collect();
     const workers = await ctx.db.query("payrollWorkers").collect();
     const users = await ctx.db.query("users").collect();
+
+    // Also check authAccounts for phone-based signups
+    const authAccounts = await ctx.db.query("authAccounts").collect();
 
     return {
       invites: invites.map((i) => ({
@@ -22,9 +25,26 @@ export const diagnose = mutation({
         hourlyRate: (i as any).hourlyRate,
         acceptedBy: i.acceptedBy,
       })),
+      allUsers: users.map((u) => {
+        const profile = profiles.find((p) => p.userId === u._id);
+        const accounts = authAccounts.filter((a: any) => a.userId === u._id);
+        return {
+          id: u._id,
+          email: (u as any).email,
+          name: (u as any).name,
+          phone: (u as any).phone,
+          hasProfile: !!profile,
+          profileRole: profile?.role,
+          profileDisplayName: profile?.displayName,
+          staffId: profile?.staffId,
+          payrollWorkerId: profile?.payrollWorkerId,
+          authProviders: accounts.map((a: any) => a.provider),
+        };
+      }),
       profiles: profiles.map((p) => {
         const user = users.find((u) => u._id === p.userId);
         return {
+          id: p._id,
           displayName: p.displayName,
           role: p.role,
           email: (user as any)?.email,
@@ -33,8 +53,8 @@ export const diagnose = mutation({
           customerId: (p as any).customerId,
         };
       }),
-      staff: staff.map((s) => ({ name: s.name, email: (s as any).email, role: s.role, isActive: s.isActive })),
-      workers: workers.map((w) => ({ name: w.name, email: w.email, rate: w.hourlyRate, isActive: w.isActive })),
+      staff: staff.map((s) => ({ id: s._id, name: s.name, email: (s as any).email, phone: (s as any).phone, role: s.role, isActive: s.isActive })),
+      workers: workers.map((w) => ({ id: w._id, name: w.name, email: w.email, phone: (w as any).phone, rate: w.hourlyRate, isActive: w.isActive })),
     };
   },
 });

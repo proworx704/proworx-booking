@@ -59,6 +59,8 @@ export function PayrollTimeEntriesPage() {
   const createEntry = useMutation(api.payrollTimeEntries.create);
   const updateEntry = useMutation(api.payrollTimeEntries.update);
   const removeEntry = useMutation(api.payrollTimeEntries.remove);
+  const approveEntry = useMutation(api.payrollTimeEntries.approve);
+  const rejectEntry = useMutation(api.payrollTimeEntries.reject);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<Id<"payrollTimeEntries"> | null>(null);
@@ -259,6 +261,34 @@ export function PayrollTimeEntriesPage() {
                             )}
                           </div>
                           <div className="flex items-center gap-1">
+                            {entry.status === "pending" && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                  title="Approve"
+                                  onClick={async () => {
+                                    await approveEntry({ id: entry._id });
+                                    toast.success("Time entry approved");
+                                  }}
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                  title="Reject"
+                                  onClick={async () => {
+                                    await rejectEntry({ id: entry._id });
+                                    toast.success("Time entry rejected");
+                                  }}
+                                >
+                                  <XCircle className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            )}
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(entry)}>
                               <Pencil className="h-3 w-3" />
                             </Button>

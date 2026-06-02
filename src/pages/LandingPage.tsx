@@ -1,6 +1,7 @@
 import {
   Anchor,
   ArrowRight,
+  Briefcase,
   CalendarCheck,
   Car,
   LogIn,
@@ -21,6 +22,21 @@ export function LandingPage() {
 
   return (
     <div className="flex flex-col">
+      {/* Top Bar */}
+      <div className="bg-slate-950 text-slate-400 text-xs sm:text-sm py-2">
+        <div className="container flex items-center justify-between">
+          <span className="hidden sm:inline">Charlotte, NC &amp; Surrounding Areas</span>
+          <span className="sm:hidden">&nbsp;</span>
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors ml-auto"
+          >
+            <Briefcase className="size-3.5" />
+            Employee Portal
+          </Link>
+        </div>
+      </div>
+
       {/* Hero */}
       <section className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 text-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.15),transparent_50%)]" />
@@ -251,6 +267,15 @@ export function LandingPage() {
               {BUSINESS_PHONE}
             </a>
           </p>
+          <div className="mt-4 pt-4 border-t border-muted">
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-sm"
+            >
+              <Briefcase className="size-3.5" />
+              Employee Portal — Sign In / Sign Up
+            </Link>
+          </div>
           <p className="mt-3">
             © {new Date().getFullYear()} {BUSINESS_NAME}. All rights reserved.
           </p>

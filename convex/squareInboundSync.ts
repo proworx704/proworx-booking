@@ -6,7 +6,7 @@
  * confirmation email/SMS (which includes the pre-appointment agreement link).
  */
 import { v } from "convex/values";
-import { internalAction, internalMutation, internalQuery } from "./_generated/server";
+import { action, internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 
 const SQUARE_BASE_URL = "https://connect.squareup.com/v2";
@@ -276,5 +276,14 @@ export const updateLastSync = internalMutation({
         updatedAt: Date.now(),
       });
     }
+  },
+});
+
+// ── Manual sync: trigger Square inbound poll on demand ──────────────────
+export const manualSync = action({
+  args: {},
+  handler: async (ctx) => {
+    await ctx.runAction(internal.squareInboundSync.pollNewBookings);
+    return { success: true };
   },
 });

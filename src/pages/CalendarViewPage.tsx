@@ -1,4 +1,4 @@
-import { useQuery } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import {
   CalendarDays,
   CalendarPlus,
@@ -8,6 +8,7 @@ import {
   MapPin,
   DollarSign,
   Plus,
+  RefreshCw,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -664,6 +665,11 @@ export function CalendarViewPage() {
   const [eventDialogTime, setEventDialogTime] = useState("");
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
+  // ─── Square sync state ─────────────────────────────────
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
+  const triggerSync = useAction(api.squareInboundSync.manualSync);
+
   const handleSlotClick = useCallback((date: string, time: string) => {
     setQuickBookDate(date);
     setQuickBookTime(time);
@@ -734,6 +740,30 @@ export function CalendarViewPage() {
           <p className="text-sm text-muted-foreground">{monthLabel}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={syncing}
+            onClick={async () => {
+              setSyncing(true);
+              setSyncResult(null);
+              try {
+                await triggerSync();
+                setSyncResult("✓ Synced");
+                setTimeout(() => setSyncResult(null), 3000);
+              } catch {
+                setSyncResult("✗ Failed");
+                setTimeout(() => setSyncResult(null), 4000);
+              } finally {
+                setSyncing(false);
+              }
+            }}
+            title="Sync bookings from Square"
+          >
+            <RefreshCw className={`size-4 mr-1.5 ${syncing ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">{syncResult || "Sync Square"}</span>
+            <span className="sm:hidden">{syncResult || "Sync"}</span>
+          </Button>
           <Button
             size="sm"
             onClick={() => {

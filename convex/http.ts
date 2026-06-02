@@ -88,4 +88,17 @@ http.route({
   }),
 });
 
+// Temporary diagnostic endpoint for Square sync debugging
+http.route({
+  path: "/api/square-diagnose",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    const results = await ctx.runAction(internal.squareInboundSync.diagnoseSync);
+    return new Response(JSON.stringify(results, null, 2), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
 export default http;

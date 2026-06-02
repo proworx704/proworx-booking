@@ -161,6 +161,54 @@ export const pollNewBookings = internalAction({
   },
 });
 
+// ── Diagnostic: check raw Square API response ──────────────────────────
+export const diagnoseSync = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const token = await getSquareToken(ctx);
+    if (!token) {
+      return { error: "No token stored", tokenLength: 0 };
+    }
+
+    const now = new Date();
+    const startAt = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const endAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    const url = `/bookings?location_id=${LOCATION_ID}&start_at_min=${startAt.toISOString()}&start_at_max=${endAt.toISOString()}&limit=100`;
+
+    // Raw fetch to see exactly what Square returns
+    try {
+      const res = await fetch(`${SQUARE_BASE_URL}${url}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "Square-Version": "2025-03-19",
+        },
+      });
+      const data = await res.json();
+      return {
+        tokenLength: token.length,
+        tokenPrefix: token.substring(0, 8) + "...",
+        httpStatus: res.status,
+        url: `${SQUARE_BASE_URL}${url}`,
+        bookingsCount: data?.bookings?.length ?? 0,
+        bookings: (data?.bookings || []).map((b: any) => ({
+          id: b.id,
+          status: b.status,
+          start_at: b.start_at,
+          customer_id: b.customer_id,
+          version: b.version,
+        })),
+        errors: data?.errors || null,
+        rawKeys: Object.keys(data || {}),
+      };
+    } catch (err: any) {
+      return { error: err.message, tokenLength: token.length };
+    }
+  },
+});
+
 // ── Check if booking exists by Square ID ────────────────────────────────
 export const bookingExistsBySquareId = internalQuery({
   args: { squareBookingId: v.string() },

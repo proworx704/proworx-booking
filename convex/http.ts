@@ -88,6 +88,19 @@ http.route({
   }),
 });
 
+// Cleanup unassigned users
+http.route({
+  path: "/api/admin-cleanup-users",
+  method: "POST",
+  handler: httpAction(async (ctx) => {
+    const results = await ctx.runMutation(internal.adminFixAccounts.cleanupUnassignedUsers);
+    return new Response(JSON.stringify(results, null, 2), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
 // Temporary diagnostic endpoint for Square sync debugging
 http.route({
   path: "/api/square-diagnose",

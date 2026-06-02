@@ -1,4 +1,4 @@
-import { mutation } from "./_generated/server";
+import { mutation, internalMutation } from "./_generated/server";
 
 const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4"];
 
@@ -179,5 +179,74 @@ export const fixExistingAccounts = mutation({
     }
 
     return results;
+  },
+});
+
+/** Delete users who have no profile/role assigned — keeps owner and users with profiles */
+export const cleanupUnassignedUsers = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const allUsers = await ctx.db.query("users").collect();
+    const allProfiles = await ctx.db.query("userProfiles").collect();
+    const authAccounts = await ctx.db.query("authAccounts").collect();
+    const authSessions = await ctx.db.query("authSessions").collect();
+    const allStaff = await ctx.db.query("staff").collect();
+    const allWorkers = await ctx.db.query("payrollWorkers").collect();
+
+    const results: string[] = [];
+    let deletedCount = 0;
+
+    for (const user of allUsers) {
+      const profile = allProfiles.find((p) => p.userId === user._id);
+      const email = (user as any).email ?? "";
+
+      // Keep users who have a profile with a role
+      if (profile && profile.role) {
+        results.push(`✅ KEEP: ${email} (role: ${profile.role})`);
+        continue;
+      }
+
+      // Delete this user — no role assigned
+      results.push(`🗑️ DELETE: ${email}`);
+
+      // Delete auth accounts
+      const userAuthAccounts = authAccounts.filter((a: any) => a.userId === user._id);
+      for (const acc of userAuthAccounts) {
+        await ctx.db.delete(acc._id);
+        results.push(`   → Deleted auth account (${(acc as any).provider})`);
+      }
+
+      // Delete auth sessions
+      const userSessions = authSessions.filter((s: any) => s.userId === user._id);
+      for (const sess of userSessions) {
+        await ctx.db.delete(sess._id);
+        results.push(`   → Deleted auth session`);
+      }
+
+      // Delete any orphaned profile (shouldn't exist if no role, but just in case)
+      if (profile) {
+        await ctx.db.delete(profile._id);
+        results.push(`   → Deleted profile`);
+      }
+
+      // Delete the user
+      await ctx.db.delete(user._id);
+      results.push(`   → Deleted user record`);
+      deletedCount++;
+    }
+
+    // Also clean up any orphaned staff records not linked to active profiles
+    const activeProfileStaffIds = allProfiles
+      .filter((p) => p.staffId)
+      .map((p) => p.staffId);
+    for (const staff of allStaff) {
+      if (!activeProfileStaffIds.includes(staff._id) && staff.isActive === false) {
+        // Only auto-delete inactive staff not linked to any profile
+        await ctx.db.delete(staff._id);
+        results.push(`🗑️ Deleted orphaned inactive staff: ${staff.name}`);
+      }
+    }
+
+    return { deleted: deletedCount, details: results };
   },
 });

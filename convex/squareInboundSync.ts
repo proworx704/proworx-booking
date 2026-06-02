@@ -57,11 +57,10 @@ export const pollNewBookings = internalAction({
       return;
     }
 
-    // Look back 3 days minimum so we catch bookings with future start times
-    // that might have been rescheduled, plus 30 days ahead
+    // Look back 3 days + 27 days ahead = 30 days total (Square max is 31)
     const now = new Date();
     const startAt = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-    const endAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const endAt = new Date(now.getTime() + 27 * 24 * 60 * 60 * 1000);
 
     const listResult = await squareApi(
       token,
@@ -172,7 +171,7 @@ export const diagnoseSync = internalAction({
 
     const now = new Date();
     const startAt = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const endAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const endAt = new Date(now.getTime() + 23 * 24 * 60 * 60 * 1000);
 
     const url = `/bookings?location_id=${LOCATION_ID}&start_at_min=${startAt.toISOString()}&start_at_max=${endAt.toISOString()}&limit=100`;
 
@@ -319,10 +318,10 @@ export const manualSync = action({
       return { success: false, error: "No Square access token — go to Settings to add one.", found: 0, imported: 0 };
     }
 
-    // Always look back 7 days for manual sync to catch all upcoming + recent bookings
+    // Look back 7 days + 23 days ahead = 30 days total (Square max is 31)
     const now = new Date();
     const startAt = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const endAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const endAt = new Date(now.getTime() + 23 * 24 * 60 * 60 * 1000);
 
     const listResult = await squareApi(
       token,

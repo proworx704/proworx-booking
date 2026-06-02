@@ -57,31 +57,15 @@ export const pollNewBookings = internalAction({
       return;
     }
 
-    // Get last sync timestamp (or default to 24h ago)
-    const lastSyncStr = await ctx.runQuery(internal.systemSettings.getInternal, {
-      key: "square_inbound_last_sync",
-    });
+    // Look back 3 days minimum so we catch bookings with future start times
+    // that might have been rescheduled, plus 30 days ahead
     const now = new Date();
-    const defaultStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const startAt = lastSyncStr ? new Date(lastSyncStr) : defaultStart;
+    const startAt = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+    const endAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    // Fetch bookings from Square created after last sync
-    const result = await squareApi(token, "/bookings", "POST", {
-      query: {
-        filter: {
-          location_id: LOCATION_ID,
-          start_at_range: {
-            start_at: startAt.toISOString(),
-            end_at: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(), // up to 30 days ahead
-          },
-        },
-      },
-    });
-
-    // Square Bookings list uses GET, not POST search. Let's use the list endpoint.
     const listResult = await squareApi(
       token,
-      `/bookings?location_id=${LOCATION_ID}&start_at_min=${startAt.toISOString()}&limit=100`,
+      `/bookings?location_id=${LOCATION_ID}&start_at_min=${startAt.toISOString()}&start_at_max=${endAt.toISOString()}&limit=100`,
       "GET",
     );
 
@@ -129,13 +113,12 @@ export const pollNewBookings = internalAction({
         }
       }
 
-      // Parse date/time from Square's start_at (ISO 8601)
+      // Parse date/time — proper ET conversion
       const dt = new Date(sb.start_at);
-      const isDST = dt.getMonth() >= 2 && dt.getMonth() <= 10;
-      const offsetHours = isDST ? -4 : -5;
-      const eastern = new Date(dt.getTime() + offsetHours * 3600000);
-      const dateStr = `${eastern.getUTCFullYear()}-${(eastern.getUTCMonth() + 1).toString().padStart(2, "0")}-${eastern.getUTCDate().toString().padStart(2, "0")}`;
-      const timeStr = `${eastern.getUTCHours().toString().padStart(2, "0")}:${eastern.getUTCMinutes().toString().padStart(2, "0")}`;
+      const etStr = dt.toLocaleString("en-US", { timeZone: "America/New_York" });
+      const etDate = new Date(etStr);
+      const dateStr = `${etDate.getFullYear()}-${(etDate.getMonth() + 1).toString().padStart(2, "0")}-${etDate.getDate().toString().padStart(2, "0")}`;
+      const timeStr = `${etDate.getHours().toString().padStart(2, "0")}:${etDate.getMinutes().toString().padStart(2, "0")}`;
 
       // Get duration from appointment segments
       const duration = sb.appointment_segments?.[0]?.duration_minutes || 120;
@@ -279,11 +262,102 @@ export const updateLastSync = internalMutation({
   },
 });
 
-// ── Manual sync: trigger Square inbound poll on demand ──────────────────
+// ── Manual sync with diagnostics ────────────────────────────────────────
 export const manualSync = action({
   args: {},
   handler: async (ctx) => {
-    await ctx.runAction(internal.squareInboundSync.pollNewBookings);
-    return { success: true };
+    const token = await getSquareToken(ctx);
+    if (!token) {
+      return { success: false, error: "No Square access token — go to Settings to add one.", found: 0, imported: 0 };
+    }
+
+    // Always look back 7 days for manual sync to catch all upcoming + recent bookings
+    const now = new Date();
+    const startAt = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const endAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    const listResult = await squareApi(
+      token,
+      `/bookings?location_id=${LOCATION_ID}&start_at_min=${startAt.toISOString()}&start_at_max=${endAt.toISOString()}&limit=100`,
+      "GET",
+    );
+
+    if (!listResult.ok) {
+      return { success: false, error: `Square API error: ${listResult.error}`, found: 0, imported: 0 };
+    }
+
+    const squareBookings = listResult.data?.bookings || [];
+    let imported = 0;
+    let skippedExisting = 0;
+    let skippedCancelled = 0;
+
+    for (const sb of squareBookings) {
+      if (sb.status === "CANCELLED_BY_CUSTOMER" || sb.status === "CANCELLED_BY_SELLER") {
+        skippedCancelled++;
+        continue;
+      }
+
+      const exists = await ctx.runQuery(internal.squareInboundSync.bookingExistsBySquareId, {
+        squareBookingId: sb.id,
+      });
+      if (exists) {
+        skippedExisting++;
+        continue;
+      }
+
+      // Get customer info
+      let customerName = "Square Customer";
+      let customerPhone = "";
+      let customerEmail = "";
+
+      if (sb.customer_id) {
+        const custResult = await squareApi(token, `/customers/${sb.customer_id}`, "GET");
+        if (custResult.ok && custResult.data?.customer) {
+          const c = custResult.data.customer;
+          customerName = [c.given_name, c.family_name].filter(Boolean).join(" ") || "Square Customer";
+          customerPhone = c.phone_number || "";
+          customerEmail = c.email_address || "";
+        }
+      }
+
+      // Parse date/time — proper ET conversion
+      const dt = new Date(sb.start_at);
+      const etStr = dt.toLocaleString("en-US", { timeZone: "America/New_York" });
+      const etDate = new Date(etStr);
+      const dateStr = `${etDate.getFullYear()}-${(etDate.getMonth() + 1).toString().padStart(2, "0")}-${etDate.getDate().toString().padStart(2, "0")}`;
+      const timeStr = `${etDate.getHours().toString().padStart(2, "0")}:${etDate.getMinutes().toString().padStart(2, "0")}`;
+
+      const duration = sb.appointment_segments?.[0]?.duration_minutes || 120;
+      const customerNote = sb.customer_note || "";
+
+      const bookingId = await ctx.runMutation(internal.squareInboundSync.createFromSquare, {
+        customerName,
+        customerPhone,
+        customerEmail,
+        serviceAddress: customerNote.includes(",") ? customerNote : "",
+        date: dateStr,
+        time: timeStr,
+        squareBookingId: sb.id,
+        squareCustomerId: sb.customer_id || "",
+        duration,
+        customerNote,
+      });
+
+      if (bookingId) imported++;
+    }
+
+    // Update last sync
+    await ctx.runMutation(internal.squareInboundSync.updateLastSync, {
+      timestamp: now.toISOString(),
+    });
+
+    return {
+      success: true,
+      found: squareBookings.length,
+      imported,
+      skippedExisting,
+      skippedCancelled,
+      error: null,
+    };
   },
 });

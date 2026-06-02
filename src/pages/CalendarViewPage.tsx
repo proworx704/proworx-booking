@@ -748,9 +748,16 @@ export function CalendarViewPage() {
               setSyncing(true);
               setSyncResult(null);
               try {
-                await triggerSync();
-                setSyncResult("✓ Synced");
-                setTimeout(() => setSyncResult(null), 3000);
+                const result = await triggerSync();
+                if (result.success) {
+                  const msg = result.imported
+                    ? `✓ ${result.imported} new`
+                    : `✓ Up to date`;
+                  setSyncResult(msg);
+                } else {
+                  setSyncResult(`✗ ${result.error || "Failed"}`);
+                }
+                setTimeout(() => setSyncResult(null), 4000);
               } catch {
                 setSyncResult("✗ Failed");
                 setTimeout(() => setSyncResult(null), 4000);

@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "convex/react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   DollarSign,
   CheckCircle2,
@@ -8,6 +8,9 @@ import {
   Receipt,
   Trash2,
   RefreshCw,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../convex/_generated/api";
@@ -27,6 +30,7 @@ import {
   formatDateShort,
   formatDateLong,
   formatHours,
+  getWeekStart,
 } from "@/lib/dateUtils";
 
 export function PayrollPayoutsPage() {
@@ -38,6 +42,37 @@ export function PayrollPayoutsPage() {
   const generatePayouts = useMutation(api.payrollPayouts.generate);
 
   const [recalculating, setRecalculating] = useState<string | null>(null);
+
+  // Week picker for generating payouts
+  const [selectedWeekStart, setSelectedWeekStart] = useState(() => getWeekStart(new Date()));
+  const selectedWeekEnd = useMemo(() => {
+    const d = new Date(`${selectedWeekStart}T12:00:00`);
+    d.setDate(d.getDate() + 6);
+    return d.toISOString().split("T")[0];
+  }, [selectedWeekStart]);
+  const [generating, setGenerating] = useState(false);
+
+  const shiftWeek = (direction: number) => {
+    const d = new Date(`${selectedWeekStart}T12:00:00`);
+    d.setDate(d.getDate() + direction * 7);
+    setSelectedWeekStart(d.toISOString().split("T")[0]);
+  };
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const result = await generatePayouts({ weekStart: selectedWeekStart, weekEnd: selectedWeekEnd });
+      if (result.length === 0) {
+        toast.info("No approved time entries found for this week");
+      } else {
+        toast.success(`Generated ${result.length} payout(s) for week of ${formatDateShort(selectedWeekStart)}`);
+      }
+    } catch {
+      toast.error("Failed to generate payouts");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -149,6 +184,51 @@ export function PayrollPayoutsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Generate Payouts for Any Week */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Generate Payouts
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftWeek(-1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="text-sm font-medium min-w-[180px] text-center">
+                {formatDateShort(selectedWeekStart)} – {formatDateShort(selectedWeekEnd)}
+              </div>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftWeek(1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button
+              onClick={handleGenerate}
+              disabled={generating}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              {generating ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-1.5 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <DollarSign className="h-4 w-4 mr-1.5" />
+                  Generate for This Week
+                </>
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Calculates pay for all approved time entries in the selected week (hours × rate − taxes).
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Weekly Payouts */}
       {weekKeys.length === 0 ? (

@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { BUSINESS_NAME, BUSINESS_PHONE } from "@/lib/constants";
 
 /* ── Square links ── */
+const SQUARE_BOOKING_URL =
+  "https://book.squareup.com/appointments/3462dsfn0cvfuh/location/9VRKFJAZZM3HG/services";
 const SQUARE_WIDGET_URL =
   "https://app.squareup.com/appointments/buyer/widget/m9mhndj2r9ryyq/9VRKFJAZZM3HG";
 const MEMBERSHIP_CHECKOUT_URL =
@@ -171,8 +173,10 @@ export function July4thPromoPage() {
                         Headlight restoration & more
                       </li>
                     </ul>
-                    <Button onClick={openWidget} className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white cursor-pointer">
-                      Book & Save 15% <ArrowRight className="size-4 ml-1" />
+                    <Button asChild className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white cursor-pointer">
+                      <a href={SQUARE_BOOKING_URL} target="_blank" rel="noopener noreferrer">
+                        Book & Save 15% <ArrowRight className="size-4 ml-1" />
+                      </a>
                     </Button>
                   </div>
                 </div>

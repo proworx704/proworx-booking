@@ -22,6 +22,19 @@ export function LandingPage() {
 
   return (
     <div className="flex flex-col">
+      {/* 🇺🇸 4th of July Promo Banner */}
+      <Link
+        to="/july4th"
+        className="block bg-gradient-to-r from-red-600 via-blue-700 to-red-600 text-white py-2.5 hover:opacity-90 transition-opacity group"
+      >
+        <div className="container flex items-center justify-center gap-2 text-sm sm:text-base font-semibold">
+          <span>🇺🇸</span>
+          <span>Red, White, & SHINE — 4th of July Specials!</span>
+          <span className="hidden sm:inline text-white/80 font-normal">Save up to $300</span>
+          <ArrowRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
+        </div>
+      </Link>
+
       {/* Top Bar */}
       <div className="bg-slate-950 text-slate-400 text-xs sm:text-sm py-2">
         <div className="container flex items-center justify-between">

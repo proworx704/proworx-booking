@@ -16,8 +16,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BUSINESS_NAME, BUSINESS_PHONE } from "@/lib/constants";
 
-const SQUARE_BOOKING_URL =
-  "https://squareup.com/appointments/buyer/widget/m9mhndj2r9ryyq/9VRKFJAZZM3HG/services";
+/* ── Square links ── */
+const SQUARE_WIDGET_URL =
+  "https://app.squareup.com/appointments/buyer/widget/m9mhndj2r9ryyq/9VRKFJAZZM3HG";
+const MEMBERSHIP_CHECKOUT_URL =
+  "https://checkout.square.site/merchant/KAXAX104TMA6W/checkout/HDT3KCUF2VOY34QRVE27JKFL";
+const COATING_LINKS = {
+  oneEvo: "https://square.link/u/gH4gRlzU",       // $399
+  pureEvo: "https://square.link/u/ApNI3tJ3",       // $699
+  flashEvo: "https://square.link/u/Yb3WXDgL",      // $1,299
+};
 
 export function July4thPromoPage() {
   useEffect(() => {
@@ -37,8 +45,8 @@ export function July4thPromoPage() {
     }
   }, []);
 
-  const openBooking = useCallback(() => {
-    window.open(SQUARE_BOOKING_URL, "_blank", "noopener,noreferrer");
+  const openWidget = useCallback(() => {
+    window.open(SQUARE_WIDGET_URL, "_blank", "noopener,noreferrer");
   }, []);
 
   return (
@@ -163,10 +171,7 @@ export function July4thPromoPage() {
                         Headlight restoration & more
                       </li>
                     </ul>
-                    <p className="text-xs text-muted-foreground mt-3 italic">
-                      Mention code <strong>JULY15</strong> when booking.
-                    </p>
-                    <Button onClick={openBooking} className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white cursor-pointer">
+                    <Button onClick={openWidget} className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white cursor-pointer">
                       Book & Save 15% <ArrowRight className="size-4 ml-1" />
                     </Button>
                   </div>
@@ -219,11 +224,10 @@ export function July4thPromoPage() {
                         Maintains & protects vehicle value
                       </li>
                     </ul>
-                    <p className="text-xs text-muted-foreground mt-3 italic">
-                      Mention code <strong>FREEDOM</strong> when booking.
-                    </p>
-                    <Button onClick={openBooking} className="mt-4 w-full bg-amber-600 hover:bg-amber-700 text-white cursor-pointer">
-                      Join & Get Free Coating <ArrowRight className="size-4 ml-1" />
+                    <Button asChild className="mt-4 w-full bg-amber-600 hover:bg-amber-700 text-white cursor-pointer">
+                      <a href={MEMBERSHIP_CHECKOUT_URL} target="_blank" rel="noopener noreferrer">
+                        Join & Get Free Coating <ArrowRight className="size-4 ml-1" />
+                      </a>
                     </Button>
                   </div>
                 </div>
@@ -279,7 +283,7 @@ export function July4thPromoPage() {
                         Premium Fragrance of your choice
                       </li>
                     </ul>
-                    <Button onClick={openBooking} className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white cursor-pointer">
+                    <Button onClick={openWidget} className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white cursor-pointer">
                       Book Summer Freedom <ArrowRight className="size-4 ml-1" />
                     </Button>
                   </div>
@@ -367,12 +371,23 @@ export function July4thPromoPage() {
                         </tbody>
                       </table>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-3 italic">
-                      Mention code <strong>SHIELD</strong> when booking.
-                    </p>
-                    <Button onClick={openBooking} className="mt-4 w-full bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-700 hover:to-blue-700 text-white cursor-pointer">
-                      Book Ceramic Coating <ArrowRight className="size-4 ml-1" />
-                    </Button>
+                    <div className="mt-4 flex flex-col gap-2">
+                      <Button asChild className="w-full bg-slate-800 hover:bg-slate-900 text-white cursor-pointer text-xs">
+                        <a href={COATING_LINKS.oneEvo} target="_blank" rel="noopener noreferrer">
+                          Get Q² One EVO — $399 <ArrowRight className="size-3 ml-1" />
+                        </a>
+                      </Button>
+                      <Button asChild className="w-full bg-blue-700 hover:bg-blue-800 text-white cursor-pointer text-xs">
+                        <a href={COATING_LINKS.pureEvo} target="_blank" rel="noopener noreferrer">
+                          Get Premium Ceramic — $699 <ArrowRight className="size-3 ml-1" />
+                        </a>
+                      </Button>
+                      <Button asChild className="w-full bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-700 hover:to-blue-700 text-white cursor-pointer text-xs">
+                        <a href={COATING_LINKS.flashEvo} target="_blank" rel="noopener noreferrer">
+                          Get Q² Flash EVO — $1,299 <ArrowRight className="size-3 ml-1" />
+                        </a>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -395,7 +410,7 @@ export function July4thPromoPage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
             <Button
               size="lg"
-              onClick={openBooking}
+              onClick={openWidget}
               className="bg-red-600 hover:bg-red-700 text-white text-lg px-8 py-6 shadow-lg shadow-red-900/40 cursor-pointer"
             >
               Book Your Detail Now
@@ -412,28 +427,6 @@ export function July4thPromoPage() {
                 {BUSINESS_PHONE}
               </a>
             </Button>
-          </div>
-
-          {/* Promo Code Info */}
-          <div className="mt-6 inline-block bg-white/10 backdrop-blur-sm rounded-xl px-6 py-4 border border-white/10">
-            <p className="text-slate-300 text-sm mb-2">
-              Mention your promo code at checkout:
-            </p>
-            <div className="flex flex-wrap gap-2 justify-center">
-              <code className="bg-red-600/30 text-red-200 px-3 py-1 rounded-lg text-sm font-mono font-bold">JULY15</code>
-              <span className="text-slate-500">—</span>
-              <span className="text-slate-400 text-sm">15% off add-ons</span>
-            </div>
-            <div className="flex flex-wrap gap-2 justify-center mt-1.5">
-              <code className="bg-amber-600/30 text-amber-200 px-3 py-1 rounded-lg text-sm font-mono font-bold">FREEDOM</code>
-              <span className="text-slate-500">—</span>
-              <span className="text-slate-400 text-sm">Annual membership + free coating</span>
-            </div>
-            <div className="flex flex-wrap gap-2 justify-center mt-1.5">
-              <code className="bg-blue-600/30 text-blue-200 px-3 py-1 rounded-lg text-sm font-mono font-bold">SHIELD</code>
-              <span className="text-slate-500">—</span>
-              <span className="text-slate-400 text-sm">Ceramic coating savings</span>
-            </div>
           </div>
 
           <p className="text-slate-400 text-sm mt-4">

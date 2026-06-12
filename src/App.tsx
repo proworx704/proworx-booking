@@ -77,7 +77,11 @@ import { ChecklistsPage } from "./pages/ChecklistsPage";
 import { ChecklistFormPage } from "./pages/ChecklistFormPage";
 import { ChecklistReviewPage } from "./pages/ChecklistReviewPage";
 import { MyChecklistsPage } from "./pages/MyChecklistsPage";
-import { July4thPromoPage } from "./pages/July4thPromoPage";
+/** External redirect helper */
+function ExternalRedirect({ url }: { url: string }) {
+  window.location.replace(url);
+  return null;
+}
 
 function App() {
   return (
@@ -92,7 +96,7 @@ function App() {
             <Route path="/book" element={<BookingPage />} />
             <Route path="/boat-detailing" element={<BoatDetailingPage />} />
             <Route path="/memberships" element={<MembershipPage />} />
-            <Route path="/july4th" element={<July4thPromoPage />} />
+            <Route path="/july4th" element={<ExternalRedirect url="https://proworxdetailing.com/4thsummersale" />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/agreement" element={<AgreementPage />} />
             <Route element={<PublicOnlyRoute />}>

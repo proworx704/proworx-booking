@@ -491,48 +491,54 @@ function PayrollSummaryPanel() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="space-y-1">
+          <Link
+            to="/payroll/time-entries"
+            className="block rounded-lg border p-3 space-y-1 hover:bg-accent/50 active:bg-accent transition-colors cursor-pointer"
+          >
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <ClipboardList className="h-3 w-3" />
               This Week
             </p>
             <p className="text-xl font-bold">{formatHours(weekHours)}</p>
             <p className="text-xs text-muted-foreground">{weekEntries.length} entries</p>
-          </div>
-          <div className="space-y-1">
+          </Link>
+          <Link
+            to="/payroll/time-entries"
+            className="block rounded-lg border p-3 space-y-1 hover:bg-accent/50 active:bg-accent transition-colors cursor-pointer"
+          >
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
               Pending Review
             </p>
-            <p className="text-xl font-bold text-amber-600">{pendingEntries.length}</p>
-            {pendingEntries.length > 0 && (
-              <Link to="/payroll/time-entries" className="text-xs text-primary hover:underline">
-                Review →
-              </Link>
-            )}
-          </div>
-          <div className="space-y-1">
+            <p className={`text-xl font-bold ${pendingEntries.length > 0 ? "text-amber-600" : ""}`}>{pendingEntries.length}</p>
+            <p className="text-xs text-primary">Review →</p>
+          </Link>
+          <Link
+            to="/payroll/payouts"
+            className="block rounded-lg border p-3 space-y-1 hover:bg-accent/50 active:bg-accent transition-colors cursor-pointer"
+          >
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <DollarSign className="h-3 w-3" />
               Unpaid
             </p>
-            <p className="text-xl font-bold text-amber-600">
+            <p className={`text-xl font-bold ${totalOwed > 0 ? "text-amber-600" : ""}`}>
               {formatCurrency(totalOwed)}
             </p>
             <p className="text-xs text-muted-foreground">
               {unpaidPayouts.length} payout{unpaidPayouts.length !== 1 ? "s" : ""}
             </p>
-          </div>
-          <div className="space-y-1">
+          </Link>
+          <Link
+            to="/payroll/workers"
+            className="block rounded-lg border p-3 space-y-1 hover:bg-accent/50 active:bg-accent transition-colors cursor-pointer"
+          >
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Users className="h-3 w-3" />
               Workers
             </p>
             <p className="text-xl font-bold">{activeWorkers.length}</p>
-            <Link to="/payroll/workers" className="text-xs text-primary hover:underline">
-              Manage →
-            </Link>
-          </div>
+            <p className="text-xs text-primary">Manage →</p>
+          </Link>
         </div>
       </CardContent>
     </Card>

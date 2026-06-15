@@ -31,4 +31,13 @@ crons.interval(
   internal.squareInboundSync.pollNewBookings,
 );
 
+// Auto-generate payroll payouts every Monday at 6 AM ET (10:00 UTC)
+// Generates payouts for the previous Mon–Sun week using approved time entries.
+// Tyler can still adjust/edit payouts manually after auto-generation.
+crons.weekly(
+  "autoGeneratePayouts",
+  { dayOfWeek: "monday", hourUTC: 10, minuteUTC: 0 },
+  internal.payrollPayouts.autoGenerateWeeklyPayouts,
+);
+
 export default crons;

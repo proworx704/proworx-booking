@@ -21,7 +21,7 @@ function newPriceCents(durationMin: number): number {
 // So ONLY: core detailing + boat detailing
 const REPRICE_CATEGORIES = new Set([
   "core",          // Standard Inside & Out, Interior Only, Exterior Only
-  "boatDetailing", // Boat wash, interior/exterior/full detail, oxidation removal
+  "boatDetailing", // Boat wash, interior/exterior/full detail, correction tiers
 ]);
 
 // Everything else stays the same:

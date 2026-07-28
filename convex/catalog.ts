@@ -178,10 +178,10 @@ export const seed = mutation({
         description: "A full-vehicle refresh — interior and exterior in one appointment. Includes: full vacuum, carpet & upholstery shampoo, dashboard & console wipe-down, interior glass, door jambs, hand wash, wheel & tire cleaning, exterior glass, light spray wax, and tire shine.",
         category: "core",
         variants: [
-          { label: "Coupe/Sedan", price: 18000, durationMin: 150 },
-          { label: "Small SUV / Small Truck", price: 21600, durationMin: 180 },
-          { label: "Large SUV (3-row) / Off-Road Truck", price: 25200, durationMin: 210 },
-          { label: "Vans", price: 28800, durationMin: 240 },
+          { label: "Coupe/Sedan", price: 25800, durationMin: 150 },
+          { label: "Small SUV / Small Truck", price: 31000, durationMin: 180 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 36100, durationMin: 210 },
+          { label: "Vans", price: 41300, durationMin: 240 },
         ],
         isActive: true,
         sortOrder: 1,
@@ -192,10 +192,10 @@ export const seed = mutation({
         description: "Standard Inside & Out plus interior-focused add-ons at 10% off: Leather Deep Clean & Conditioning, Steam Cleaning, Premium Fragrance, and UV Protection.",
         category: "core",
         variants: [
-          { label: "Coupe/Sedan", price: 31100, durationMin: 210 },
-          { label: "Small SUV / Small Truck", price: 34700, durationMin: 240 },
-          { label: "Large SUV (3-row) / Off-Road Truck", price: 38300, durationMin: 270 },
-          { label: "Vans", price: 41900, durationMin: 300 },
+          { label: "Coupe/Sedan", price: 38900, durationMin: 210 },
+          { label: "Small SUV / Small Truck", price: 44100, durationMin: 240 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 49200, durationMin: 270 },
+          { label: "Vans", price: 54400, durationMin: 300 },
         ],
         isActive: true,
         sortOrder: 2,
@@ -207,10 +207,10 @@ export const seed = mutation({
         description: "Standard Inside & Out plus exterior-focused add-ons at 10% off: Clay Bar Treatment, Iron Decontamination, 6-Month Paint Sealant, and Trim Restoration.",
         category: "core",
         variants: [
-          { label: "Coupe/Sedan", price: 45000, durationMin: 210 },
-          { label: "Small SUV / Small Truck", price: 48600, durationMin: 240 },
-          { label: "Large SUV (3-row) / Off-Road Truck", price: 52200, durationMin: 270 },
-          { label: "Vans", price: 55800, durationMin: 300 },
+          { label: "Coupe/Sedan", price: 52800, durationMin: 210 },
+          { label: "Small SUV / Small Truck", price: 58000, durationMin: 240 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 63100, durationMin: 270 },
+          { label: "Vans", price: 68300, durationMin: 300 },
         ],
         isActive: true,
         sortOrder: 3,
@@ -222,10 +222,10 @@ export const seed = mutation({
         description: "The ultimate package — Standard base plus all add-ons at 15% off with ceramic upgrades: Steam Cleaning, Premium Fragrance, Clay Bar Treatment, Iron Decontamination, Fabric Protection, GYEON Leather Shield, Ceramic Tire Dressing, Plastic & Trim Ceramic, and 12-Month Ceramic Wax.",
         category: "core",
         variants: [
-          { label: "Coupe/Sedan", price: 67300, durationMin: 330 },
-          { label: "Small SUV / Small Truck", price: 70900, durationMin: 360 },
-          { label: "Large SUV (3-row) / Off-Road Truck", price: 74500, durationMin: 390 },
-          { label: "Vans", price: 78100, durationMin: 420 },
+          { label: "Coupe/Sedan", price: 75100, durationMin: 330 },
+          { label: "Small SUV / Small Truck", price: 80300, durationMin: 360 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 85400, durationMin: 390 },
+          { label: "Vans", price: 90600, durationMin: 420 },
         ],
         isActive: true,
         sortOrder: 4,
@@ -237,10 +237,10 @@ export const seed = mutation({
         description: "Complete interior detail. Includes: thorough vacuum of all surfaces, carpet & upholstery shampoo, dashboard & console wipe-down, cup holders & crevices, interior glass cleaning, door panels & jambs, and light stain treatment.",
         category: "core",
         variants: [
-          { label: "Coupe/Sedan", price: 12700, durationMin: 105 },
-          { label: "Small SUV / Small Truck", price: 14400, durationMin: 120 },
-          { label: "3rd Row SUV / Off-Road Truck", price: 18000, durationMin: 150 },
-          { label: "Vans", price: 21600, durationMin: 180 },
+          { label: "Coupe/Sedan", price: 18100, durationMin: 105 },
+          { label: "Small SUV / Small Truck", price: 20700, durationMin: 120 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 25800, durationMin: 150 },
+          { label: "Vans", price: 31000, durationMin: 180 },
         ],
         isActive: true,
         sortOrder: 5,
@@ -251,10 +251,10 @@ export const seed = mutation({
         description: "Standard Interior plus bundled premium add-ons at 10% off: Leather Deep Clean & Conditioning, Steam Cleaning of vents and crevices, Premium Fragrance, and UV Protection for dashboard and plastics.",
         category: "core",
         variants: [
-          { label: "Coupe/Sedan", price: 25800, durationMin: 165 },
-          { label: "Small SUV / Small Truck", price: 27500, durationMin: 180 },
-          { label: "3rd Row SUV / Off-Road Truck", price: 31100, durationMin: 210 },
-          { label: "Vans", price: 34700, durationMin: 240 },
+          { label: "Coupe/Sedan", price: 31200, durationMin: 165 },
+          { label: "Small SUV / Small Truck", price: 33800, durationMin: 180 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 38900, durationMin: 210 },
+          { label: "Vans", price: 44100, durationMin: 240 },
         ],
         isActive: true,
         sortOrder: 6,
@@ -266,10 +266,10 @@ export const seed = mutation({
         description: "Standard Interior plus ceramic add-ons at 15% off: Steam Cleaning, Premium Fragrance, Fabric Protection / Weather Guard, and GYEON Leather Shield.",
         category: "core",
         variants: [
-          { label: "Coupe/Sedan", price: 31400, durationMin: 210 },
-          { label: "Small SUV / Small Truck", price: 33100, durationMin: 225 },
-          { label: "3rd Row SUV / Off-Road Truck", price: 36700, durationMin: 255 },
-          { label: "Vans", price: 40300, durationMin: 285 },
+          { label: "Coupe/Sedan", price: 36800, durationMin: 210 },
+          { label: "Small SUV / Small Truck", price: 39400, durationMin: 225 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 44500, durationMin: 255 },
+          { label: "Vans", price: 49700, durationMin: 285 },
         ],
         isActive: true,
         sortOrder: 7,
@@ -281,10 +281,10 @@ export const seed = mutation({
         description: "Professional exterior refresh. Includes: full hand wash, wheel & tire cleaning, tire shine, exterior glass cleaning, door jambs, and a light spray wax for protection and shine.",
         category: "core",
         variants: [
-          { label: "Coupe/Sedan", price: 10300, durationMin: 75 },
-          { label: "Small SUV / Small Truck", price: 12400, durationMin: 90 },
-          { label: "3rd Row SUV / Off-Road Truck", price: 14400, durationMin: 105 },
-          { label: "Vans", price: 16500, durationMin: 120 },
+          { label: "Coupe/Sedan", price: 13000, durationMin: 75 },
+          { label: "Small SUV / Small Truck", price: 15500, durationMin: 90 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 18100, durationMin: 105 },
+          { label: "Vans", price: 20700, durationMin: 120 },
         ],
         isActive: true,
         sortOrder: 8,
@@ -295,10 +295,10 @@ export const seed = mutation({
         description: "Standard Exterior plus bundled premium add-ons at 10% off: Clay Bar Treatment for smooth paint, Iron Decontamination, 6-Month Paint Sealant, and Trim Restoration to revive faded plastics.",
         category: "core",
         variants: [
-          { label: "Coupe/Sedan", price: 37300, durationMin: 150 },
-          { label: "Small SUV / Small Truck", price: 39400, durationMin: 165 },
-          { label: "3rd Row SUV / Off-Road Truck", price: 41400, durationMin: 180 },
-          { label: "Vans", price: 43500, durationMin: 195 },
+          { label: "Coupe/Sedan", price: 40000, durationMin: 150 },
+          { label: "Small SUV / Small Truck", price: 42500, durationMin: 165 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 45100, durationMin: 180 },
+          { label: "Vans", price: 47700, durationMin: 195 },
         ],
         isActive: true,
         sortOrder: 9,
@@ -310,10 +310,10 @@ export const seed = mutation({
         description: "Standard Exterior plus ceramic add-ons at 15% off: Clay Bar, Iron Decontamination, Ceramic Tire Dressing, Plastic & Trim Ceramic, and 12-Month Ceramic Wax for ultimate exterior protection.",
         category: "core",
         variants: [
-          { label: "Coupe/Sedan", price: 40900, durationMin: 195 },
-          { label: "Small SUV / Small Truck", price: 43000, durationMin: 210 },
-          { label: "3rd Row SUV / Off-Road Truck", price: 45000, durationMin: 225 },
-          { label: "Vans", price: 47100, durationMin: 240 },
+          { label: "Coupe/Sedan", price: 43600, durationMin: 195 },
+          { label: "Small SUV / Small Truck", price: 46100, durationMin: 210 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 48700, durationMin: 225 },
+          { label: "Vans", price: 51300, durationMin: 240 },
         ],
         isActive: true,
         sortOrder: 10,
@@ -337,9 +337,9 @@ export const seed = mutation({
         description: "Removes light swirls and minor imperfections. Restores depth and gloss for vehicles in good condition.",
         category: "paintCorrection",
         variants: [
-          { label: "Compact 2 Door", price: 55000, durationMin: 360 },
-          { label: "Midsize Sedans", price: 70000, durationMin: 480 },
-          { label: "SUV/Truck", price: 90000, durationMin: 600 },
+          { label: "Compact 2 Door", price: 57000, durationMin: 360 },
+          { label: "Midsize Sedans", price: 76000, durationMin: 480 },
+          { label: "SUV/Truck", price: 95000, durationMin: 600 },
         ],
         isActive: true,
         sortOrder: 1,
@@ -350,9 +350,9 @@ export const seed = mutation({
         description: "A compounding stage to remove deeper scratches, followed by fine polishing for a mirror-like finish.",
         category: "paintCorrection",
         variants: [
-          { label: "Compact 2 Door", price: 100000, durationMin: 600 },
-          { label: "Midsize Sedans", price: 120000, durationMin: 720 },
-          { label: "SUV/Truck", price: 140000, durationMin: 840 },
+          { label: "Compact 2 Door", price: 95000, durationMin: 600 },
+          { label: "Midsize Sedans", price: 114000, durationMin: 720 },
+          { label: "SUV/Truck", price: 133000, durationMin: 840 },
         ],
         isActive: true,
         sortOrder: 2,
@@ -363,9 +363,9 @@ export const seed = mutation({
         description: "Our most thorough correction — multiple cutting and polishing stages for showroom-quality perfection.",
         category: "paintCorrection",
         variants: [
-          { label: "Compact 2 Door", price: 170000, durationMin: 960 },
-          { label: "Midsize Sedans", price: 200000, durationMin: 1200 },
-          { label: "SUV/Truck", price: 240000, durationMin: 1440 },
+          { label: "Compact 2 Door", price: 156700, durationMin: 960 },
+          { label: "Midsize Sedans", price: 190000, durationMin: 1200 },
+          { label: "SUV/Truck", price: 228000, durationMin: 1440 },
         ],
         isActive: true,
         sortOrder: 3,
@@ -405,9 +405,33 @@ export const seed = mutation({
         variants: [
           { label: "Starting Price", price: 159900, durationMin: 300 },
         ],
+        isActive: false,
+        sortOrder: 99,
+        deposit: 48000,
+      },
+      {
+        name: "GYEON Infinite Type 1",
+        slug: "gyeon-infinite-type1",
+        description: "Next-generation GYEON Infinite ceramic coating — Type 1 single-layer system with extreme durability, gloss, and hydrophobic performance.",
+        category: "ceramicCoating",
+        variants: [
+          { label: "Starting Price", price: 179900, durationMin: 360 },
+        ],
         isActive: true,
         sortOrder: 3,
-        deposit: 48000,
+        deposit: 54000,
+      },
+      {
+        name: "GYEON Infinite Type 1+2",
+        slug: "gyeon-infinite-type1-2",
+        description: "The ultimate GYEON Infinite ceramic system — Type 1 base coat plus Type 2 top coat for maximum hardness, self-cleaning, and multi-year protection.",
+        category: "ceramicCoating",
+        variants: [
+          { label: "Starting Price", price: 219900, durationMin: 480 },
+        ],
+        isActive: true,
+        sortOrder: 4,
+        deposit: 66000,
       },
 
       // ─── INTERIOR ADD-ONS ──────────────────────────────────
@@ -572,7 +596,7 @@ export const seed = mutation({
         slug: "convertible-top",
         description: "Hydrophobic treatment for convertible tops.",
         category: "ceramicAddon",
-        variants: [{ label: "Standard", price: 6000, durationMin: 30 }],
+        variants: [{ label: "Standard", price: 10000, durationMin: 30 }],
         isActive: true,
         sortOrder: 2,
       },
@@ -651,6 +675,15 @@ export const seed = mutation({
         isActive: true,
         sortOrder: 10,
       },
+      {
+        name: "GYEON Can Coat Pro EVO",
+        slug: "gyeon-can-coat-pro-evo",
+        description: "Professional spray ceramic coating — easy-apply GYEON Can Coat Pro EVO delivers instant hydrophobic protection, UV resistance, and deep gloss in a single application.",
+        category: "ceramicAddon",
+        variants: [{ label: "Standard", price: 14900, durationMin: 30 }],
+        isActive: true,
+        sortOrder: 11,
+      },
 
       // ─── BOAT DETAILING ────────────────────────────────────
       {
@@ -659,10 +692,10 @@ export const seed = mutation({
         description: "Exterior hand wash, rinse and dry, basic interior wipe-down, glass cleaned, trailer rinse.",
         category: "boatDetailing",
         variants: [
-          { label: "Up to 20 ft", price: 25000, durationMin: 120 },
-          { label: "21–25 ft", price: 32500, durationMin: 150 },
-          { label: "26–30 ft", price: 40000, durationMin: 180 },
-          { label: "31–35 ft", price: 50000, durationMin: 210 },
+          { label: "Up to 20 ft", price: 20600, durationMin: 120 },
+          { label: "21–25 ft", price: 26800, durationMin: 150 },
+          { label: "26–30 ft", price: 33000, durationMin: 180 },
+          { label: "31–35 ft", price: 41200, durationMin: 210 },
         ],
         isActive: true,
         sortOrder: 1,
@@ -673,10 +706,10 @@ export const seed = mutation({
         description: "Deep clean all vinyl seats & bolsters, compartments, bilge, carpet/non-skid scrub, glass surfaces, and UV protectant applied.",
         category: "boatDetailing",
         variants: [
-          { label: "Up to 20 ft", price: 35000, durationMin: 180 },
-          { label: "21–25 ft", price: 45000, durationMin: 240 },
-          { label: "26–30 ft", price: 55000, durationMin: 300 },
-          { label: "31–35 ft", price: 67500, durationMin: 360 },
+          { label: "Up to 20 ft", price: 30900, durationMin: 180 },
+          { label: "21–25 ft", price: 39700, durationMin: 240 },
+          { label: "26–30 ft", price: 48600, durationMin: 300 },
+          { label: "31–35 ft", price: 59600, durationMin: 360 },
         ],
         isActive: true,
         sortOrder: 2,
@@ -687,10 +720,10 @@ export const seed = mutation({
         description: "Full exterior hand wash, machine compound & polish gelcoat, apply polymer sealant/wax, metal & brightwork polish, glass cleaned.",
         category: "boatDetailing",
         variants: [
-          { label: "Up to 20 ft", price: 45000, durationMin: 240 },
-          { label: "21–25 ft", price: 57500, durationMin: 300 },
-          { label: "26–30 ft", price: 70000, durationMin: 360 },
-          { label: "31–35 ft", price: 85000, durationMin: 420 },
+          { label: "Up to 20 ft", price: 41200, durationMin: 240 },
+          { label: "21–25 ft", price: 52600, durationMin: 300 },
+          { label: "26–30 ft", price: 64100, durationMin: 360 },
+          { label: "31–35 ft", price: 77800, durationMin: 420 },
         ],
         isActive: true,
         sortOrder: 3,
@@ -701,10 +734,10 @@ export const seed = mutation({
         description: "The works — complete interior deep clean + full exterior compound, polish, and sealant. Brightwork, glass, trailer included.",
         category: "boatDetailing",
         variants: [
-          { label: "Up to 20 ft", price: 60000, durationMin: 360 },
-          { label: "21–25 ft", price: 77500, durationMin: 420 },
-          { label: "26–30 ft", price: 95000, durationMin: 480 },
-          { label: "31–35 ft", price: 115000, durationMin: 540 },
+          { label: "Up to 20 ft", price: 61800, durationMin: 360 },
+          { label: "21–25 ft", price: 79800, durationMin: 420 },
+          { label: "26–30 ft", price: 97900, durationMin: 480 },
+          { label: "31–35 ft", price: 118500, durationMin: 540 },
         ],
         isActive: true,
         sortOrder: 4,
@@ -721,8 +754,51 @@ export const seed = mutation({
           { label: "26–30 ft", price: 57500, durationMin: 420 },
           { label: "31–35 ft", price: 70000, durationMin: 480 },
         ],
+        isActive: false,
+        sortOrder: 99,
+      },
+      // ── New Boat Correction Tiers (replace Oxidation Removal) ──
+      {
+        name: "Boat 1-Step Correction",
+        slug: "boat-1-step-correction",
+        description: "Single-stage machine polish for gelcoat — removes light oxidation, water spots, and minor swirls to restore gloss.",
+        category: "boatDetailing",
+        variants: [
+          { label: "Up to 20 ft", price: 82400, durationMin: 300 },
+          { label: "21–25 ft", price: 92700, durationMin: 360 },
+          { label: "26–30 ft", price: 103000, durationMin: 420 },
+          { label: "31–35 ft", price: 113300, durationMin: 480 },
+        ],
         isActive: true,
         sortOrder: 5,
+      },
+      {
+        name: "Boat 2-Step Correction",
+        slug: "boat-2-step-correction",
+        description: "Two-stage compound and polish for gelcoat — removes moderate oxidation, deeper scratches, and restores a high-gloss finish.",
+        category: "boatDetailing",
+        variants: [
+          { label: "Up to 20 ft", price: 123600, durationMin: 420 },
+          { label: "21–25 ft", price: 133900, durationMin: 480 },
+          { label: "26–30 ft", price: 144200, durationMin: 540 },
+          { label: "31–35 ft", price: 154500, durationMin: 600 },
+        ],
+        isActive: true,
+        sortOrder: 6,
+      },
+      {
+        name: "Boat Multi-Stage Correction",
+        slug: "boat-multi-stage-correction",
+        description: "Multi-stage heavy compound and polish for severely oxidized or neglected gelcoat — full restoration to showroom finish.",
+        category: "boatDetailing",
+        variants: [
+          { label: "Up to 20 ft", price: 185400, durationMin: 540 },
+          { label: "21–25 ft", price: 206000, durationMin: 600 },
+          { label: "26–30 ft", price: 226600, durationMin: 720 },
+          { label: "31–35 ft", price: 247200, durationMin: 840 },
+        ],
+        isActive: true,
+        sortOrder: 7,
       },
 
       // ─── BOAT CERAMIC ──────────────────────────────────────
@@ -737,8 +813,8 @@ export const seed = mutation({
           { label: "26–30 ft", price: 125000, durationMin: 720 },
           { label: "31–35 ft", price: 150000, durationMin: 840 },
         ],
-        isActive: true,
-        sortOrder: 1,
+        isActive: false,
+        sortOrder: 98,
       },
       {
         name: "Boat Ceramic Coating (5-Year)",
@@ -751,8 +827,22 @@ export const seed = mutation({
           { label: "26–30 ft", price: 190000, durationMin: 900 },
           { label: "31–35 ft", price: 225000, durationMin: 1080 },
         ],
+        isActive: false,
+        sortOrder: 99,
+      },
+      {
+        name: "GYEON Q²R GelCoat Marine Ceramic",
+        slug: "boat-ceramic-gelcoat",
+        description: "Professional GYEON Q²R GelCoat ceramic coating for marine gelcoat surfaces — superior UV, chemical, and saltwater protection with hydrophobic self-cleaning properties.",
+        category: "boatCeramic",
+        variants: [
+          { label: "Up to 20 ft", price: 47500, durationMin: 360 },
+          { label: "21–25 ft", price: 61800, durationMin: 480 },
+          { label: "26–30 ft", price: 76000, durationMin: 600 },
+          { label: "31–35 ft", price: 95000, durationMin: 720 },
+        ],
         isActive: true,
-        sortOrder: 2,
+        sortOrder: 1,
         popular: true,
       },
 
@@ -960,10 +1050,10 @@ export const runAddBundleTiers = internalMutation({
         category: "core",
         description: "A full-vehicle refresh — interior and exterior in one appointment. Includes: full vacuum, carpet & upholstery shampoo, dashboard & console wipe-down, interior glass, door jambs, hand wash, wheel & tire cleaning, exterior glass, light spray wax, and tire shine.",
         variants: [
-          { label: "Coupe/Sedan", price: 18000, durationMin: 150 },
-          { label: "Small SUV / Small Truck", price: 21600, durationMin: 180 },
-          { label: "Large SUV (3-row) / Off-Road Truck", price: 25200, durationMin: 210 },
-          { label: "Vans", price: 28800, durationMin: 240 },
+          { label: "Coupe/Sedan", price: 25800, durationMin: 150 },
+          { label: "Small SUV / Small Truck", price: 31000, durationMin: 180 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 36100, durationMin: 210 },
+          { label: "Vans", price: 41300, durationMin: 240 },
         ],
         sortOrder: 1,
       },
@@ -973,10 +1063,10 @@ export const runAddBundleTiers = internalMutation({
         category: "core",
         description: "Standard Inside & Out plus interior-focused add-ons at 10% off: Leather Deep Clean & Conditioning, Steam Cleaning, Premium Fragrance, and UV Protection.",
         variants: [
-          { label: "Coupe/Sedan", price: 31100, durationMin: 210 },
-          { label: "Small SUV / Small Truck", price: 34700, durationMin: 240 },
-          { label: "Large SUV (3-row) / Off-Road Truck", price: 38300, durationMin: 270 },
-          { label: "Vans", price: 41900, durationMin: 300 },
+          { label: "Coupe/Sedan", price: 38900, durationMin: 210 },
+          { label: "Small SUV / Small Truck", price: 44100, durationMin: 240 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 49200, durationMin: 270 },
+          { label: "Vans", price: 54400, durationMin: 300 },
         ],
         sortOrder: 2,
         popular: true,
@@ -987,10 +1077,10 @@ export const runAddBundleTiers = internalMutation({
         category: "core",
         description: "Standard Inside & Out plus exterior-focused add-ons at 10% off: Clay Bar Treatment, Iron Decontamination, 6-Month Paint Sealant, and Trim Restoration.",
         variants: [
-          { label: "Coupe/Sedan", price: 45000, durationMin: 210 },
-          { label: "Small SUV / Small Truck", price: 48600, durationMin: 240 },
-          { label: "Large SUV (3-row) / Off-Road Truck", price: 52200, durationMin: 270 },
-          { label: "Vans", price: 55800, durationMin: 300 },
+          { label: "Coupe/Sedan", price: 52800, durationMin: 210 },
+          { label: "Small SUV / Small Truck", price: 58000, durationMin: 240 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 63100, durationMin: 270 },
+          { label: "Vans", price: 68300, durationMin: 300 },
         ],
         sortOrder: 3,
         popular: true,
@@ -1001,10 +1091,10 @@ export const runAddBundleTiers = internalMutation({
         category: "core",
         description: "The ultimate package — Standard base plus all add-ons at 15% off with ceramic upgrades: Steam Cleaning, Premium Fragrance, Clay Bar Treatment, Iron Decontamination, Fabric Protection, GYEON Leather Shield, Ceramic Tire Dressing, Plastic & Trim Ceramic, and 12-Month Ceramic Wax.",
         variants: [
-          { label: "Coupe/Sedan", price: 67300, durationMin: 330 },
-          { label: "Small SUV / Small Truck", price: 70900, durationMin: 360 },
-          { label: "Large SUV (3-row) / Off-Road Truck", price: 74500, durationMin: 390 },
-          { label: "Vans", price: 78100, durationMin: 420 },
+          { label: "Coupe/Sedan", price: 75100, durationMin: 330 },
+          { label: "Small SUV / Small Truck", price: 80300, durationMin: 360 },
+          { label: "Large SUV (3-row) / Off-Road Truck", price: 85400, durationMin: 390 },
+          { label: "Vans", price: 90600, durationMin: 420 },
         ],
         sortOrder: 4,
       },
@@ -1015,10 +1105,10 @@ export const runAddBundleTiers = internalMutation({
         category: "core",
         description: "Complete interior detail. Includes: thorough vacuum of all surfaces, carpet & upholstery shampoo, dashboard & console wipe-down, cup holders & crevices, interior glass cleaning, door panels & jambs, and light stain treatment.",
         variants: [
-          { label: "Coupe/Sedan", price: 12700, durationMin: 105 },
-          { label: "Small SUV / Small Truck", price: 14400, durationMin: 120 },
-          { label: "3rd Row SUV / Off-Road Truck", price: 18000, durationMin: 150 },
-          { label: "Vans", price: 21600, durationMin: 180 },
+          { label: "Coupe/Sedan", price: 18100, durationMin: 105 },
+          { label: "Small SUV / Small Truck", price: 20700, durationMin: 120 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 25800, durationMin: 150 },
+          { label: "Vans", price: 31000, durationMin: 180 },
         ],
         sortOrder: 5,
       },
@@ -1028,10 +1118,10 @@ export const runAddBundleTiers = internalMutation({
         category: "core",
         description: "Standard Interior plus bundled premium add-ons at 10% off: Leather Deep Clean & Conditioning, Steam Cleaning of vents and crevices, Premium Fragrance, and UV Protection for dashboard and plastics.",
         variants: [
-          { label: "Coupe/Sedan", price: 25800, durationMin: 165 },
-          { label: "Small SUV / Small Truck", price: 27500, durationMin: 180 },
-          { label: "3rd Row SUV / Off-Road Truck", price: 31100, durationMin: 210 },
-          { label: "Vans", price: 34700, durationMin: 240 },
+          { label: "Coupe/Sedan", price: 31200, durationMin: 165 },
+          { label: "Small SUV / Small Truck", price: 33800, durationMin: 180 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 38900, durationMin: 210 },
+          { label: "Vans", price: 44100, durationMin: 240 },
         ],
         sortOrder: 6,
         popular: true,
@@ -1042,10 +1132,10 @@ export const runAddBundleTiers = internalMutation({
         category: "core",
         description: "Standard Interior plus ceramic add-ons at 15% off: Steam Cleaning, Premium Fragrance, Fabric Protection / Weather Guard, and GYEON Leather Shield.",
         variants: [
-          { label: "Coupe/Sedan", price: 31400, durationMin: 210 },
-          { label: "Small SUV / Small Truck", price: 33100, durationMin: 225 },
-          { label: "3rd Row SUV / Off-Road Truck", price: 36700, durationMin: 255 },
-          { label: "Vans", price: 40300, durationMin: 285 },
+          { label: "Coupe/Sedan", price: 36800, durationMin: 210 },
+          { label: "Small SUV / Small Truck", price: 39400, durationMin: 225 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 44500, durationMin: 255 },
+          { label: "Vans", price: 49700, durationMin: 285 },
         ],
         sortOrder: 7,
       },
@@ -1056,10 +1146,10 @@ export const runAddBundleTiers = internalMutation({
         category: "core",
         description: "Professional exterior refresh. Includes: full hand wash, wheel & tire cleaning, tire shine, exterior glass cleaning, door jambs, and a light spray wax for protection and shine.",
         variants: [
-          { label: "Coupe/Sedan", price: 10300, durationMin: 75 },
-          { label: "Small SUV / Small Truck", price: 12400, durationMin: 90 },
-          { label: "3rd Row SUV / Off-Road Truck", price: 14400, durationMin: 105 },
-          { label: "Vans", price: 16500, durationMin: 120 },
+          { label: "Coupe/Sedan", price: 13000, durationMin: 75 },
+          { label: "Small SUV / Small Truck", price: 15500, durationMin: 90 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 18100, durationMin: 105 },
+          { label: "Vans", price: 20700, durationMin: 120 },
         ],
         sortOrder: 8,
       },
@@ -1069,10 +1159,10 @@ export const runAddBundleTiers = internalMutation({
         category: "core",
         description: "Standard Exterior plus bundled premium add-ons at 10% off: Clay Bar Treatment for smooth paint, Iron Decontamination, 6-Month Paint Sealant, and Trim Restoration to revive faded plastics.",
         variants: [
-          { label: "Coupe/Sedan", price: 37300, durationMin: 150 },
-          { label: "Small SUV / Small Truck", price: 39400, durationMin: 165 },
-          { label: "3rd Row SUV / Off-Road Truck", price: 41400, durationMin: 180 },
-          { label: "Vans", price: 43500, durationMin: 195 },
+          { label: "Coupe/Sedan", price: 40000, durationMin: 150 },
+          { label: "Small SUV / Small Truck", price: 42500, durationMin: 165 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 45100, durationMin: 180 },
+          { label: "Vans", price: 47700, durationMin: 195 },
         ],
         sortOrder: 9,
         popular: true,
@@ -1083,10 +1173,10 @@ export const runAddBundleTiers = internalMutation({
         category: "core",
         description: "Standard Exterior plus ceramic add-ons at 15% off: Clay Bar, Iron Decontamination, Ceramic Tire Dressing, Plastic & Trim Ceramic, and 12-Month Ceramic Wax for ultimate exterior protection.",
         variants: [
-          { label: "Coupe/Sedan", price: 40900, durationMin: 195 },
-          { label: "Small SUV / Small Truck", price: 43000, durationMin: 210 },
-          { label: "3rd Row SUV / Off-Road Truck", price: 45000, durationMin: 225 },
-          { label: "Vans", price: 47100, durationMin: 240 },
+          { label: "Coupe/Sedan", price: 43600, durationMin: 195 },
+          { label: "Small SUV / Small Truck", price: 46100, durationMin: 210 },
+          { label: "3rd Row SUV / Off-Road Truck", price: 48700, durationMin: 225 },
+          { label: "Vans", price: 51300, durationMin: 240 },
         ],
         sortOrder: 10,
       },
@@ -1147,5 +1237,355 @@ export const runAddBundleTiers = internalMutation({
     if (wash) await ctx.db.patch(wash._id, { sortOrder: 11 });
 
     return `10-tier migration complete: ${created} created, ${updated} updated. ${log.join("; ")}`;
+  },
+});
+
+// ─── July 2026 Price Update Migration ─────────────────────────────────────────
+// Updates all prices to website-matched rates, adds new services, deactivates replaced ones.
+// Run: npx convex run catalog:runJuly2026PriceUpdate
+export const runJuly2026PriceUpdate = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const log: string[] = [];
+
+    // Helper: upsert by slug
+    async function upsertBySlug(
+      slug: string,
+      data: {
+        name: string;
+        category: CatalogCategory;
+        description: string;
+        variants: Array<{ label: string; price: number; durationMin: number }>;
+        isActive: boolean;
+        sortOrder: number;
+        deposit?: number;
+        popular?: boolean;
+      },
+    ) {
+      const existing = await ctx.db
+        .query("serviceCatalog")
+        .withIndex("by_slug", (q) => q.eq("slug", slug))
+        .first();
+      if (existing) {
+        await ctx.db.patch(existing._id, { ...data });
+        log.push(`updated: ${slug}`);
+      } else {
+        await ctx.db.insert("serviceCatalog", { slug, ...data });
+        log.push(`created: ${slug}`);
+      }
+    }
+
+    // Helper: deactivate by slug
+    async function deactivateBySlug(slug: string) {
+      const item = await ctx.db
+        .query("serviceCatalog")
+        .withIndex("by_slug", (q) => q.eq("slug", slug))
+        .first();
+      if (item && item.isActive) {
+        await ctx.db.patch(item._id, { isActive: false, sortOrder: 99 });
+        log.push(`deactivated: ${slug}`);
+      }
+    }
+
+    // ── CORE DETAILING (10 tiers) ──
+    await upsertBySlug("standard-inside-out", {
+      name: "Standard Inside & Out",
+      category: "core",
+      description: "A full-vehicle refresh — interior and exterior in one appointment. Includes: full vacuum, carpet & upholstery shampoo, dashboard & console wipe-down, interior glass, door jambs, hand wash, wheel & tire cleaning, exterior glass, light spray wax, and tire shine.",
+      variants: [
+        { label: "Coupe/Sedan", price: 25800, durationMin: 150 },
+        { label: "Small SUV / Small Truck", price: 31000, durationMin: 180 },
+        { label: "Large SUV (3-row) / Off-Road Truck", price: 36100, durationMin: 210 },
+        { label: "Vans", price: 41300, durationMin: 240 },
+      ],
+      isActive: true, sortOrder: 1,
+    });
+    await upsertBySlug("premium-inside-out-interior", {
+      name: "Premium Inside & Out — Interior Focus",
+      category: "core",
+      description: "Standard Inside & Out plus interior-focused add-ons at 10% off: Leather Deep Clean & Conditioning, Steam Cleaning, Premium Fragrance, and UV Protection.",
+      variants: [
+        { label: "Coupe/Sedan", price: 38900, durationMin: 210 },
+        { label: "Small SUV / Small Truck", price: 44100, durationMin: 240 },
+        { label: "Large SUV (3-row) / Off-Road Truck", price: 49200, durationMin: 270 },
+        { label: "Vans", price: 54400, durationMin: 300 },
+      ],
+      isActive: true, sortOrder: 2, popular: true,
+    });
+    await upsertBySlug("premium-inside-out-exterior", {
+      name: "Premium Inside & Out — Exterior Focus",
+      category: "core",
+      description: "Standard Inside & Out plus exterior-focused add-ons at 10% off: Clay Bar Treatment, Iron Decontamination, 6-Month Paint Sealant, and Trim Restoration.",
+      variants: [
+        { label: "Coupe/Sedan", price: 52800, durationMin: 210 },
+        { label: "Small SUV / Small Truck", price: 58000, durationMin: 240 },
+        { label: "Large SUV (3-row) / Off-Road Truck", price: 63100, durationMin: 270 },
+        { label: "Vans", price: 68300, durationMin: 300 },
+      ],
+      isActive: true, sortOrder: 3, popular: true,
+    });
+    await upsertBySlug("elite-inside-out", {
+      name: "Elite Inside & Out — Ceramic",
+      category: "core",
+      description: "The ultimate package — Standard base plus all add-ons at 15% off with ceramic upgrades: Steam Cleaning, Premium Fragrance, Clay Bar Treatment, Iron Decontamination, Fabric Protection, GYEON Leather Shield, Ceramic Tire Dressing, Plastic & Trim Ceramic, and 12-Month Ceramic Wax.",
+      variants: [
+        { label: "Coupe/Sedan", price: 75100, durationMin: 330 },
+        { label: "Small SUV / Small Truck", price: 80300, durationMin: 360 },
+        { label: "Large SUV (3-row) / Off-Road Truck", price: 85400, durationMin: 390 },
+        { label: "Vans", price: 90600, durationMin: 420 },
+      ],
+      isActive: true, sortOrder: 4,
+    });
+    await upsertBySlug("standard-interior-only", {
+      name: "Standard Interior Only",
+      category: "core",
+      description: "Complete interior detail. Includes: thorough vacuum of all surfaces, carpet & upholstery shampoo, dashboard & console wipe-down, cup holders & crevices, interior glass cleaning, door panels & jambs, and light stain treatment.",
+      variants: [
+        { label: "Coupe/Sedan", price: 18100, durationMin: 105 },
+        { label: "Small SUV / Small Truck", price: 20700, durationMin: 120 },
+        { label: "3rd Row SUV / Off-Road Truck", price: 25800, durationMin: 150 },
+        { label: "Vans", price: 31000, durationMin: 180 },
+      ],
+      isActive: true, sortOrder: 5,
+    });
+    await upsertBySlug("premium-interior-only", {
+      name: "Premium Interior Only",
+      category: "core",
+      description: "Standard Interior plus bundled premium add-ons at 10% off: Leather Deep Clean & Conditioning, Steam Cleaning of vents and crevices, Premium Fragrance, and UV Protection for dashboard and plastics.",
+      variants: [
+        { label: "Coupe/Sedan", price: 31200, durationMin: 165 },
+        { label: "Small SUV / Small Truck", price: 33800, durationMin: 180 },
+        { label: "3rd Row SUV / Off-Road Truck", price: 38900, durationMin: 210 },
+        { label: "Vans", price: 44100, durationMin: 240 },
+      ],
+      isActive: true, sortOrder: 6, popular: true,
+    });
+    await upsertBySlug("elite-interior-only", {
+      name: "Elite Interior Only — Ceramic",
+      category: "core",
+      description: "Standard Interior plus ceramic add-ons at 15% off: Steam Cleaning, Premium Fragrance, Fabric Protection / Weather Guard, and GYEON Leather Shield.",
+      variants: [
+        { label: "Coupe/Sedan", price: 36800, durationMin: 210 },
+        { label: "Small SUV / Small Truck", price: 39400, durationMin: 225 },
+        { label: "3rd Row SUV / Off-Road Truck", price: 44500, durationMin: 255 },
+        { label: "Vans", price: 49700, durationMin: 285 },
+      ],
+      isActive: true, sortOrder: 7,
+    });
+    await upsertBySlug("standard-exterior-only", {
+      name: "Standard Exterior Only",
+      category: "core",
+      description: "Professional exterior refresh. Includes: full hand wash, wheel & tire cleaning, tire shine, exterior glass cleaning, door jambs, and a light spray wax for protection and shine.",
+      variants: [
+        { label: "Coupe/Sedan", price: 13000, durationMin: 75 },
+        { label: "Small SUV / Small Truck", price: 15500, durationMin: 90 },
+        { label: "3rd Row SUV / Off-Road Truck", price: 18100, durationMin: 105 },
+        { label: "Vans", price: 20700, durationMin: 120 },
+      ],
+      isActive: true, sortOrder: 8,
+    });
+    await upsertBySlug("premium-exterior-only", {
+      name: "Premium Exterior Only",
+      category: "core",
+      description: "Standard Exterior plus bundled premium add-ons at 10% off: Clay Bar Treatment for smooth paint, Iron Decontamination, 6-Month Paint Sealant, and Trim Restoration to revive faded plastics.",
+      variants: [
+        { label: "Coupe/Sedan", price: 40000, durationMin: 150 },
+        { label: "Small SUV / Small Truck", price: 42500, durationMin: 165 },
+        { label: "3rd Row SUV / Off-Road Truck", price: 45100, durationMin: 180 },
+        { label: "Vans", price: 47700, durationMin: 195 },
+      ],
+      isActive: true, sortOrder: 9, popular: true,
+    });
+    await upsertBySlug("elite-exterior-only", {
+      name: "Elite Exterior Only — Ceramic",
+      category: "core",
+      description: "Standard Exterior plus ceramic add-ons at 15% off: Clay Bar, Iron Decontamination, Ceramic Tire Dressing, Plastic & Trim Ceramic, and 12-Month Ceramic Wax for ultimate exterior protection.",
+      variants: [
+        { label: "Coupe/Sedan", price: 43600, durationMin: 195 },
+        { label: "Small SUV / Small Truck", price: 46100, durationMin: 210 },
+        { label: "3rd Row SUV / Off-Road Truck", price: 48700, durationMin: 225 },
+        { label: "Vans", price: 51300, durationMin: 240 },
+      ],
+      isActive: true, sortOrder: 10,
+    });
+
+    // ── PAINT CORRECTION ──
+    await upsertBySlug("single-stage-correction", {
+      name: "Single Stage Paint Correction",
+      category: "paintCorrection",
+      description: "Removes light swirls and minor imperfections. Restores depth and gloss for vehicles in good condition.",
+      variants: [
+        { label: "Compact 2 Door", price: 57000, durationMin: 360 },
+        { label: "Midsize Sedans", price: 76000, durationMin: 480 },
+        { label: "SUV/Truck", price: 95000, durationMin: 600 },
+      ],
+      isActive: true, sortOrder: 1,
+    });
+    await upsertBySlug("enhancement-polish", {
+      name: "Enhancement Polish",
+      category: "paintCorrection",
+      description: "A compounding stage to remove deeper scratches, followed by fine polishing for a mirror-like finish.",
+      variants: [
+        { label: "Compact 2 Door", price: 95000, durationMin: 600 },
+        { label: "Midsize Sedans", price: 114000, durationMin: 720 },
+        { label: "SUV/Truck", price: 133000, durationMin: 840 },
+      ],
+      isActive: true, sortOrder: 2,
+    });
+    await upsertBySlug("multi-stage-correction", {
+      name: "Multi-Stage Paint Correction",
+      category: "paintCorrection",
+      description: "Our most thorough correction — multiple cutting and polishing stages for showroom-quality perfection.",
+      variants: [
+        { label: "Compact 2 Door", price: 156700, durationMin: 960 },
+        { label: "Midsize Sedans", price: 190000, durationMin: 1200 },
+        { label: "SUV/Truck", price: 228000, durationMin: 1440 },
+      ],
+      isActive: true, sortOrder: 3,
+    });
+
+    // ── CERAMIC COATING ──
+    await deactivateBySlug("ceramic-10yr"); // Flash EVO replaced by Infinite tiers
+    await upsertBySlug("gyeon-infinite-type1", {
+      name: "GYEON Infinite Type 1",
+      category: "ceramicCoating",
+      description: "Next-generation GYEON Infinite ceramic coating — Type 1 single-layer system with extreme durability, gloss, and hydrophobic performance.",
+      variants: [{ label: "Starting Price", price: 179900, durationMin: 360 }],
+      isActive: true, sortOrder: 3, deposit: 54000,
+    });
+    await upsertBySlug("gyeon-infinite-type1-2", {
+      name: "GYEON Infinite Type 1+2",
+      category: "ceramicCoating",
+      description: "The ultimate GYEON Infinite ceramic system — Type 1 base coat plus Type 2 top coat for maximum hardness, self-cleaning, and multi-year protection.",
+      variants: [{ label: "Starting Price", price: 219900, durationMin: 480 }],
+      isActive: true, sortOrder: 4, deposit: 66000,
+    });
+
+    // ── BOAT DETAILING ──
+    await upsertBySlug("boat-basic-wash", {
+      name: "Basic Boat Wash",
+      category: "boatDetailing",
+      description: "Exterior hand wash, rinse and dry, basic interior wipe-down, glass cleaned, trailer rinse.",
+      variants: [
+        { label: "Up to 20 ft", price: 20600, durationMin: 120 },
+        { label: "21–25 ft", price: 26800, durationMin: 150 },
+        { label: "26–30 ft", price: 33000, durationMin: 180 },
+        { label: "31–35 ft", price: 41200, durationMin: 210 },
+      ],
+      isActive: true, sortOrder: 1,
+    });
+    await upsertBySlug("boat-interior", {
+      name: "Interior Boat Detail",
+      category: "boatDetailing",
+      description: "Deep clean all vinyl seats & bolsters, compartments, bilge, carpet/non-skid scrub, glass surfaces, and UV protectant applied.",
+      variants: [
+        { label: "Up to 20 ft", price: 30900, durationMin: 180 },
+        { label: "21–25 ft", price: 39700, durationMin: 240 },
+        { label: "26–30 ft", price: 48600, durationMin: 300 },
+        { label: "31–35 ft", price: 59600, durationMin: 360 },
+      ],
+      isActive: true, sortOrder: 2,
+    });
+    await upsertBySlug("boat-exterior-wax", {
+      name: "Exterior Boat Detail + Wax",
+      category: "boatDetailing",
+      description: "Full exterior hand wash, machine compound & polish gelcoat, apply polymer sealant/wax, metal & brightwork polish, glass cleaned.",
+      variants: [
+        { label: "Up to 20 ft", price: 41200, durationMin: 240 },
+        { label: "21–25 ft", price: 52600, durationMin: 300 },
+        { label: "26–30 ft", price: 64100, durationMin: 360 },
+        { label: "31–35 ft", price: 77800, durationMin: 420 },
+      ],
+      isActive: true, sortOrder: 3,
+    });
+    await upsertBySlug("boat-full-detail", {
+      name: "Full Boat Detail (Inside & Out)",
+      category: "boatDetailing",
+      description: "The works — complete interior deep clean + full exterior compound, polish, and sealant. Brightwork, glass, trailer included.",
+      variants: [
+        { label: "Up to 20 ft", price: 61800, durationMin: 360 },
+        { label: "21–25 ft", price: 79800, durationMin: 420 },
+        { label: "26–30 ft", price: 97900, durationMin: 480 },
+        { label: "31–35 ft", price: 118500, durationMin: 540 },
+      ],
+      isActive: true, sortOrder: 4, popular: true,
+    });
+    await deactivateBySlug("boat-oxidation"); // Replaced by correction tiers
+    await upsertBySlug("boat-1-step-correction", {
+      name: "Boat 1-Step Correction",
+      category: "boatDetailing",
+      description: "Single-stage machine polish for gelcoat — removes light oxidation, water spots, and minor swirls to restore gloss.",
+      variants: [
+        { label: "Up to 20 ft", price: 82400, durationMin: 300 },
+        { label: "21–25 ft", price: 92700, durationMin: 360 },
+        { label: "26–30 ft", price: 103000, durationMin: 420 },
+        { label: "31–35 ft", price: 113300, durationMin: 480 },
+      ],
+      isActive: true, sortOrder: 5,
+    });
+    await upsertBySlug("boat-2-step-correction", {
+      name: "Boat 2-Step Correction",
+      category: "boatDetailing",
+      description: "Two-stage compound and polish for gelcoat — removes moderate oxidation, deeper scratches, and restores a high-gloss finish.",
+      variants: [
+        { label: "Up to 20 ft", price: 123600, durationMin: 420 },
+        { label: "21–25 ft", price: 133900, durationMin: 480 },
+        { label: "26–30 ft", price: 144200, durationMin: 540 },
+        { label: "31–35 ft", price: 154500, durationMin: 600 },
+      ],
+      isActive: true, sortOrder: 6,
+    });
+    await upsertBySlug("boat-multi-stage-correction", {
+      name: "Boat Multi-Stage Correction",
+      category: "boatDetailing",
+      description: "Multi-stage heavy compound and polish for severely oxidized or neglected gelcoat — full restoration to showroom finish.",
+      variants: [
+        { label: "Up to 20 ft", price: 185400, durationMin: 540 },
+        { label: "21–25 ft", price: 206000, durationMin: 600 },
+        { label: "26–30 ft", price: 226600, durationMin: 720 },
+        { label: "31–35 ft", price: 247200, durationMin: 840 },
+      ],
+      isActive: true, sortOrder: 7,
+    });
+
+    // ── BOAT CERAMIC ──
+    await deactivateBySlug("boat-ceramic-2yr");
+    await deactivateBySlug("boat-ceramic-5yr");
+    await upsertBySlug("boat-ceramic-gelcoat", {
+      name: "GYEON Q²R GelCoat Marine Ceramic",
+      category: "boatCeramic",
+      description: "Professional GYEON Q²R GelCoat ceramic coating for marine gelcoat surfaces — superior UV, chemical, and saltwater protection with hydrophobic self-cleaning properties.",
+      variants: [
+        { label: "Up to 20 ft", price: 47500, durationMin: 360 },
+        { label: "21–25 ft", price: 61800, durationMin: 480 },
+        { label: "26–30 ft", price: 76000, durationMin: 600 },
+        { label: "31–35 ft", price: 95000, durationMin: 720 },
+      ],
+      isActive: true, sortOrder: 1, popular: true,
+    });
+
+    // ── ADD-ONS ──
+    // Convertible Top: $60 → $100
+    const convTop = await ctx.db
+      .query("serviceCatalog")
+      .withIndex("by_slug", (q) => q.eq("slug", "convertible-top"))
+      .first();
+    if (convTop) {
+      await ctx.db.patch(convTop._id, {
+        variants: [{ label: "Standard", price: 10000, durationMin: 30 }],
+      });
+      log.push("updated: convertible-top ($60→$100)");
+    }
+
+    // New: GYEON Can Coat Pro EVO
+    await upsertBySlug("gyeon-can-coat-pro-evo", {
+      name: "GYEON Can Coat Pro EVO",
+      category: "ceramicAddon",
+      description: "Professional spray ceramic coating — easy-apply GYEON Can Coat Pro EVO delivers instant hydrophobic protection, UV resistance, and deep gloss in a single application.",
+      variants: [{ label: "Standard", price: 14900, durationMin: 30 }],
+      isActive: true, sortOrder: 11,
+    });
+
+    return `July 2026 price update complete (${log.length} changes): ${log.join("; ")}`;
   },
 });

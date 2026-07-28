@@ -9,6 +9,7 @@ import {
   Sparkles,
   Star,
 } from "lucide-react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,54 +26,70 @@ function formatPrice(cents: number) {
   return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: cents % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 })}`;
 }
 
-// Feature bullets per tier
-const TIER_FEATURES: Record<string, string[]> = {
-  "membership-exterior-only": [
-    "Monthly exterior hand wash",
-    "Tire & wheel clean",
-    "Exterior window cleaning",
-    "Door jamb wipe-down",
-    "Tire shine & dressing",
-  ],
-  "membership-interior-only": [
-    "Monthly interior detail",
-    "Full vacuum & wipe-down",
-    "Dashboard & console detail",
-    "Leather / vinyl conditioning",
-    "Interior windows",
-    "Air freshener",
-  ],
-  "membership-full-inside-out": [
-    "Full inside & out detail",
-    "Everything in Exterior + Interior",
-    "Ceramic wet-coat protection",
-    "Paint sealant refresh",
-    "Tire shine & trim dressing",
-    "Priority scheduling",
-  ],
-  "membership-ceramic-maintenance": [
-    "Full inside & out detail",
-    "Everything in Full I&O plan",
-    "GYEON ceramic top-coat refresh",
-    "Ceramic trim & plastic refresh",
-    "Iron decontamination",
-    "Priority scheduling",
-    "15% off add-on services",
-  ],
+// Plan type definitions
+const PLAN_TYPES = [
+  {
+    key: "full-io",
+    label: "Full Inside & Out",
+    slugPrefix: "membership-full-io-",
+    description: "Complete interior and exterior detail every visit — our most comprehensive plan.",
+    features: [
+      "Full interior vacuum (carpets, seats, crevices)",
+      "Wipe-down of all interior surfaces",
+      "Interior glass cleaning",
+      "Hand wash with foam pre-treatment",
+      "Wheels & tires cleaned and dressed",
+      "Exterior glass cleaned",
+      "Light spray wax & tire shine",
+    ],
+    gradient: "from-amber-500 to-orange-500",
+    accent: "border-amber-400/50 ring-1 ring-amber-400/20",
+  },
+  {
+    key: "ext",
+    label: "Exterior Only",
+    slugPrefix: "membership-ext-",
+    description: "Professional hand wash, wheels, tires, and exterior protection every visit.",
+    features: [
+      "Hand wash with foam pre-treatment",
+      "Wheels & tires cleaned and dressed",
+      "Door jambs wiped down",
+      "Exterior glass cleaned",
+      "Light spray wax & tire shine",
+    ],
+    gradient: "from-slate-500 to-slate-400",
+    accent: "border-slate-300 dark:border-slate-600",
+  },
+  {
+    key: "int",
+    label: "Interior Only",
+    slugPrefix: "membership-int-",
+    description: "Full interior vacuum, surface wipe-down, and interior glass cleaning every visit.",
+    features: [
+      "Full interior vacuum (carpets, seats, crevices)",
+      "Wipe-down of all interior surfaces",
+      "Interior glass cleaning",
+      "Door panels & jambs",
+    ],
+    gradient: "from-blue-600 to-cyan-500",
+    accent: "border-blue-400/50 ring-2 ring-blue-400/20",
+  },
+];
+
+const FREQUENCY_ORDER = ["biweekly", "monthly", "quarterly", "annual"];
+
+const FREQUENCY_LABELS: Record<string, string> = {
+  biweekly: "Biweekly",
+  monthly: "Monthly",
+  quarterly: "Quarterly",
+  annual: "Annual Pre-Pay",
 };
 
-const TIER_GRADIENTS: Record<string, string> = {
-  "membership-exterior-only": "from-slate-500 to-slate-400",
-  "membership-interior-only": "from-blue-600 to-cyan-500",
-  "membership-full-inside-out": "from-amber-500 to-orange-500",
-  "membership-ceramic-maintenance": "from-emerald-500 to-teal-500",
-};
-
-const TIER_ACCENT: Record<string, string> = {
-  "membership-exterior-only": "border-slate-300 dark:border-slate-600",
-  "membership-interior-only": "border-blue-400/50 ring-2 ring-blue-400/20",
-  "membership-full-inside-out": "border-amber-400/50 ring-1 ring-amber-400/20",
-  "membership-ceramic-maintenance": "border-emerald-400/50 ring-2 ring-emerald-400/20",
+const FREQUENCY_DESCRIPTIONS: Record<string, string> = {
+  biweekly: "Our best per-visit rate. Perfect for daily drivers and pristine upkeep.",
+  monthly: "The sweet spot. Keeps your vehicle consistently fresh and protected.",
+  quarterly: "The seasonal refresh. A deep maintenance clean every 3 months.",
+  annual: "12 monthly visits pre-paid for the year. Save 8% plus 10% off add-on services.",
 };
 
 export function MembershipPage() {
@@ -80,6 +97,19 @@ export function MembershipPage() {
   const memberships = (catalog ?? [])
     .filter((c) => c.category === "membership")
     .sort((a, b) => a.sortOrder - b.sortOrder);
+  const [activePlan, setActivePlan] = useState("full-io");
+
+  const activePlanType = PLAN_TYPES.find((p) => p.key === activePlan)!;
+
+  // Group memberships by plan type
+  const planMemberships = memberships.filter((m) =>
+    m.slug.startsWith(activePlanType.slugPrefix),
+  );
+
+  // Sort by frequency order
+  const sortedPlanMemberships = FREQUENCY_ORDER.map((freq) =>
+    planMemberships.find((m) => m.slug.endsWith(`-${freq}`)),
+  ).filter(Boolean) as typeof memberships;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
@@ -93,11 +123,11 @@ export function MembershipPage() {
             </div>
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold mb-4 tracking-tight">
-            Maintenance Memberships
+            Monthly Maintenance Plans
           </h1>
           <p className="text-lg text-blue-100 max-w-2xl mb-2">
-            Keep your vehicle looking showroom-fresh year-round with scheduled
-            monthly maintenance detailing.
+            Keep your vehicle looking its best — every month. Professional mobile
+            detailing on a schedule that works for you. Cancel anytime.
           </p>
         </div>
       </div>
@@ -142,7 +172,7 @@ export function MembershipPage() {
                 step: "2",
                 icon: <Calendar className="size-5 text-green-500" />,
                 title: "Sign Up Within 30 Days",
-                desc: "Enroll in your chosen membership tier within the same month as your initial detail.",
+                desc: "Enroll in your chosen plan within the same month as your initial detail.",
               },
               {
                 step: "3",
@@ -164,23 +194,49 @@ export function MembershipPage() {
           </div>
         </div>
 
-        {/* Membership Tiers */}
+        {/* Plan Type Tabs */}
+        <div className="mb-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            Select Your Plan Type
+          </h2>
+          <div className="flex gap-2 flex-wrap">
+            {PLAN_TYPES.map((plan) => (
+              <button
+                key={plan.key}
+                type="button"
+                onClick={() => setActivePlan(plan.key)}
+                className={`px-5 py-3 rounded-xl text-sm font-bold transition-all ${
+                  activePlan === plan.key
+                    ? "bg-primary text-primary-foreground shadow-md scale-105"
+                    : "bg-card border-2 border-border text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-primary/5"
+                }`}
+              >
+                {plan.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Active Plan Description */}
+        <div className="mb-6">
+          <p className="text-muted-foreground">{activePlanType.description}</p>
+        </div>
+
+        {/* Frequency Cards */}
         {!catalog ? (
-          <div className="grid sm:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-96 rounded-xl bg-muted animate-pulse" />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-80 rounded-xl bg-muted animate-pulse" />
             ))}
           </div>
         ) : (
-          <div className="grid sm:grid-cols-3 gap-6 mb-12">
-            {memberships.map((item) => {
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {sortedPlanMemberships.map((item) => {
+              const freq = item.slug.replace(activePlanType.slugPrefix, "");
               const price = item.variants[0]?.price ?? 0;
-              const features = (item as any).features?.length
-                ? (item as any).features as string[]
-                : TIER_FEATURES[item.slug] ?? [];
-              const subUrl = (item as any).subscriptionUrl as string | undefined;
-              const gradient = TIER_GRADIENTS[item.slug] ?? "from-gray-500 to-gray-400";
-              const accent = TIER_ACCENT[item.slug] ?? "";
+              const isAnnual = freq === "annual";
+              const gradient = activePlanType.gradient;
+              const accent = item.popular ? activePlanType.accent : "";
 
               return (
                 <Card
@@ -200,53 +256,97 @@ export function MembershipPage() {
                     >
                       <ShieldCheck className="size-5" />
                     </div>
-                    <CardTitle className="text-xl">
-                      {item.name.replace(" Membership", "")}
+                    <CardTitle className="text-lg">
+                      {FREQUENCY_LABELS[freq] ?? freq}
                     </CardTitle>
-                    <CardDescription>{item.description}</CardDescription>
+                    <CardDescription className="text-xs">
+                      {FREQUENCY_DESCRIPTIONS[freq] ?? ""}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-4">
-                      <span className="text-3xl font-bold">
+                      <span className="text-2xl font-bold">
                         {formatPrice(price)}
                       </span>
-                      <span className="text-muted-foreground text-sm">/month</span>
+                      <span className="text-muted-foreground text-sm">
+                        {isAnnual ? "/yr" : "/visit"}
+                      </span>
                     </div>
-                    <ul className="space-y-2 mb-6">
-                      {features.map((f) => (
-                        <li key={f} className="flex items-start gap-2 text-sm">
-                          {f.endsWith(":") ? (
-                            <span className="text-muted-foreground font-medium">
-                              {f}
-                            </span>
-                          ) : (
-                            <>
-                              <CheckCircle2 className="size-4 text-green-500 mt-0.5 shrink-0" />
-                              <span>{f}</span>
-                            </>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Starting at (Sedan). See table below for all sizes.
+                    </p>
                     <Button
                       asChild
-                      className={`w-full ${item.popular ? "" : "variant-outline"}`}
+                      className="w-full"
                       variant={item.popular ? "default" : "outline"}
+                      size="sm"
                     >
-                      {subUrl ? (
-                        <a href={subUrl} target="_blank" rel="noopener noreferrer">
-                          <ArrowRight className="size-4 mr-1" /> Subscribe Now
-                        </a>
-                      ) : (
-                        <a href={`tel:${BUSINESS_PHONE}`}>
-                          <Phone className="size-4 mr-1" /> Call to Join
-                        </a>
-                      )}
+                      <a href={`tel:${BUSINESS_PHONE}`}>
+                        <Phone className="size-4 mr-1" /> Subscribe Now
+                      </a>
                     </Button>
                   </CardContent>
                 </Card>
               );
             })}
+          </div>
+        )}
+
+        {/* What's Included */}
+        <div className="mb-8 p-6 rounded-2xl border bg-card">
+          <h3 className="font-semibold mb-3">What's included in every visit:</h3>
+          <ul className="grid sm:grid-cols-2 gap-2">
+            {activePlanType.features.map((f) => (
+              <li key={f} className="flex items-start gap-2 text-sm">
+                <CheckCircle2 className="size-4 text-green-500 mt-0.5 shrink-0" />
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Pricing Table */}
+        {catalog && sortedPlanMemberships.length > 0 && (
+          <div className="mb-12 overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b-2">
+                  <th className="text-left p-3 font-semibold">Vehicle Size</th>
+                  {sortedPlanMemberships.map((item) => {
+                    const freq = item.slug.replace(activePlanType.slugPrefix, "");
+                    return (
+                      <th key={item._id} className="text-center p-3 font-semibold">
+                        {FREQUENCY_LABELS[freq] ?? freq}
+                        {item.popular && (
+                          <Badge className="ml-1 bg-blue-500 text-white border-0 text-[9px]">
+                            ★
+                          </Badge>
+                        )}
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {(sortedPlanMemberships[0]?.variants ?? []).map((_, vi) => (
+                  <tr key={vi} className="border-b hover:bg-muted/50">
+                    <td className="p-3 font-medium">
+                      {sortedPlanMemberships[0]?.variants[vi]?.label}
+                    </td>
+                    {sortedPlanMemberships.map((item) => (
+                      <td key={item._id} className="text-center p-3">
+                        {formatPrice(item.variants[vi]?.price ?? 0)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="text-xs text-muted-foreground mt-3">
+              Per-visit rates shown for Biweekly, Monthly, and Quarterly. Annual is a
+              one-time pre-pay for 12 monthly visits. Billing starts the 1st of the month
+              following signup.
+            </p>
           </div>
         )}
 
@@ -278,7 +378,8 @@ export function MembershipPage() {
             <li className="flex items-start gap-2">
               <span className="font-bold">•</span>
               <span>
-                Memberships are billed monthly through Square. Cancel anytime with 7 days' notice.
+                No long-term contracts — <strong>cancel anytime</strong> with no penalty.
+                Annual pre-pay plans include 10% off add-on services.
               </span>
             </li>
           </ul>

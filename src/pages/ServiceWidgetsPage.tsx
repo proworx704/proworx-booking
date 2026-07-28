@@ -46,24 +46,6 @@ const SERVICE_CATEGORIES: CategoryDef[] = [
         description:
           "Complete interior and exterior detail — hand wash, vacuum, wipe-down, glass, tire dressing, and spray wax.",
       },
-      {
-        slug: "premium-io-interior",
-        name: "Premium I&O — Interior Focus",
-        description:
-          "Standard Inside & Out + bundled interior add-ons at 10% off — steam, fragrance, leather conditioning, and more.",
-      },
-      {
-        slug: "premium-io-exterior",
-        name: "Premium I&O — Exterior Focus",
-        description:
-          "Standard Inside & Out + bundled exterior add-ons at 10% off — clay bar, iron decontamination, paint protection, and more.",
-      },
-      {
-        slug: "elite-inside-out",
-        name: "Elite Inside & Out — Ceramic",
-        description:
-          "Standard Inside & Out + all ceramic interior & exterior add-ons bundled at 15% off with GYEON ceramic upgrades.",
-      },
     ],
   },
   {
@@ -72,22 +54,10 @@ const SERVICE_CATEGORIES: CategoryDef[] = [
     icon: <Sparkles className="size-5" />,
     services: [
       {
-        slug: "standard-interior",
-        name: "Standard Interior",
+        slug: "standard-interior-only",
+        name: "Standard Interior Only",
         description:
           "Full interior clean — vacuum, wipe-down of all surfaces, interior glass, and light fragrance.",
-      },
-      {
-        slug: "premium-interior",
-        name: "Premium Interior",
-        description:
-          "Standard Interior + bundled add-ons at 10% off — steam cleaning, premium fragrance, leather conditioning, stain removal.",
-      },
-      {
-        slug: "elite-interior",
-        name: "Elite Interior — Ceramic",
-        description:
-          "Standard Interior plus ceramic interior add-ons at 15% off — hot water extraction, steam cleaning, fabric protection, GYEON leather shield.",
       },
     ],
   },
@@ -97,22 +67,10 @@ const SERVICE_CATEGORIES: CategoryDef[] = [
     icon: <Paintbrush className="size-5" />,
     services: [
       {
-        slug: "standard-exterior",
-        name: "Standard Exterior",
+        slug: "standard-exterior-only",
+        name: "Standard Exterior Only",
         description:
           "Hand wash with foam pre-treatment, wheels & tires cleaned and dressed, exterior glass, and spray wax.",
-      },
-      {
-        slug: "premium-exterior",
-        name: "Premium Exterior",
-        description:
-          "Standard Exterior + bundled add-ons at 10% off — clay bar, iron decontamination, paint sealant, trim restoration.",
-      },
-      {
-        slug: "elite-exterior",
-        name: "Elite Exterior — Ceramic",
-        description:
-          "Standard Exterior + ceramic exterior add-ons bundled at 15% off — clay bar, iron decon, ceramic tire dressing, plastic & trim ceramic, 12-month ceramic wax.",
       },
     ],
   },

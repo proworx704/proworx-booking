@@ -65,19 +65,12 @@ type ServiceType = (typeof SERVICE_TYPES)[number]["value"];
 const TIER_OPTIONS: Record<string, Array<{ value: string; label: string; slug: string; badge?: string; description?: string }>> = {
   "full-detail": [
     { value: "standard", label: "Standard", slug: "standard-inside-out", description: "Full interior + exterior refresh" },
-    { value: "premium-interior", label: "Premium — Interior Focus", slug: "premium-io-interior-focus", badge: "Popular", description: "+Leather, Steam, Fragrance, UV Protection (10% off add-ons)" },
-    { value: "premium-exterior", label: "Premium — Exterior Focus", slug: "premium-io-exterior-focus", badge: "Popular", description: "+Clay Bar, Iron Decon, 6mo Sealant, Trim Restore (10% off add-ons)" },
-    { value: "elite", label: "Elite Ceramic", slug: "elite-inside-out", badge: "Best Protection", description: "+All add-ons with ceramic upgrades — Leather Shield, Ceramic Tire & Trim, 12mo Ceramic Wax (15% off)" },
   ],
   interior: [
     { value: "standard", label: "Standard", slug: "standard-interior-only", description: "Complete interior detail" },
-    { value: "premium", label: "Premium", slug: "premium-interior", badge: "Recommended", description: "+Leather, Steam, Fragrance, UV Protection (10% off add-ons)" },
-    { value: "elite", label: "Elite Ceramic", slug: "elite-interior-only", badge: "Best Protection", description: "+Steam, Fragrance, Fabric Protection, GYEON Leather Shield (15% off)" },
   ],
   exterior: [
     { value: "standard", label: "Standard", slug: "standard-exterior-only", description: "Professional exterior refresh" },
-    { value: "premium", label: "Premium", slug: "premium-exterior", badge: "Most Popular", description: "+Clay Bar, Iron Decon, Sealant, Trim Restore (10% off add-ons)" },
-    { value: "elite", label: "Elite Ceramic", slug: "elite-exterior", badge: "Best Protection", description: "+Clay Bar, Iron Decon, Ceramic Tire & Trim, 12mo Ceramic Wax (15% off)" },
   ],
 };
 
@@ -93,23 +86,12 @@ const VEHICLE_SIZES = [
 const TIER_INCLUDED_ADDONS: Record<string, Record<string, string[]>> = {
   "full-detail": {
     standard: [],
-    "premium-interior": ["leather-clean", "steam-cleaning", "premium-fragrance", "uv-protection"],
-    "premium-exterior": ["clay-bar", "iron-decontamination", "paint-protection", "trim-restoration"],
-    elite: [
-      "leather-clean", "steam-cleaning", "premium-fragrance", "uv-protection",
-      "clay-bar", "iron-decontamination", "paint-protection", "trim-restoration",
-      "gyeon-leather", "ceramic-tire", "plastic-ceramic",
-    ],
   },
   interior: {
     standard: [],
-    premium: ["leather-clean", "steam-cleaning", "premium-fragrance", "uv-protection"],
-    elite: ["steam-cleaning", "premium-fragrance", "fabric-protection", "gyeon-leather"],
   },
   exterior: {
     standard: [],
-    premium: ["clay-bar", "iron-decontamination", "paint-protection", "trim-restoration"],
-    elite: ["clay-bar", "iron-decontamination", "ceramic-tire", "plastic-ceramic"],
   },
 };
 
@@ -190,6 +172,14 @@ function ServiceStep({
   onTierChange: (t: string) => void;
 }) {
   const tiers = value ? TIER_OPTIONS[value] : null;
+
+  // Auto-select tier when only one option exists
+  useEffect(() => {
+    if (tiers && tiers.length === 1 && tier !== tiers[0].value) {
+      onTierChange(tiers[0].value);
+    }
+  }, [tiers, tier, onTierChange]);
+
   return (
     <div className="space-y-4">
       <div>
@@ -225,12 +215,12 @@ function ServiceStep({
         ))}
       </div>
 
-      {/* Tier selection for core services */}
-      {tiers && (
+      {/* Tier selection for core services — only shown when multiple tiers exist */}
+      {tiers && tiers.length > 1 && (
         <div className="mt-2 space-y-3">
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-1">Choose Tier</h3>
-            <p className="text-xs text-muted-foreground">Premium & Elite bundle popular add-ons at a discount</p>
+            <p className="text-xs text-muted-foreground">Select your service tier</p>
           </div>
           <div className="grid grid-cols-1 gap-2">
             {tiers.map((t) => {

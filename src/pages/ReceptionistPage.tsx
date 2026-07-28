@@ -173,13 +173,6 @@ function ServiceStep({
 }) {
   const tiers = value ? TIER_OPTIONS[value] : null;
 
-  // Auto-select tier when only one option exists
-  useEffect(() => {
-    if (tiers && tiers.length === 1 && tier !== tiers[0].value) {
-      onTierChange(tiers[0].value);
-    }
-  }, [tiers, tier, onTierChange]);
-
   return (
     <div className="space-y-4">
       <div>
@@ -1030,7 +1023,13 @@ export function ReceptionistPage({ standalone = false }: { standalone?: boolean 
 
   // Reset dependent state when service changes
   useEffect(() => {
-    setTier("");
+    // Auto-select tier when only one option exists, otherwise reset
+    const tiers = TIER_OPTIONS[serviceType as string];
+    if (tiers && tiers.length === 1) {
+      setTier(tiers[0].value);
+    } else {
+      setTier("");
+    }
     setVehicleSize("");
     setBoatLength("");
     setSubService("");
@@ -1176,7 +1175,9 @@ export function ReceptionistPage({ standalone = false }: { standalone?: boolean 
       case "service": {
         if (!serviceType) return false;
         const tiers = TIER_OPTIONS[serviceType as string];
-        return tiers ? !!tier : true;
+        if (!tiers) return true; // No tiers needed (paint correction, ceramic, boat)
+        if (tiers.length <= 1) return true; // Single tier auto-selects
+        return !!tier; // Multiple tiers require selection
       }
       case "size":
         if (serviceType === "boat") return !!boatLength && !!subService;

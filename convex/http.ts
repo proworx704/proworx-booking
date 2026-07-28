@@ -22,6 +22,22 @@ http.route({
   }),
 });
 
+// July 2026 price update migration — remove after running
+http.route({
+  path: "/migrate-july2026-prices",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json();
+    if (body.secret !== "proworx-july2026-price-update") {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const result = await ctx.runMutation(internal.catalog.runJuly2026PriceUpdate);
+    return new Response(JSON.stringify({ result }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
 // ── Public API: site settings (review count, etc.) ──────────────────────
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",

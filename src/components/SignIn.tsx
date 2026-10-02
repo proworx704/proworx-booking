@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
+import { PasswordInput } from "./PasswordInput";
 import { Label } from "./ui/label";
 
 function isTestEmail(email: string): boolean {
@@ -69,10 +70,9 @@ export function SignIn() {
                   Forgot password?
                 </Button>
               </div>
-              <Input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 placeholder="••••••••"
                 autoComplete="current-password"
                 className="h-11"
@@ -248,10 +248,9 @@ export function SignIn() {
         >
           <div className="space-y-2">
             <Label htmlFor="newPassword">New Password</Label>
-            <Input
+            <PasswordInput
               id="newPassword"
               name="newPassword"
-              type="password"
               placeholder="••••••••"
               minLength={6}
               autoComplete="new-password"
